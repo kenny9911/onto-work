@@ -1,0 +1,340 @@
+@import "tailwindcss";
+@source "../node_modules/streamdown/dist/*.js";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  color-scheme: dark;
+  /* Primitives — copied from the binding Claude Design system. */
+  --p-graphite-950: oklch(0.155 0.018 260);
+  --p-iron-900: oklch(0.175 0.018 260);
+  --p-iron-850: oklch(0.195 0.018 260);
+  --p-steel-700: oklch(0.32 0.02 260);
+  --p-mist-100: oklch(0.98 0.005 260);
+  --p-lime-500: oklch(0.92 0.22 130);
+  --p-violet-500: oklch(0.7 0.26 305);
+  --p-amber-500: oklch(0.86 0.17 85);
+  --p-red-500: oklch(0.66 0.2 25);
+  --p-blue-500: oklch(0.72 0.14 240);
+  --p-tide-500: oklch(0.78 0.1 185);
+
+  /* Semantic layer. */
+  --c-bg: var(--p-graphite-950);
+  --c-plate: var(--p-iron-900);
+  --c-surface: var(--p-iron-850);
+  --c-raise: oklch(0.225 0.018 260);
+  --ink-1: var(--p-mist-100);
+  --ink-2: oklch(0.82 0.01 260);
+  --ink-3: oklch(0.64 0.012 260);
+  --ink-4: oklch(0.48 0.012 260);
+  --c-line: var(--p-steel-700);
+  --c-hair: color-mix(in oklab, var(--p-steel-700) 62%, transparent);
+  --c-run: var(--p-lime-500);
+  --c-run-dim: color-mix(in oklab, var(--p-lime-500) 16%, transparent);
+  --c-run-line: color-mix(in oklab, var(--p-lime-500) 45%, transparent);
+  --c-human: var(--p-violet-500);
+  --c-human-dim: color-mix(in oklab, var(--p-violet-500) 15%, transparent);
+  --c-wait: var(--p-amber-500);
+  --c-wait-dim: color-mix(in oklab, var(--p-amber-500) 14%, transparent);
+  --c-fail: var(--p-red-500);
+  --c-fail-dim: color-mix(in oklab, var(--p-red-500) 16%, transparent);
+  --c-info: var(--p-blue-500);
+  --c-verified: var(--p-tide-500);
+  --c-focus: oklch(0.85 0.14 210);
+  --term-bg: oklch(0.135 0.014 260);
+  --syn-add: oklch(0.72 0.15 150);
+  --syn-del: oklch(0.68 0.17 25);
+  --syn-add-bg: color-mix(in oklab, var(--syn-add) 12%, transparent);
+  --syn-del-bg: color-mix(in oklab, var(--syn-del) 12%, transparent);
+  --syn-key: oklch(0.76 0.14 300);
+  --syn-str: oklch(0.82 0.12 120);
+  --syn-num: oklch(0.84 0.12 85);
+  --syn-com: oklch(0.55 0.02 260);
+  --e-pop: 0 18px 40px -18px rgb(0 0 0 / 72%);
+  --e-urgent: 0 0 0 1px color-mix(in oklab, var(--c-human) 45%, transparent),
+    0 16px 34px -20px rgb(0 0 0 / 80%);
+
+  /* Component aliases consumed by shadcn/Tailwind. */
+  --background: var(--c-bg);
+  --foreground: var(--ink-1);
+  --card: var(--c-plate);
+  --card-foreground: var(--ink-1);
+  --popover: var(--c-raise);
+  --popover-foreground: var(--ink-1);
+  --primary: var(--c-run);
+  --primary-foreground: var(--c-bg);
+  --human: var(--c-human);
+  --waiting: var(--c-wait);
+  --healthy: var(--c-verified);
+  --secondary: var(--c-surface);
+  --secondary-foreground: var(--ink-2);
+  --muted: var(--c-surface);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--c-raise);
+  --accent-foreground: var(--ink-1);
+  --destructive: var(--c-fail);
+  --border: var(--c-hair);
+  --input: var(--c-line);
+  --ring: var(--c-focus);
+  --radius: 0.375rem;
+  --sidebar: var(--c-plate);
+  --sidebar-foreground: var(--ink-2);
+  --sidebar-border: var(--c-hair);
+  /* Typography — matched to the Claude Design source file. */
+  font-family: "Geist Variable", "Geist", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+[data-ah-theme="light"] {
+  color-scheme: light;
+  --c-bg: oklch(0.975 0.004 260);
+  --c-plate: oklch(1 0 0);
+  --c-surface: oklch(0.955 0.004 260);
+  --c-raise: oklch(1 0 0);
+  --ink-1: oklch(0.24 0.015 260);
+  --ink-2: oklch(0.38 0.014 260);
+  --ink-3: oklch(0.52 0.012 260);
+  --ink-4: oklch(0.64 0.01 260);
+  --c-line: oklch(0.88 0.006 260);
+  --c-hair: oklch(0.91 0.005 260);
+  --c-run: oklch(0.58 0.16 132);
+  --c-run-dim: color-mix(in oklab, var(--c-run) 12%, transparent);
+  --c-run-line: color-mix(in oklab, var(--c-run) 40%, transparent);
+  --c-human: oklch(0.5 0.22 300);
+  --c-human-dim: color-mix(in oklab, var(--c-human) 10%, transparent);
+  --c-wait: oklch(0.62 0.14 70);
+  --c-wait-dim: color-mix(in oklab, var(--c-wait) 12%, transparent);
+  --c-fail: oklch(0.54 0.2 25);
+  --c-fail-dim: color-mix(in oklab, var(--c-fail) 10%, transparent);
+  --c-info: oklch(0.52 0.14 250);
+  --c-verified: oklch(0.55 0.09 190);
+  --term-bg: oklch(0.22 0.014 260);
+  --syn-com: oklch(0.62 0.02 260);
+  --e-pop: 0 18px 40px -22px rgb(20 26 36 / 28%);
+  --e-urgent: 0 0 0 1px color-mix(in oklab, var(--c-human) 35%, transparent),
+    0 14px 30px -18px rgb(20 26 36 / 30%);
+}
+
+@theme inline {
+  --font-sans: "Geist Variable", "Geist", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Semantic type roles. Dense telemetry stays compact; anything read or
+     operated on is deliberately larger than the original compressed pass. */
+  --text-ui-micro: 0.625rem;
+  --text-ui-micro--line-height: 0.875rem;
+  --text-ui-meta: 0.6875rem;
+  --text-ui-meta--line-height: 1rem;
+  --text-ui-code: 0.75rem;
+  --text-ui-code--line-height: 1.125rem;
+  --text-ui-control: 0.8125rem;
+  --text-ui-control--line-height: 1.125rem;
+  --text-ui-body: 0.875rem;
+  --text-ui-body--line-height: 1.375rem;
+  --text-ui-title: 1rem;
+  --text-ui-title--line-height: 1.3125rem;
+  --text-ui-display: 1.125rem;
+  --text-ui-display--line-height: 1.5rem;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-human: var(--human);
+  --color-waiting: var(--waiting);
+  --color-healthy: var(--healthy);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  outline: none;
+}
+
+:focus-visible {
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+}
+
+[tabindex="-1"]:focus,
+[tabindex="-1"]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+::selection {
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--ink-4) 52%, transparent);
+  background-clip: padding-box;
+}
+
+.activity-rail::before {
+  position: absolute;
+  top: 1.75rem;
+  bottom: -1rem;
+  left: 0.44rem;
+  width: 1px;
+  content: "";
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--primary) 75%, transparent),
+    color-mix(in oklab, var(--border) 85%, transparent)
+  );
+}
+
+.running-dot {
+  animation: breathe 1.8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.78;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+/* Motion vocabulary from the binding Claude Design source. Each role is
+   distinct: spin for indeterminate work, pulse for a live background signal,
+   caret for token streaming, rise for anything that interrupts the operator. */
+@keyframes ah-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ah-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes ah-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ah-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes ah-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ah-spin {
+  animation: ah-spin 1.6s linear infinite;
+}
+
+.ah-pulse {
+  animation: ah-pulse 1.6s ease-in-out infinite;
+}
+
+.ah-caret {
+  animation: ah-caret 1s step-end infinite;
+}
+
+.ah-rise {
+  animation: ah-rise 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

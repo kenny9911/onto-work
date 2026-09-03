@@ -1,0 +1,60 @@
+# Local evaluation configuration. Values use LiteLLM's os.environ/NAME
+# indirection so provider credentials are never embedded in this file.
+model_list:
+  - model_name: codex-openai
+    litellm_params:
+      model: os.environ/OPENAI_MODEL
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: codex-anthropic
+    litellm_params:
+      model: os.environ/ANTHROPIC_MODEL
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: codex-gemini
+    litellm_params:
+      model: os.environ/GEMINI_MODEL
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: codex-openrouter
+    litellm_params:
+      model: os.environ/OPENROUTER_MODEL
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: codex-newapi
+    litellm_params:
+      model: os.environ/NEWAPI_MODEL
+      api_base: os.environ/NEWAPI_API_BASE
+      api_key: os.environ/NEWAPI_API_KEY
+
+  - model_name: codex-deepseek
+    litellm_params:
+      model: os.environ/DEEPSEEK_MODEL
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+  - model_name: codex-doubao
+    litellm_params:
+      model: os.environ/DOUBAO_MODEL
+      api_base: os.environ/DOUBAO_API_BASE
+      api_key: os.environ/DOUBAO_API_KEY
+
+  - model_name: codex-qwen
+    litellm_params:
+      model: os.environ/QWEN_MODEL
+      api_base: os.environ/QWEN_API_BASE
+      api_key: os.environ/QWEN_API_KEY
+
+  - model_name: codex-glm
+    litellm_params:
+      model: os.environ/GLM_MODEL
+      api_base: os.environ/GLM_API_BASE
+      api_key: os.environ/GLM_API_KEY
+
+  - model_name: codex-ollama
+    litellm_params:
+      model: os.environ/OLLAMA_MODEL
+      api_base: os.environ/OLLAMA_API_BASE
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+

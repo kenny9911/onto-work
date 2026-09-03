@@ -1,0 +1,72 @@
+name: agent-harness-litellm
+
+services:
+  gateway:
+    # Pinned for repeatable local evaluation. Review release notes and image
+    # provenance before changing this value.
+    image: ${LITELLM_IMAGE:-ghcr.io/berriai/litellm:v1.99.0}
+    command:
+      - --config
+      - /app/config.yaml
+      - --port
+      - "4000"
+    ports:
+      # Evaluation scaffold: never bind the master-key endpoint publicly.
+      - 127.0.0.1:${LITELLM_PORT:-4000}:4000
+    extra_hosts:
+      # Makes host.docker.internal usable by local Ollama/NewAPI on Linux too.
+      - host.docker.internal:host-gateway
+    environment:
+      HOME: /tmp
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Set LITELLM_MASTER_KEY in infra/litellm/.env}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?Set LITELLM_SALT_KEY in infra/litellm/.env}
+
+      OPENAI_MODEL: ${OPENAI_MODEL:-openai/gpt-5.5}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-anthropic/claude-sonnet-4-5-20250929}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini/gemini-2.5-pro}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/openai/gpt-5}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      NEWAPI_MODEL: ${NEWAPI_MODEL:-openai/replace-with-upstream-model}
+      NEWAPI_API_BASE: ${NEWAPI_API_BASE:-http://host.docker.internal:3000/v1}
+      NEWAPI_API_KEY: ${NEWAPI_API_KEY:-}
+
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek/deepseek-chat}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DOUBAO_MODEL: ${DOUBAO_MODEL:-openai/replace-with-doubao-model}
+      DOUBAO_API_BASE: ${DOUBAO_API_BASE:-https://replace.invalid/v1}
+      DOUBAO_API_KEY: ${DOUBAO_API_KEY:-}
+      QWEN_MODEL: ${QWEN_MODEL:-openai/replace-with-qwen-model}
+      QWEN_API_BASE: ${QWEN_API_BASE:-https://replace.invalid/v1}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      GLM_MODEL: ${GLM_MODEL:-openai/replace-with-glm-model}
+      GLM_API_BASE: ${GLM_API_BASE:-https://replace.invalid/v1}
+      GLM_API_KEY: ${GLM_API_KEY:-}
+
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-ollama/qwen3-coder}
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 15s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=2)
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s

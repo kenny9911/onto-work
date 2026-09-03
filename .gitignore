@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.vite/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+
+.env
+.env.*
+!.env.example
+
+data/
+apps/server/data/
+*.db
+*.db-shm
+*.db-wal
+
+.DS_Store
+*.log
+
+# Pinned Codex binary fetched for protocol verification.
+.tools/
