@@ -122,6 +122,7 @@ async function fixture(t: TestContext, withWorkspace = true): Promise<Fixture> {
     webOrigin: "http://127.0.0.1:4173",
     databasePath: join(directory, "harness.db"),
     runtimeDataDir: join(directory, "runtimes"),
+    uploadDataDir: `${directory}-uploads`,
     sessionTtlMs: 60 * 60 * 1_000,
     sessionSecret: "test-session-secret-that-is-long-enough",
     credentialEncryptionKey: "test-credential-key-that-is-long-enough",
@@ -157,6 +158,7 @@ async function fixture(t: TestContext, withWorkspace = true): Promise<Fixture> {
     await app.close();
     store.close();
     await rm(directory, { recursive: true, force: true });
+    await rm(`${directory}-uploads`, { recursive: true, force: true });
   });
   return {
     app,

@@ -16,6 +16,7 @@ import type {
   ThreadSummary,
   TimelineItem,
 } from "@agent-harness/contracts";
+import { UPLOAD_MAX_BYTES } from "@agent-harness/contracts";
 import {
   Activity,
   Archive,
@@ -36,6 +37,7 @@ import {
   PanelRight,
   Paperclip,
   Pencil,
+  RotateCcw,
   Shield,
   ShieldAlert,
   Square,
@@ -57,8 +59,10 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  usePromptInputAttachments,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -83,7 +87,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { api, ApiClientError, idempotencyKey } from "@/lib/api";
 import { useCloseAtBreakpoint } from "@/lib/use-close-at-breakpoint";
 import { cn } from "@/lib/utils";
 import {
@@ -164,7 +171,7 @@ interface WorkspaceViewProps {
   onRename: (name: string) => Promise<void>;
   onRetryRuntimeStream: () => void;
   onSelectProject: (projectId: string) => void;
-  onSend: (message: string) => Promise<void>;
+  onSend: (message: string, uploadIds?: string[]) => Promise<void>;
   runtimeStream: RuntimeStreamState;
 }
 
@@ -1231,6 +1238,294 @@ function TaskInspector({
   );
 }
 
+/**
+ * File types the composer offers in the OS picker. The server never trusts a
+ * client-declared type — it sniffs the bytes and stores only its own
+ * classification — so this list is a convenience filter, not a control.
+ */
+const UPLOAD_ACCEPT = ".txt,.md,.csv,.tsv,.json,.ndjson,.xml,text/*,application/json";
+
+/** The server's `attachments` array is `z.array(...).max(4)` on `turn/start`. */
+const MAX_COMPOSER_ATTACHMENTS = 4;
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1_048_576) return `${(bytes / 1024).toFixed(bytes < 10_240 ? 1 : 0)} KB`;
+  return `${(bytes / 1_048_576).toFixed(bytes < 10_485_760 ? 1 : 0)} MB`;
+}
+
+/**
+ * One composer attachment paired with the real `File` the browser handed us.
+ *
+ * `PromptInput` keeps only a `FileUIPart` (filename, media type, and a blob
+ * URL) for each attachment, so the bytes have to be captured from the DOM event
+ * that produced them. `file` is null when that pairing failed; such an entry is
+ * reported as a failed upload rather than silently dropped.
+ */
+interface ComposerAttachment {
+  id: string;
+  filename: string;
+  file: File | null;
+}
+
+type ComposerUploadState = "uploading" | "stored" | "failed";
+
+interface ComposerUpload {
+  state: ComposerUploadState;
+  /** Server-issued upload id. Only a `"stored"` entry has one, and only ids are sent. */
+  uploadId?: string;
+  /** 0…1, driven by `XMLHttpRequest.upload.onprogress`. */
+  progress: number;
+  error?: string;
+  errorCode?: string;
+  filename: string;
+  sizeBytes: number;
+  file: File | null;
+  /** Retrying reuses this key so the server replays instead of storing twice. */
+  requestKey: string;
+  target: { kind: "task" | "project"; id: string } | null;
+  controller: AbortController;
+}
+
+/**
+ * The attach control, and the only place that learns which real `File` belongs
+ * to which `PromptInput` attachment id.
+ *
+ * `usePromptInputAttachments` has to run inside the `PromptInput` subtree, which
+ * is why this is a component rather than a hook call in `WorkspaceView`.
+ *
+ * Capture works because a listener on the element itself runs before React's
+ * delegated listener on the root container: the handler reads the `File`s off
+ * the DOM event, and `PromptInput`'s own handler then validates them against
+ * `accept` / `maxFiles` / `maxFileSize` and appends the parts. The effect below
+ * pairs each newly appended part with a captured file of the same name and
+ * media type. Every capture replaces the queue, so a file `PromptInput` rejected
+ * can never be paired with a later attachment.
+ */
+function ComposerAttachControl({
+  disabled,
+  projectToken,
+  resetToken,
+  tooltip,
+  onAttach,
+  onDetach,
+}: {
+  disabled: boolean;
+  /** Attachments belong to one task; a move between existing tasks drops them. */
+  resetToken: string | null;
+  /** Project-scoped uploads must also be dropped when a new task changes project. */
+  projectToken: string | null;
+  tooltip: string;
+  onAttach: (attachments: ComposerAttachment[]) => void;
+  onDetach: (attachmentId: string) => void;
+}) {
+  const attachments = usePromptInputAttachments();
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const pickedRef = useRef<File[]>([]);
+  const knownRef = useRef<Set<string>>(new Set());
+  const resetTokenRef = useRef(resetToken);
+  const projectTokenRef = useRef(projectToken);
+  const onAttachRef = useRef(onAttach);
+  const onDetachRef = useRef(onDetach);
+  const { clear, fileInputRef, files, openFileDialog } = attachments;
+
+  useEffect(() => {
+    onAttachRef.current = onAttach;
+    onDetachRef.current = onDetach;
+  }, [onAttach, onDetach]);
+
+  useEffect(() => {
+    const previousThread = resetTokenRef.current;
+    const previousProject = projectTokenRef.current;
+    resetTokenRef.current = resetToken;
+    projectTokenRef.current = projectToken;
+    // `null -> id` is this composer's own new task becoming real, so its
+    // project-scoped attachments stay attachable to the thread that just
+    // appeared. A project change while both sides are still a new task is a
+    // different target and must clear the project-scoped attachments.
+    const movedBetweenTasks = previousThread !== null && previousThread !== resetToken;
+    const changedNewTaskProject =
+      previousThread === null
+      && resetToken === null
+      && previousProject !== projectToken;
+    if (movedBetweenTasks || changedNewTaskProject) clear();
+  }, [clear, projectToken, resetToken]);
+
+  useEffect(() => {
+    const input = fileInputRef.current;
+    const form = anchorRef.current?.closest("form") ?? null;
+    const capture = (picked: File[]) => {
+      if (picked.length > 0) pickedRef.current = picked;
+    };
+    const onChange = (event: Event) => {
+      const target = event.target as HTMLInputElement | null;
+      capture(target?.files ? [...target.files] : []);
+    };
+    const onDrop = (event: Event) => {
+      const transferred = (event as DragEvent).dataTransfer?.files;
+      capture(transferred ? [...transferred] : []);
+    };
+    const onPaste = (event: Event) => {
+      const items = (event as ClipboardEvent).clipboardData?.items;
+      if (!items) return;
+      const picked: File[] = [];
+      for (const item of items) {
+        if (item.kind !== "file") continue;
+        const file = item.getAsFile();
+        if (file) picked.push(file);
+      }
+      capture(picked);
+    };
+
+    input?.addEventListener("change", onChange, true);
+    form?.addEventListener("drop", onDrop, true);
+    form?.addEventListener("paste", onPaste, true);
+    return () => {
+      input?.removeEventListener("change", onChange, true);
+      form?.removeEventListener("drop", onDrop, true);
+      form?.removeEventListener("paste", onPaste, true);
+    };
+  }, [fileInputRef]);
+
+  useEffect(() => {
+    const known = knownRef.current;
+    const present = new Set(files.map((part) => part.id));
+    for (const id of [...known]) {
+      if (present.has(id)) continue;
+      known.delete(id);
+      onDetachRef.current(id);
+    }
+
+    const queue = pickedRef.current;
+    const added: ComposerAttachment[] = [];
+    for (const part of files) {
+      if (known.has(part.id)) continue;
+      known.add(part.id);
+      const filename = part.filename ?? "attachment";
+      const index = queue.findIndex(
+        (candidate) => candidate.name === filename && candidate.type === part.mediaType,
+      );
+      const file = index >= 0 ? queue.splice(index, 1)[0] ?? null : null;
+      added.push({ file, filename, id: part.id });
+    }
+    if (added.length > 0) onAttachRef.current(added);
+  }, [files]);
+
+  return (
+    <>
+      <span aria-hidden="true" className="hidden" ref={anchorRef} />
+      <PromptInputButton
+        aria-label="Attach context"
+        className="h-[26px] border border-[var(--c-hair)] px-2 text-[var(--ink-3)]"
+        disabled={disabled}
+        onClick={() => openFileDialog()}
+        tooltip={tooltip}
+      >
+        <Paperclip className="size-3.5" />
+      </PromptInputButton>
+    </>
+  );
+}
+
+/**
+ * Chips for the composer's attachments. Reads the attachment list from
+ * `PromptInput` and the per-upload state from `WorkspaceView`, so a chip always
+ * reports what the control plane actually knows about that file.
+ */
+function ComposerAttachmentTray({
+  disabled,
+  uploads,
+  onRetry,
+}: {
+  disabled: boolean;
+  uploads: Map<string, ComposerUpload>;
+  onRetry: (attachmentId: string) => void;
+}) {
+  const attachments = usePromptInputAttachments();
+  if (attachments.files.length === 0) return null;
+
+  return (
+    <div
+      className="flex flex-wrap gap-2 border-t border-[var(--c-hair)] px-3 py-2"
+      data-slot="composer-attachments"
+    >
+      {attachments.files.map((part) => {
+        const filename = part.filename ?? "attachment";
+        const upload = uploads.get(part.id);
+        const state = upload?.state ?? "uploading";
+        return (
+          <div className="min-w-0 max-w-[248px]" key={part.id}>
+            <Badge
+              className={cn(
+                "flex h-6 w-full items-center gap-1.5 border-[var(--c-hair)] bg-[var(--c-plate)] px-1.5 font-normal text-[var(--ink-2)]",
+                state === "failed" && "border-[var(--c-fail)] text-[var(--c-fail)]",
+              )}
+              variant="outline"
+            >
+              {state === "uploading" ? (
+                <Spinner aria-label={`Uploading ${filename}`} className="size-3 shrink-0" />
+              ) : null}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="min-w-0 flex-1 truncate">{filename}</span>
+                </TooltipTrigger>
+                <TooltipContent>{filename}</TooltipContent>
+              </Tooltip>
+              <span className="text-ui-micro shrink-0 font-mono text-[var(--ink-4)]">
+                {formatBytes(upload?.sizeBytes ?? 0)}
+              </span>
+              <Button
+                aria-label={`Remove ${filename}`}
+                className="size-4 shrink-0 rounded-sm p-0 text-[var(--ink-4)] hover:text-[var(--ink-1)]"
+                disabled={disabled}
+                onClick={() => attachments.remove(part.id)}
+                type="button"
+                variant="ghost"
+              >
+                <X className="size-3" />
+              </Button>
+            </Badge>
+            {state === "uploading" ? (
+              <div
+                aria-hidden="true"
+                className="mt-1 h-[3px] w-full rounded-full bg-[var(--c-line)]"
+                data-slot="upload-progress"
+              >
+                <span
+                  className="block h-full rounded-full bg-[var(--c-wait)]"
+                  style={{ width: `${Math.round((upload?.progress ?? 0) * 100)}%` }}
+                />
+              </div>
+            ) : null}
+            {state === "failed" ? (
+              <p
+                className="text-ui-meta mt-1 flex items-center gap-1.5 text-[var(--c-fail)]"
+                role="status"
+              >
+                <span className="shrink-0 font-mono">{upload?.errorCode ?? "upload_failed"}</span>
+                <span className="min-w-0 flex-1 truncate">{upload?.error}</span>
+                {upload?.file && upload.target ? (
+                  <Button
+                    aria-label={`Retry ${filename}`}
+                    className="size-4 shrink-0 rounded-sm p-0 text-[var(--c-fail)]"
+                    disabled={disabled}
+                    onClick={() => onRetry(part.id)}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RotateCcw className="size-3" />
+                  </Button>
+                ) : null}
+              </p>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function WorkspaceView({
   dashboard,
   activeThread,
@@ -1260,6 +1555,13 @@ export function WorkspaceView({
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [attachmentNotice, setAttachmentNotice] = useState<string | null>(null);
+  const [uploads, setUploads] = useState<Map<string, ComposerUpload>>(() => new Map());
+  const uploadsRef = useRef(uploads);
+  const uploadTargetRef = useRef<ComposerUpload["target"]>(null);
+  const previousThreadIdRef = useRef(activeThreadId);
+  const previousProjectIdRef = useRef(selectedProjectId);
+  /** Uploads in this set were accepted by turn/start and must remain durable. */
+  const handedOffUploadIdsRef = useRef<Set<string>>(new Set());
   const [renameOpen, setRenameOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -1306,20 +1608,236 @@ export function WorkspaceView({
 
   useCloseAtBreakpoint("(min-width: 1180px)", setInspectorOpen);
 
-  const handleAttachmentAttempt = useCallback(() => {
-    setAttachmentNotice("File attachments are not available yet. Paste text instead.");
+  // A file is uploaded the moment it is attached, against the thread when one
+  // exists and against the saved project otherwise — the project-scoped row is
+  // claimed by the first turn after `createTask` returns a thread.
+  const uploadTarget: ComposerUpload["target"] = activeThreadId
+    ? { id: activeThreadId, kind: "task" }
+    : selectedSavedProject
+      ? { id: selectedSavedProject.id, kind: "project" }
+      : null;
+
+  useEffect(() => {
+    uploadsRef.current = uploads;
+  }, [uploads]);
+
+  useEffect(() => {
+    uploadTargetRef.current = uploadTarget;
+  });
+
+  const discardUpload = useCallback((entry: ComposerUpload) => {
+    entry.controller.abort();
+    if (entry.state !== "stored" || !entry.uploadId) return;
+    // PromptInput clears its chips after a successful turn/start. That clear is
+    // local UI cleanup, not a user request to delete bytes the turn now owns.
+    if (handedOffUploadIdsRef.current.delete(entry.uploadId)) return;
+    void api.deleteUpload(entry.uploadId).catch(() => {
+      // The durable retention janitor remains the backstop when a best-effort
+      // composer cleanup cannot reach the control plane.
+    });
   }, []);
+
+  const discardAllUploads = useCallback(() => {
+    if (uploadsRef.current.size === 0) return;
+    for (const entry of uploadsRef.current.values()) discardUpload(entry);
+    uploadsRef.current = new Map();
+    setUploads(new Map());
+  }, [discardUpload]);
+
+  // Uploads are bound to one thread (or to the project that will become one).
+  // Moving between existing tasks abandons them rather than offering one task's
+  // ids to another; `null -> id` is this composer's own task being created, so
+  // its project-scoped uploads survive to be claimed by the first turn.
+  useEffect(() => {
+    const previous = previousThreadIdRef.current;
+    previousThreadIdRef.current = activeThreadId;
+    if (previous === null || previous === activeThreadId) return;
+    discardAllUploads();
+  }, [activeThreadId, discardAllUploads]);
+
+  useEffect(() => {
+    const previous = previousProjectIdRef.current;
+    previousProjectIdRef.current = selectedProjectId;
+    // Once a thread exists its binding, not the project picker, owns the upload
+    // target. While composing a new task, however, changing projects changes
+    // the workspace in which every project-scoped upload may be claimed.
+    if (activeThreadId !== null || previous === selectedProjectId) return;
+    discardAllUploads();
+  }, [activeThreadId, discardAllUploads, selectedProjectId]);
+
+  const patchUpload = useCallback((attachmentId: string, patch: Partial<ComposerUpload>) => {
+    const referenced = uploadsRef.current.get(attachmentId);
+    if (referenced) {
+      const next = new Map(uploadsRef.current);
+      next.set(attachmentId, { ...referenced, ...patch });
+      uploadsRef.current = next;
+    }
+    setUploads((current) => {
+      const entry = current.get(attachmentId);
+      if (!entry) return current;
+      const next = new Map(current);
+      next.set(attachmentId, { ...entry, ...patch });
+      return next;
+    });
+  }, []);
+
+  const runUpload = useCallback(
+    (attachmentId: string, entry: ComposerUpload) => {
+      const { controller, file, requestKey, target } = entry;
+      if (!file || !target) return;
+      const onProgress = (fraction: number) => patchUpload(attachmentId, { progress: fraction });
+      const request = target.kind === "task"
+        ? api.uploadToTask(target.id, file, onProgress, requestKey, controller.signal)
+        : api.uploadToProject(target.id, file, onProgress, requestKey, controller.signal);
+
+      void request.then(
+        (payload) =>
+          patchUpload(attachmentId, {
+            error: undefined,
+            errorCode: undefined,
+            progress: 1,
+            state: "stored",
+            uploadId: payload.upload.id,
+          }),
+        (cause: unknown) => {
+          // A removed chip aborts its own request; that is not a failure to report.
+          if (cause instanceof ApiClientError && cause.code === "upload_aborted") return;
+          patchUpload(attachmentId, {
+            error: cause instanceof Error ? cause.message : "The upload was rejected.",
+            errorCode: cause instanceof ApiClientError ? cause.code : "upload_failed",
+            state: "failed",
+          });
+        },
+      );
+    },
+    [patchUpload],
+  );
+
+  const attachUploads = useCallback(
+    (added: ComposerAttachment[]) => {
+      // The notice is deliberately not cleared here: `PromptInput` reports
+      // `max_files` while still accepting the files under the cap, and that
+      // warning has to survive the accepted subset. Typing or sending clears it.
+      const target = uploadTargetRef.current;
+      const created = added.map<[string, ComposerUpload]>((attachment) => {
+        const entry: ComposerUpload = {
+          controller: new AbortController(),
+          file: attachment.file,
+          filename: attachment.filename,
+          progress: 0,
+          requestKey: idempotencyKey(),
+          sizeBytes: attachment.file?.size ?? 0,
+          state: "uploading",
+          target,
+        };
+        if (!attachment.file) {
+          return [attachment.id, {
+            ...entry,
+            error: "The browser did not hand this file to the composer.",
+            errorCode: "attachment_unreadable",
+            state: "failed",
+          }];
+        }
+        if (!target) {
+          return [attachment.id, {
+            ...entry,
+            error: "Choose an available saved project before attaching a file.",
+            errorCode: "no_upload_target",
+            state: "failed",
+          }];
+        }
+        return [attachment.id, entry];
+      });
+
+      const referenced = new Map(uploadsRef.current);
+      for (const [attachmentId, entry] of created) referenced.set(attachmentId, entry);
+      uploadsRef.current = referenced;
+      setUploads((current) => {
+        const next = new Map(current);
+        for (const [attachmentId, entry] of created) next.set(attachmentId, entry);
+        return next;
+      });
+      for (const [attachmentId, entry] of created) {
+        if (entry.state === "uploading") runUpload(attachmentId, entry);
+      }
+    },
+    [runUpload],
+  );
+
+  const detachUpload = useCallback((attachmentId: string) => {
+    const entry = uploadsRef.current.get(attachmentId);
+    if (!entry) return;
+    discardUpload(entry);
+    const next = new Map(uploadsRef.current);
+    next.delete(attachmentId);
+    uploadsRef.current = next;
+    setUploads(next);
+  }, [discardUpload]);
+
+  const retryUpload = useCallback(
+    (attachmentId: string) => {
+      const entry = uploadsRef.current.get(attachmentId);
+      if (!entry?.file || !entry.target) return;
+      // Same idempotency key: the server replays the original summary instead of
+      // storing the bytes twice.
+      const retried: ComposerUpload = {
+        ...entry,
+        controller: new AbortController(),
+        error: undefined,
+        errorCode: undefined,
+        progress: 0,
+        state: "uploading",
+      };
+      const referenced = new Map(uploadsRef.current);
+      referenced.set(attachmentId, retried);
+      uploadsRef.current = referenced;
+      setUploads((current) => {
+        if (!current.has(attachmentId)) return current;
+        const next = new Map(current);
+        next.set(attachmentId, retried);
+        return next;
+      });
+      runUpload(attachmentId, retried);
+    },
+    [runUpload],
+  );
+
+  const handleAttachmentError = useCallback(
+    (failure: { code: "max_files" | "max_file_size" | "accept"; message: string }) => {
+      setAttachmentNotice(
+        failure.code === "max_files"
+          ? `Attach at most ${MAX_COMPOSER_ATTACHMENTS} files to one turn.`
+          : failure.code === "max_file_size"
+            ? `Each file must be ${formatBytes(UPLOAD_MAX_BYTES)} or smaller.`
+            : "Attach UTF-8 text files — .txt, .md, .csv, .tsv, .json, .ndjson, or .xml.",
+      );
+    },
+    [],
+  );
+
+  const uploadEntries = [...uploads.values()];
+  const attachmentsUploading = uploadEntries.some((entry) => entry.state === "uploading");
+  const storedUploadIds = uploadEntries.flatMap((entry) =>
+    entry.state === "stored" && entry.uploadId ? [entry.uploadId] : [],
+  );
 
   async function handleSubmit(message: PromptInputMessage) {
     const text = message.text.trim();
-    if (!text || isSending) return;
+    // This PromptInput opts out of data-URL conversion below: the bytes are
+    // already in the control plane and the turn carries opaque upload ids.
+    if (
+      !text
+      || isSending
+      || attachmentsUploading
+      || (activeTurnId !== null && storedUploadIds.length > 0)
+    ) return;
     setAttachmentNotice(null);
-    try {
-      await onSend(text);
-      onDraftChange("");
-    } catch {
-      // The task timeline carries the actionable error; retain the draft for retry.
-    }
+    await onSend(text, storedUploadIds.length > 0 ? storedUploadIds : undefined);
+    // Mark synchronously, before PromptInput observes this promise resolving
+    // and clears its chips. Their ensuing onDetach callbacks must not delete
+    // uploads that the successful turn now owns.
+    for (const uploadId of storedUploadIds) handedOffUploadIdsRef.current.add(uploadId);
+    onDraftChange("");
   }
 
   async function submitRename(event: FormEvent<HTMLFormElement>) {
@@ -1495,10 +2013,14 @@ export function WorkspaceView({
 
             <div className="shrink-0 border-t border-[var(--c-hair)] bg-[var(--c-plate)] px-4 pb-2 pt-2.5 sm:px-5">
           <PromptInput
+            accept={UPLOAD_ACCEPT}
             aria-busy={isSending}
-            attachmentsDisabled
             className="mx-auto w-full max-w-[820px] [&>[data-slot=input-group]]:overflow-hidden [&>[data-slot=input-group]]:rounded-[7px] [&>[data-slot=input-group]]:border-[var(--c-line)] [&>[data-slot=input-group]]:bg-[var(--c-surface)] [&>[data-slot=input-group]]:shadow-none"
-            onAttachmentAttempt={handleAttachmentAttempt}
+            convertAttachmentsToDataUrls={false}
+            maxFileSize={UPLOAD_MAX_BYTES}
+            maxFiles={MAX_COMPOSER_ATTACHMENTS}
+            multiple
+            onError={handleAttachmentError}
             onSubmit={handleSubmit}
           >
             <div className="order-first flex w-full items-center gap-1.5 border-b border-[var(--c-hair)] px-2 py-1.5">
@@ -1520,7 +2042,6 @@ export function WorkspaceView({
             <PromptInputBody>
               <PromptInputTextarea
                 aria-label="Task prompt"
-                aria-describedby={attachmentNotice ? "attachment-unavailable" : undefined}
                 className="text-ui-body min-h-[58px] px-3 py-2.5"
                 onChange={(event) => {
                   setAttachmentNotice(null);
@@ -1535,12 +2056,13 @@ export function WorkspaceView({
                 value={draft}
               />
             </PromptInputBody>
+            <ComposerAttachmentTray
+              disabled={isSending}
+              onRetry={retryUpload}
+              uploads={uploads}
+            />
             {attachmentNotice ? (
-              <p
-                className="text-ui-meta px-4 pb-1 text-amber-200"
-                id="attachment-unavailable"
-                role="status"
-              >
+              <p className="text-ui-meta px-4 pb-1 text-amber-200" role="status">
                 {attachmentNotice}
               </p>
             ) : null}
@@ -1564,14 +2086,20 @@ export function WorkspaceView({
             ) : null}
             <PromptInputFooter className="flex-wrap gap-1.5 border-t border-[var(--c-hair)] px-2 py-1.5">
               <PromptInputTools className="flex-wrap gap-1.5">
-                <PromptInputButton
-                  aria-label="Attach context (not available)"
-                  className="h-[26px] border border-[var(--c-hair)] px-2 text-[var(--ink-3)]"
-                  disabled
-                  tooltip="Context attachments are not available yet"
-                >
-                  <Paperclip className="size-3.5" />
-                </PromptInputButton>
+                <ComposerAttachControl
+                  disabled={isSending || activeTurnId !== null || uploadTarget === null}
+                  onAttach={attachUploads}
+                  onDetach={detachUpload}
+                  projectToken={selectedProjectId}
+                  resetToken={activeThreadId}
+                  tooltip={
+                    activeTurnId
+                      ? "Attachments start a new turn — the active run only accepts steering"
+                      : uploadTarget === null
+                        ? "Choose an available saved project to attach a file"
+                        : "Attach UTF-8 text files the agent reads from disk"
+                  }
+                />
                 {!activeThreadId ? (
                   <Select
                     disabled={savedProjectsLoading || !availableSavedProjects.length || isSending}
@@ -1617,6 +2145,8 @@ export function WorkspaceView({
                   className="text-ui-control h-7 w-auto min-w-[88px] shrink-0 gap-1.5 rounded-[5px] bg-[var(--c-run)] px-3 font-semibold text-[var(--c-bg)] hover:brightness-105"
                   disabled={
                     isSending
+                    || attachmentsUploading
+                    || (activeTurnId !== null && storedUploadIds.length > 0)
                     || !draft.trim()
                     || !activeProvider
                     || (!activeThreadId && !selectedSavedProject)

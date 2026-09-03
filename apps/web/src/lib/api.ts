@@ -10,6 +10,7 @@ import type {
   ReviewTarget,
   ThreadDetailPayload,
   UpdateProjectPayload,
+  UploadDetailPayload,
   UserRole,
   UserStatus,
   UserSummary,
@@ -112,11 +113,107 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-function idempotencyKey(): string {
+export function idempotencyKey(): string {
   if (typeof globalThis.crypto?.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
   }
   return `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function decodeResponseBody(body: string): { error?: string; message?: string } | null {
+  if (!body) return null;
+  try {
+    return JSON.parse(body) as { error?: string; message?: string };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Streams one file to an upload route with `XMLHttpRequest`.
+ *
+ * It deliberately does not go through `request<T>()`: that helper injects
+ * `content-type: application/json` for any truthy body, and the upload routes
+ * accept exactly `application/octet-stream`. `XMLHttpRequest` rather than
+ * `fetch` because only XHR reports upload progress, and progress cannot arrive
+ * over SSE either — `GET /api/codex/events` is a verbatim pass-through of the
+ * runtime bridge, so there is no server frame to add.
+ *
+ * The failure decode is intentionally identical to `request<T>()`'s, so an
+ * upload rejection surfaces as an `ApiClientError` carrying the server's own
+ * `payload.error` code (`upload_too_large`, `unsupported_upload_type`,
+ * `storage_quota_exhausted`, …) exactly like every other call.
+ *
+ * The body is the `File` itself — no FormData, no data URL. A data URL would
+ * cost +33% on the wire and hold the whole file in memory.
+ */
+function uploadBytes(
+  path: string,
+  file: File,
+  onProgress: (fraction: number) => void,
+  requestKey: string,
+  signal?: AbortSignal,
+): Promise<UploadDetailPayload> {
+  return new Promise<UploadDetailPayload>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new ApiClientError(0, "upload_aborted", "The upload was cancelled."));
+      return;
+    }
+
+    const xhr = new XMLHttpRequest();
+    const abort = () => xhr.abort();
+    const release = () => signal?.removeEventListener("abort", abort);
+
+    xhr.open("POST", path, true);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("content-type", "application/octet-stream");
+    xhr.setRequestHeader("idempotency-key", requestKey);
+    xhr.setRequestHeader("x-upload-filename", encodeURIComponent(file.name));
+
+    xhr.upload?.addEventListener("progress", (event: ProgressEvent) => {
+      if (!event.lengthComputable || event.total <= 0) return;
+      onProgress(Math.min(1, event.loaded / event.total));
+    });
+
+    xhr.addEventListener("load", () => {
+      release();
+      const payload = decodeResponseBody(xhr.responseText);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(1);
+        resolve(payload as unknown as UploadDetailPayload);
+        return;
+      }
+      reject(
+        new ApiClientError(
+          xhr.status,
+          payload?.error ?? "request_failed",
+          payload?.message ?? `Request failed with status ${xhr.status}`,
+        ),
+      );
+    });
+
+    xhr.addEventListener("error", () => {
+      release();
+      reject(
+        new ApiClientError(0, "network_error", "The upload could not reach the control plane."),
+      );
+    });
+
+    xhr.addEventListener("abort", () => {
+      release();
+      reject(new ApiClientError(0, "upload_aborted", "The upload was cancelled."));
+    });
+
+    xhr.addEventListener("timeout", () => {
+      release();
+      reject(
+        new ApiClientError(0, "network_error", "The upload timed out before the harness answered."),
+      );
+    });
+
+    signal?.addEventListener("abort", abort, { once: true });
+    xhr.send(file);
+  });
 }
 
 export const api = {
@@ -309,6 +406,54 @@ export const api = {
         body: JSON.stringify({ input: [{ type: "text", text }] }),
       },
     ),
+
+  /**
+   * Uploads a file against an existing task. Retrying a failed upload must
+   * reuse the same `requestKey` — the server's mutation ledger replays the
+   * original `UploadSummary` instead of storing a second copy.
+   */
+  uploadToTask: (
+    threadId: string,
+    file: File,
+    onProgress: (fraction: number) => void,
+    requestKey = idempotencyKey(),
+    signal?: AbortSignal,
+  ) =>
+    uploadBytes(
+      `/api/tasks/${encodeURIComponent(threadId)}/uploads`,
+      file,
+      onProgress,
+      requestKey,
+      signal,
+    ),
+
+  /**
+   * Uploads a file before a thread exists. The row is written with
+   * `thread_id = NULL` and claimed by the first turn that references it.
+   */
+  uploadToProject: (
+    projectId: string,
+    file: File,
+    onProgress: (fraction: number) => void,
+    requestKey = idempotencyKey(),
+    signal?: AbortSignal,
+  ) =>
+    uploadBytes(
+      `/api/projects/${encodeURIComponent(projectId)}/uploads`,
+      file,
+      onProgress,
+      requestKey,
+      signal,
+    ),
+
+  /**
+   * Removes upload bytes that the composer has not handed to a turn.
+   * The server scopes the opaque id to the authenticated tenant and user.
+   */
+  deleteUpload: (uploadId: string) =>
+    request<{ ok: true }>(`/api/uploads/${encodeURIComponent(uploadId)}`, {
+      method: "DELETE",
+    }),
 
   resolveCodexApproval: (
     requestId: string | number,

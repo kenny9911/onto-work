@@ -1221,8 +1221,11 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
     document.title = `${title} · Agent Harness`;
   }, [activeThread?.title, view]);
 
-  async function sendMessage(message: string) {
+  async function sendMessage(message: string, uploadIds?: string[]) {
     if (!dashboard) return;
+    // Opaque upload ids only — never a path, never a URL. `turn/steer` has no
+    // attachments field, so a steer carries none.
+    const attachments = (uploadIds ?? []).filter((uploadId) => uploadId.length > 0);
     let threadId = activeThreadIdRef.current;
     let requestComposerKey = composerKey(threadId);
     let attemptedMutation: PendingComposerMutation | null = null;
@@ -1341,6 +1344,7 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
           {
             threadId: mutation.threadId,
             input: [{ type: "text", text: mutation.message }],
+            ...(attachments.length > 0 ? { attachments } : {}),
           },
           mutation.key,
         );

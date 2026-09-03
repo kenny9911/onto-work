@@ -15,7 +15,12 @@ import {
   type JsonValue,
 } from "../codex/runtime.js";
 import type { HarnessConfig } from "../config.js";
-import type { HarnessStore } from "../database.js";
+import {
+  uploadSummary,
+  type HarnessStore,
+  type UploadBatchClaimResult,
+  type UploadRecord,
+} from "../database.js";
 import {
   RunAdmissionError,
   RunAdmissionPolicy,
@@ -24,6 +29,14 @@ import {
 import { ApiHttpError, requireUser } from "../http.js";
 import type { HarnessRuntime } from "../runtime.js";
 import { TaskMutationLedger } from "../task-mutations.js";
+import { decryptToStaged, unlinkStagedThread, type StagedFile } from "../uploads/blob.js";
+import { prepareUserUploadPaths, type UserUploadPaths } from "../uploads/paths.js";
+import { uploadErrorReason } from "../uploads/redaction.js";
+import {
+  inputMentionsAttachmentEnvelope,
+  renderAttachmentEnvelope,
+  type StagedAttachment,
+} from "../uploads/prompt.js";
 
 interface InteractiveHarnessRuntime extends HarnessRuntime {
   forUser(
@@ -51,6 +64,12 @@ const APPROVAL_METHODS = new Set<ApprovalMethod>([
 ]);
 const APPROVAL_TTL_MS = 30 * 60 * 1_000;
 const MAX_PENDING_APPROVALS_PER_USER = 128;
+/**
+ * Ceiling on remembered attachment turns. Entries expire with the approval TTL
+ * and are pruned on every write, so this only bounds a burst; it drops the
+ * oldest, exactly as the pending-approval map does.
+ */
+const MAX_ATTACHMENT_TURNS = 512;
 const MAX_SSE_QUEUE_BYTES = 1024 * 1024;
 const MAX_BUFFERED_TURN_EVENTS = 256;
 
@@ -92,6 +111,14 @@ const requestSchema = z.discriminatedUnion("method", [
         .object({
           threadId: z.string().trim().min(1).max(256),
           input: z.array(textInputSchema).min(1).max(8),
+          // Opaque server-generated upload ids and nothing else: never a path,
+          // never a URL. `textInputSchema` stays closed for the same reason —
+          // the app-server's `localImage` / `localAudio` / `mention` / `skill`
+          // input variants each take a `PathBuf`, and `LocalImage` is read with
+          // a bare `std::fs::read` with no sandbox and no allow-list. The
+          // server resolves these ids against its own rows, stages the bytes
+          // itself, and never lets a client name a file.
+          attachments: z.array(z.string().uuid()).max(4).optional(),
         })
         .strict(),
     })
@@ -299,6 +326,89 @@ function leaseExpiry(): string {
   return new Date(Date.now() + USAGE_RESERVATION_LEASE_MS).toISOString();
 }
 
+/**
+ * Refuses client input that mentions the server attachment envelope.
+ *
+ * The envelope is assembled from module constants *after* `requestSchema.parse`
+ * and appended last, so a client can neither author nor reorder it — but client
+ * text containing the marker could close it early and re-frame the files it
+ * announced as trusted instructions. The check is on the whole input, not on
+ * one item: both `turn/start` and `turn/steer` take up to eight text items and
+ * the model sees them concatenated, so a per-item test is defeated by splitting
+ * the marker across an item boundary. `inputMentionsAttachmentEnvelope` matches
+ * each item *and* the joined text, after folding the compatibility and
+ * invisible characters that would otherwise break a literal match.
+ *
+ * This runs on every `turn/start` and every `turn/steer`, attachment or not,
+ * because in a multi-user tenant one member's upload is read inside whichever
+ * member's session sends the turn.
+ */
+function assertNoEnvelopeForgery(input: ReadonlyArray<{ text: string }>): void {
+  if (!inputMentionsAttachmentEnvelope(input.map((item) => item.text))) return;
+  throw new ApiHttpError(
+    400,
+    "invalid_attachment_reference",
+    "Turn input may not reference the server attachment envelope.",
+  );
+}
+
+function attachmentTurnKey(
+  tenantId: string,
+  userId: string,
+  threadId: string,
+  turnId: string,
+): string {
+  return `${tenantId}\0${userId}\0${threadId}\0${turnId}`;
+}
+
+/**
+ * The turn component used to arm the `acceptForSession` block before Codex has
+ * assigned a turn id.
+ *
+ * It is derived from the run reservation, which is one-per-turn and already
+ * unique, so two concurrent attachment turns on one thread arm and disarm
+ * independently. A Codex turn id would have to be this exact string to collide,
+ * and even then the collision could only ever *extend* a block, never lift one.
+ */
+function pendingAttachmentTurn(reservationId: string): string {
+  return `pending:${reservationId}`;
+}
+
+/**
+ * The directory key for one turn's staged plaintext.
+ *
+ * `decryptToStaged` and `unlinkStagedThread` hash whatever string they are
+ * given into `staged/<sha256(...)>/`; the parameter is named `threadId`
+ * upstream, but the value only has to be stable for the life of one turn and
+ * unique across turns. It must be the *turn*, not the thread: nothing enforces
+ * one live turn per thread — `activeRunLimit` is per tenant, and two
+ * `turn/start` calls on one thread both succeed — so a thread-keyed directory
+ * lets the second turn's cleanup delete the first turn's plaintext while the
+ * first turn is still reading it, leaving its envelope pointing at an ENOENT
+ * path. The run reservation id is one-per-turn, server-generated, and already
+ * in hand before the first decrypt.
+ */
+export function attachmentStagingScope(threadId: string, reservationId: string): string {
+  return `${threadId}\0${reservationId}`;
+}
+
+/**
+ * A staging failure that names the upload it was about.
+ *
+ * The dispatch `catch` has to tell "these bytes are unusable" from "the runtime
+ * was unavailable": only the first is terminal for the upload, and only the
+ * first may retire the row.
+ */
+class AttachmentStagingError extends ApiHttpError {
+  readonly uploadId: string;
+
+  constructor(uploadId: string) {
+    super(500, "upload_staging_failed", "An attachment could not be prepared for this turn.");
+    this.name = "AttachmentStagingError";
+    this.uploadId = uploadId;
+  }
+}
+
 export function registerCodexRoutes(
   app: FastifyInstance,
   input: { store: HarnessStore; config: HarnessConfig; runtime: HarnessRuntime },
@@ -307,6 +417,20 @@ export function registerCodexRoutes(
   const admissionPolicy = new RunAdmissionPolicy(store);
   const pendingApprovals = new Map<string, Map<string, PendingApproval>>();
   const mutationLedger = new TaskMutationLedger(store.db);
+  /**
+   * Turns that carried user-attached files, keyed tenant/user/thread/turn and
+   * held for the same 30 minutes as a pending approval.
+   *
+   * Membership forbids `acceptForSession` on that turn. That is the one control
+   * that stops a single injected command inside an untrusted file from becoming
+   * standing authority for the rest of the session; `accept`, `decline` and
+   * `cancel` are untouched, so the per-command approval gate still works
+   * normally. Nothing is persisted, matching the in-memory, per-user,
+   * single-use, 30-minute design of `pendingApprovals` above — and, like it,
+   * this lives in the registrar closure rather than at module scope so two apps
+   * built in one process never share a registry.
+   */
+  const attachmentTurns = new Map<string, number>();
 
   const idempotentMutation = async (
     identity: { tenantId: string; userId: string },
@@ -424,6 +548,231 @@ export function registerCodexRoutes(
     if (!approvals) return;
     approvals.delete(approvalIdKey(requestId));
     if (approvals.size === 0) pendingApprovals.delete(userKey);
+  };
+
+  const pruneAttachmentTurns = () => {
+    const now = Date.now();
+    for (const [key, expiresAt] of attachmentTurns) {
+      if (expiresAt <= now) attachmentTurns.delete(key);
+    }
+  };
+
+  const rememberAttachmentTurn = (
+    tenantId: string,
+    userId: string,
+    threadId: string,
+    turnId: string,
+  ) => {
+    pruneAttachmentTurns();
+    if (attachmentTurns.size >= MAX_ATTACHMENT_TURNS) {
+      const oldestKey = attachmentTurns.keys().next().value as string | undefined;
+      if (oldestKey) attachmentTurns.delete(oldestKey);
+    }
+    attachmentTurns.set(
+      attachmentTurnKey(tenantId, userId, threadId, turnId),
+      Date.now() + APPROVAL_TTL_MS,
+    );
+  };
+
+  const forgetAttachmentTurn = (
+    tenantId: string,
+    userId: string,
+    threadId: string,
+    turnId: string,
+  ) => {
+    attachmentTurns.delete(attachmentTurnKey(tenantId, userId, threadId, turnId));
+  };
+
+  /**
+   * Whether this thread still holds a file the agent has been handed.
+   *
+   * The in-memory registry above only covers a turn that is still running, but
+   * an attached file's content stays in the thread's rollout — and therefore in
+   * the model's context — on every later turn. Session-wide approval must not
+   * become available again one turn after the injected text was read, so the
+   * block lasts as long as the durable row does: from the claim (`attached`)
+   * through the turn that read it (`extracted`), until the user deletes the
+   * upload or its retention expires. A `stored` row bound to the thread but
+   * never attached to a turn does not count — nothing has read it.
+   */
+  const threadHoldsAttachment = (
+    tenantId: string,
+    userId: string,
+    threadId: string,
+  ): boolean =>
+    store
+      .listThreadUploads(tenantId, userId, threadId)
+      .some((upload) => upload.status === "attached" || upload.status === "extracted");
+
+  /**
+   * Whether `acceptForSession` is refused for the thread an approval belongs to.
+   *
+   * Four ways to match, each failing closed:
+   *
+   * - the thread has a durable attached/extracted upload (the content is in its
+   *   context for the rest of the thread's life);
+   * - any live attachment turn on that thread, including one armed before Codex
+   *   assigned its turn id — approvals arrive as independent `server-request`
+   *   frames and can be raised *and* resolved before `turn/start` returns, so
+   *   an exact turn match would be empty during precisely the window an
+   *   injected command asks for authority in;
+   * - an approval with no thread id while any of this user's threads has a
+   *   durable attached/extracted upload (the runtime omitted the only safe
+   *   correlation key, so a narrower decision is impossible);
+   * - for an approval that does not name its thread, any live attachment turn
+   *   for that user.
+   *
+   * The approval's own `turnId` is deliberately not part of the test: it is
+   * unknown during the dispatch window, and a thread whose context already
+   * holds an attached file is contaminated for every turn on it, not just the
+   * one that staged the bytes.
+   *
+   * Per-command `accept` remains available in every case.
+   */
+  const sessionApprovalBlocked = (
+    tenantId: string,
+    userId: string,
+    threadId: string | null,
+  ): boolean => {
+    const durableAttachmentHeld =
+      threadId === null
+        ? store.userHasDurableThreadAttachments(tenantId, userId)
+        : threadHoldsAttachment(tenantId, userId, threadId);
+    if (durableAttachmentHeld) return true;
+    pruneAttachmentTurns();
+    if (attachmentTurns.size === 0) return false;
+    const prefix =
+      threadId === null
+        ? `${tenantId}\0${userId}\0`
+        : `${tenantId}\0${userId}\0${threadId}\0`;
+    for (const key of attachmentTurns.keys()) {
+      if (key.startsWith(prefix)) return true;
+    }
+    return false;
+  };
+
+  type TurnAttachmentClaim = {
+    tenantId: string;
+    userId: string;
+    threadId: string;
+    workspacePath: string;
+    attachmentIds: readonly string[];
+  };
+
+  const attachmentClaimInput = (claim: TurnAttachmentClaim) => {
+    if (new Set(claim.attachmentIds).size !== claim.attachmentIds.length) {
+      throw new ApiHttpError(
+        400,
+        "invalid_attachment_reference",
+        "Each attachment may be referenced only once per turn.",
+      );
+    }
+    return {
+      tenantId: claim.tenantId,
+      userId: claim.userId,
+      uploadIds: claim.attachmentIds,
+      threadId: claim.threadId,
+      workspacePath: claim.workspacePath,
+    };
+  };
+
+  const resolveAttachmentClaim = (outcome: UploadBatchClaimResult): UploadRecord[] => {
+    switch (outcome.outcome) {
+      case "claimed":
+        return outcome.uploads;
+      case "already_bound":
+        throw new ApiHttpError(
+          409,
+          "upload_already_bound",
+          "This attachment is already bound to a different task.",
+        );
+      case "workspace_conflict":
+        throw new ApiHttpError(
+          409,
+          "upload_workspace_conflict",
+          "This attachment belongs to a different workspace than the task.",
+        );
+      // A `reserving` row is an upload that does not exist yet; a `failed` or
+      // `deleted` one no longer exists. Neither is attachable, and neither is
+      // worth distinguishing from an unknown id to the caller.
+      case "not_claimable":
+      case "not_found":
+        throw new ApiHttpError(404, "upload_not_found", "Attachment not found.");
+    }
+  };
+
+  /** Read-only preflight: bad ids must not consume a run reservation. */
+  const inspectTurnAttachments = (claim: TurnAttachmentClaim): void => {
+    resolveAttachmentClaim(store.inspectUploadsForThread(attachmentClaimInput(claim)));
+  };
+
+  /**
+   * Claims the complete set in one store transaction after admission succeeds.
+   * The store rechecks every row, closing the preflight/admission TOCTOU gap.
+   */
+  const claimTurnAttachments = (claim: TurnAttachmentClaim): UploadRecord[] => {
+    return resolveAttachmentClaim(store.claimUploadsForThread(attachmentClaimInput(claim)));
+  };
+
+  /**
+   * Decrypts each claimed upload into this turn's staged plaintext.
+   *
+   * `decryptToStaged` writes to a scratch file and verifies the GCM tag at
+   * `final()` before the staged name exists, so a tampered or truncated blob
+   * fails with no path for anything to read. The staged file is `0400` under
+   * `staged/<sha256(threadId)>/`, and its extension comes from the server's own
+   * classification, never from the client's label.
+   *
+   * Sequential by design: at most four files, and a failure part-way through
+   * leaves nothing racing behind it for `stopWatching` to clean up.
+   */
+  const stageAttachments = async (staging: {
+    paths: UserUploadPaths;
+    stagingScope: string;
+    uploads: readonly UploadRecord[];
+  }): Promise<StagedAttachment[]> => {
+    const staged: StagedAttachment[] = [];
+    for (const upload of staging.uploads) {
+      const summary = uploadSummary(upload);
+      let file: StagedFile;
+      try {
+        file = await decryptToStaged({
+          paths: staging.paths,
+          uploadId: upload.id,
+          threadId: staging.stagingScope,
+          contentType: upload.contentType,
+          storageKey: upload.storageKey,
+          encryptionSecret: config.credentialEncryptionKey,
+          encryptionIv: upload.encryptionIv,
+          encryptionTag: upload.encryptionTag,
+          wrappedDataKey: upload.wrappedDataKey,
+        });
+      } catch (error) {
+        app.log.warn(
+          { uploadId: upload.id, reason: uploadErrorReason(error) },
+          "an attachment could not be staged for a turn",
+        );
+        throw new AttachmentStagingError(upload.id);
+      }
+      // The GCM tag already proves the ciphertext was not modified. This catches
+      // the other half: a row paired with the wrong blob, which only a partial
+      // restore can produce, and which would otherwise hand the agent a file the
+      // envelope mislabels.
+      if (file.contentSha256 !== upload.contentSha256) {
+        app.log.warn(
+          { uploadId: upload.id, reason: "digest_mismatch" },
+          "a staged attachment did not match its recorded digest",
+        );
+        throw new AttachmentStagingError(upload.id);
+      }
+      staged.push({
+        label: summary.filename,
+        contentType: summary.contentType,
+        sizeBytes: upload.sizeBytes,
+        path: file.path,
+      });
+    }
+    return staged;
   };
 
   const authorizedThreadBridge = async (identity: {
@@ -739,13 +1088,24 @@ export function registerCodexRoutes(
   app.post("/api/codex/request", async (request) => {
     const user = requireUser(request, store);
     const body = requestSchema.parse(request.body);
+    if (body.method === "turn/start") assertNoEnvelopeForgery(body.params.input);
 
     if (body.method === "turn/start" || body.method === "review/start") {
-      await authorizedThreadBridge({
+      const { workspacePath } = await authorizedThreadBridge({
         tenantId: user.tenantId,
         userId: user.id,
         threadId: body.params.threadId,
       });
+      const attachmentClaim = {
+        tenantId: user.tenantId,
+        userId: user.id,
+        threadId: body.params.threadId,
+        workspacePath,
+        attachmentIds: body.method === "turn/start" ? body.params.attachments ?? [] : [],
+      } satisfies TurnAttachmentClaim;
+      // This phase is intentionally read-only. It keeps unknown and foreign ids
+      // from consuming admission quota without binding any valid sibling ids.
+      inspectTurnAttachments(attachmentClaim);
       const admission = admitted(() =>
         admissionPolicy.admit({
           tenantId: user.tenantId,
@@ -759,11 +1119,48 @@ export function registerCodexRoutes(
       if (admission.replayed && admission.replayResult !== null) {
         return { result: admission.replayResult, replayed: true };
       }
-      const bridge = await userBridge(
-        runtime,
-        { tenantId: user.tenantId, userId: user.id },
-        { providerId: admission.provider.id, model: admission.model },
+      let bridge: CodexUserRouteBridge;
+      try {
+        bridge = await userBridge(
+          runtime,
+          { tenantId: user.tenantId, userId: user.id },
+          { providerId: admission.provider.id, model: admission.model },
+        );
+      } catch (error) {
+        store.failUsageReservation(admission.reservationId, user.tenantId, "dispatch_failed");
+        throw error;
+      }
+      let claimedAttachments: UploadRecord[];
+      try {
+        // Repeat every check and bind the full set atomically after admission.
+        // If state changed since preflight, the fresh reservation is failed and
+        // the store rolls every attachment claim back together.
+        claimedAttachments = claimTurnAttachments(attachmentClaim);
+      } catch (error) {
+        store.failUsageReservation(
+          admission.reservationId,
+          user.tenantId,
+          "attachment_claim_failed",
+        );
+        throw error;
+      }
+      // One reservation is one turn, so it names both of this turn's
+      // turn-scoped resources: its staged plaintext directory, and the
+      // `acceptForSession` arm that has to exist before Codex assigns a turn id.
+      const stagingScope = attachmentStagingScope(
+        body.params.threadId,
+        admission.reservationId,
       );
+      const pendingTurn = pendingAttachmentTurn(admission.reservationId);
+      if (claimedAttachments.length > 0) {
+        // Armed *before* dispatch, not after. Approvals do not travel on the
+        // `turn/start` RPC: they arrive as independent `server-request` frames
+        // and register in `pendingApprovals` the instant Codex raises one,
+        // which can be both raised and resolved before `turn/start` returns. An
+        // arm that waited for the turn id would be empty for exactly the window
+        // an injected command spends asking for standing authority.
+        rememberAttachmentTurn(user.tenantId, user.id, body.params.threadId, pendingTurn);
+      }
 
       let unsubscribe: () => void = () => undefined;
       let watchTimeout: NodeJS.Timeout | null = null;
@@ -771,6 +1168,7 @@ export function registerCodexRoutes(
       let settled = false;
       let inputTokens = 0;
       let outputTokens = 0;
+      let stagedPaths: UserUploadPaths | null = null;
       const bufferedEvents: Array<{
         sequence: number;
         method: string;
@@ -782,6 +1180,26 @@ export function registerCodexRoutes(
         if (watchTimeout) clearTimeout(watchTimeout);
         watchTimeout = null;
         unsubscribe();
+        const paths = stagedPaths;
+        stagedPaths = null;
+        if (!paths) return;
+        // Staged plaintext lives for exactly one turn, and the Codex child
+        // cannot write, so it can never clean up after itself. This is the one
+        // function already called on settle, on lease expiry, and in the
+        // dispatch catch, so it is the only place that covers every exit.
+        //
+        // The directory it clears is this *turn's* (`stagingScope`), never the
+        // thread's: two `turn/start` calls on one thread both succeed whenever
+        // the tenant's active-run limit allows, and a thread-wide `rm -r` would
+        // delete a concurrent turn's plaintext out from under it while its
+        // envelope still points at the path. A predecessor's orphaned directory
+        // is the boot sweep's and the janitor's business instead.
+        void unlinkStagedThread(paths, stagingScope).catch((error: unknown) => {
+          app.log.warn(
+            { reason: uploadErrorReason(error) },
+            "staged attachment plaintext could not be removed",
+          );
+        });
       };
       const scheduleLeaseTimeout = () => {
         if (watchTimeout) clearTimeout(watchTimeout);
@@ -848,7 +1266,22 @@ export function registerCodexRoutes(
             model: admission.model,
           },
         });
-        if (settled) stopWatching();
+        // The turn that carried these attachments is over: the agent has had
+        // its one turn with the plaintext. The UPDATE only matches a `stored`
+        // or `attached` row, so a repeated completion is a no-op.
+        for (const upload of claimedAttachments) {
+          store.markUploadExtracted({
+            tenantId: user.tenantId,
+            userId: user.id,
+            uploadId: upload.id,
+            threadId: body.params.threadId,
+            turnId: event.turnId,
+          });
+        }
+        if (settled) {
+          forgetAttachmentTurn(user.tenantId, user.id, body.params.threadId, event.turnId);
+          stopWatching();
+        }
       };
 
       try {
@@ -874,9 +1307,50 @@ export function registerCodexRoutes(
         });
         scheduleLeaseTimeout();
 
-        const runtimeParams: JsonValue = body.method === "review/start"
-          ? { ...body.params, delivery: "inline" }
-          : body.params;
+        let runtimeParams: JsonValue;
+        if (body.method === "review/start") {
+          runtimeParams = { ...body.params, delivery: "inline" };
+        } else {
+          const turnInput: JsonValue[] = [...body.params.input];
+          if (claimedAttachments.length > 0) {
+            const paths = await prepareUserUploadPaths(config.uploadDataDir, {
+              tenantId: user.tenantId,
+              userId: user.id,
+            });
+            // Recorded before the first decrypt so a run that fails part-way is
+            // still reclaimed by `stopWatching` in the catch below.
+            stagedPaths = paths;
+            // Appended last, so the standing rules sit closest to generation and
+            // precede every read the agent performs against a staged file.
+            turnInput.push({
+              type: "text",
+              text: renderAttachmentEnvelope(
+                await stageAttachments({
+                  paths,
+                  stagingScope,
+                  uploads: claimedAttachments,
+                }),
+              ),
+            });
+          }
+          // `attachments` is a control-plane field, not an app-server one. The
+          // dispatched params are rebuilt from fields `turn/start` defines, so
+          // the id list cannot survive into the runtime. A file-bearing turn is
+          // pinned to server-owned, sticky app-server policy: it cannot write or
+          // use the network, and any attempted escalation needs an approval.
+          // The public schema intentionally exposes none of these override
+          // fields, so a client cannot weaken them.
+          runtimeParams = {
+            threadId: body.params.threadId,
+            input: turnInput,
+            ...(claimedAttachments.length > 0
+              ? {
+                  approvalPolicy: "on-request",
+                  sandboxPolicy: { type: "readOnly", networkAccess: false },
+                }
+              : {}),
+          };
+        }
         const result = await runtimeRequest(() => bridge.request(body.method, runtimeParams));
         const resultRecord = objectValue(result);
         const turn = objectValue(resultRecord?.turn);
@@ -914,6 +1388,15 @@ export function registerCodexRoutes(
           );
         }
         expectedTurnId = turnId;
+        if (claimedAttachments.length > 0) {
+          // Narrow the pre-dispatch arm onto the turn Codex just named, so the
+          // block is pruned by the same settle path that prunes everything else
+          // about this turn. `acceptForSession` has been refused since before
+          // dispatch and stays refused: one injected command inside an
+          // untrusted file must not become standing authority for the session.
+          rememberAttachmentTurn(user.tenantId, user.id, body.params.threadId, turnId);
+          forgetAttachmentTurn(user.tenantId, user.id, body.params.threadId, pendingTurn);
+        }
         const matching = bufferedEvents.filter((event) => event.turnId === turnId);
         bufferedEvents.length = 0;
         // Usage is emitted independently from completion. Apply every `last`
@@ -938,6 +1421,36 @@ export function registerCodexRoutes(
       } catch (error) {
         stopWatching();
         store.failUsageReservation(admission.reservationId, user.tenantId, "dispatch_failed");
+        // Never leave a thread armed by a dispatch that threw: the turn is over,
+        // and a block nothing can clear would cost the user `acceptForSession`
+        // on that thread for the whole approval TTL. What the *rows* say is a
+        // separate question, answered below and independently.
+        forgetAttachmentTurn(user.tenantId, user.id, body.params.threadId, pendingTurn);
+        if (expectedTurnId !== null) {
+          forgetAttachmentTurn(user.tenantId, user.id, body.params.threadId, expectedTurnId);
+        }
+        // Retire an upload only when the failure was *about that upload*: its
+        // ciphertext failed its authentication tag, or its row and its blob
+        // disagree. Those bytes will never stage, so the row is terminal and
+        // the janitor's orphan sweep reclaims the file on its next pass.
+        //
+        // Every other dispatch failure — `runtime_unavailable`,
+        // `codex_request_rejected`, a closed reservation, a bare throw — says
+        // nothing about the file. Failing the upload there would make one
+        // transient 503 destroy the user's document: a `failed` row is neither
+        // claimable nor visible, so the file silently disappears and has to be
+        // re-uploaded, while its blob stops counting toward tenant storage
+        // quota. The claim is therefore left exactly as it is — `attached`,
+        // still listed, still metered, still attachable — so the natural retry
+        // re-uses it.
+        if (error instanceof AttachmentStagingError) {
+          store.failUpload({
+            tenantId: user.tenantId,
+            userId: user.id,
+            uploadId: error.uploadId,
+            errorCode: error.code,
+          });
+        }
         throw error;
       }
     }
@@ -1172,6 +1685,9 @@ export function registerCodexRoutes(
     const user = requireUser(request, store);
     const { threadId, turnId } = turnPathSchema.parse(request.params);
     const body = turnSteerSchema.parse(request.body);
+    // A steer appends input to a turn whose envelope has already been sent, so
+    // it is the other half of the forgery check on `turn/start`.
+    assertNoEnvelopeForgery(body.input);
     const key = idempotencyKey(request);
     return idempotentMutation(
       { tenantId: user.tenantId, userId: user.id },
@@ -1217,6 +1733,19 @@ export function registerCodexRoutes(
         409,
         "approval_not_pending",
         "This approval request is no longer pending for the current user.",
+      );
+    }
+    if (
+      body.decision === "acceptForSession"
+      && sessionApprovalBlocked(user.tenantId, user.id, approval.threadId)
+    ) {
+      // Refused *before* the approval is consumed, so the user can still decide
+      // this same request with `accept` or `decline`.
+      throw new ApiHttpError(
+        403,
+        "approval_scope_forbidden",
+        "This turn reads user-attached files. Approve each command individually; "
+          + "session-wide approval is not available while a turn carries attachments.",
       );
     }
     forgetApproval(user.tenantId, user.id, body.requestId);

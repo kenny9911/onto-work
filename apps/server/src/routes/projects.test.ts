@@ -106,6 +106,7 @@ async function projectFixture(t: TestContext): Promise<ProjectFixture> {
     webOrigin: "http://127.0.0.1:4173",
     databasePath: join(directory, "harness.db"),
     runtimeDataDir: join(directory, "runtimes"),
+    uploadDataDir: join(directory, "uploads"),
     sessionTtlMs: 60 * 60 * 1_000,
     sessionSecret: "test-session-secret-that-is-long-enough",
     credentialEncryptionKey: "test-credential-key-that-is-long-enough",

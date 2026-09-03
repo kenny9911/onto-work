@@ -503,6 +503,15 @@ export type PromptInputProps = Omit<
   maxFiles?: number;
   // bytes
   maxFileSize?: number;
+  /**
+   * Convert local blob URLs to data URLs before `onSubmit`.
+   *
+   * Chat transports commonly need the file bytes embedded in the submitted
+   * message, so this remains enabled by default. Callers that have already
+   * uploaded the bytes to a server can disable it and submit their opaque
+   * server ids without allocating a second, base64-expanded copy in memory.
+   */
+  convertAttachmentsToDataUrls?: boolean;
   onError?: (err: {
     code: "max_files" | "max_file_size" | "accept";
     message: string;
@@ -516,6 +525,7 @@ export type PromptInputProps = Omit<
 export const PromptInput = ({
   className,
   attachmentsDisabled = false,
+  convertAttachmentsToDataUrls = true,
   onAttachmentAttempt,
   accept,
   multiple,
@@ -882,22 +892,23 @@ export const PromptInput = ({
       }
 
       try {
-        // Convert blob URLs to data URLs asynchronously
-        const convertedFiles: FileUIPart[] = await Promise.all(
-          files.map(async ({ id: _id, ...item }) => {
-            if (item.url?.startsWith("blob:")) {
-              const dataUrl = await convertBlobUrlToDataUrl(item.url);
-              // If conversion failed, keep the original blob URL
-              return {
-                ...item,
-                url: dataUrl ?? item.url,
-              };
-            }
-            return item;
-          })
-        );
+        const submittedFiles: FileUIPart[] = convertAttachmentsToDataUrls
+          ? await Promise.all(
+              files.map(async ({ id: _id, ...item }) => {
+                if (item.url?.startsWith("blob:")) {
+                  const dataUrl = await convertBlobUrlToDataUrl(item.url);
+                  // If conversion failed, keep the original blob URL
+                  return {
+                    ...item,
+                    url: dataUrl ?? item.url,
+                  };
+                }
+                return item;
+              })
+            )
+          : files.map(({ id: _id, ...item }) => item);
 
-        const result = onSubmit({ files: convertedFiles, text }, event);
+        const result = onSubmit({ files: submittedFiles, text }, event);
 
         // Handle both sync and async onSubmit
         if (result instanceof Promise) {
@@ -921,7 +932,7 @@ export const PromptInput = ({
         // Don't clear on error - user may want to retry
       }
     },
-    [usingProvider, controller, files, onSubmit, clear]
+    [usingProvider, controller, files, onSubmit, clear, convertAttachmentsToDataUrls]
   );
 
   // Render with or without local provider

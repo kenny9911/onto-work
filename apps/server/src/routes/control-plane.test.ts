@@ -17,6 +17,7 @@ function testConfig(directory: string): HarnessConfig {
     webOrigin: "http://127.0.0.1:4173",
     databasePath: join(directory, "harness.db"),
     runtimeDataDir: join(directory, "runtimes"),
+    uploadDataDir: `${directory}-uploads`,
     sessionTtlMs: 60 * 60 * 1_000,
     sessionSecret: "test-session-secret-that-is-long-enough",
     credentialEncryptionKey: "test-credential-key-that-is-long-enough",
@@ -68,6 +69,7 @@ test("protects control-plane mutations and never returns provider credentials", 
     await app.close();
     store.close();
     await rm(directory, { recursive: true, force: true });
+    await rm(`${directory}-uploads`, { recursive: true, force: true });
   });
 
   const rejectedOrigin = await app.inject({
@@ -204,7 +206,10 @@ test("protects control-plane mutations and never returns provider credentials", 
 
 test("single-host startup fails orphaned reserved leases closed", async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "agent-harness-restart-"));
-  t.after(async () => rm(directory, { recursive: true, force: true }));
+  t.after(async () => {
+    await rm(directory, { recursive: true, force: true });
+    await rm(`${directory}-uploads`, { recursive: true, force: true });
+  });
   const config = testConfig(directory);
   const seedStore = new HarnessStore(config.databasePath);
   const user = await seedStore.bootstrapAdmin("restart-admin", "restart-test-password");

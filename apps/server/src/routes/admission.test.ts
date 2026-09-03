@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import { mkdir, mkdtemp, realpath, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { type TestContext } from "node:test";
@@ -177,6 +177,7 @@ test("ordered migrations preserve a legacy database and record immutable version
     { version: 5, name: "billing_uniqueness", checksum_length: 64 },
     { version: 6, name: "saved_projects", checksum_length: 64 },
     { version: 7, name: "task_mutation_idempotency", checksum_length: 64 },
+    { version: 8, name: "uploads", checksum_length: 64 },
   ]);
   assert.equal(
     migrationChecksum(DATABASE_MIGRATIONS.find((migration) => migration.version === 4)!),
@@ -244,6 +245,211 @@ test("migration runner rejects a database created by a newer build", async (t) =
   assert.throws(
     () => applyDatabaseMigrations(database),
     /migration 999 is newer than or unknown/i,
+  );
+  database.close();
+});
+
+test("an existing task-mutation database advances through the uploads migration", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "agent-harness-v7-migration-"));
+  const databasePath = join(directory, "v7.db");
+  t.after(async () => rm(directory, { recursive: true, force: true }));
+  const database = new DatabaseSync(databasePath);
+  database.exec(`
+    CREATE TABLE schema_migrations (
+      version INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      checksum TEXT NOT NULL,
+      applied_at TEXT NOT NULL
+    );
+  `);
+  for (const migration of DATABASE_MIGRATIONS.filter((candidate) => candidate.version <= 7)) {
+    database.exec(migration.sql);
+    database
+      .prepare(
+        "INSERT INTO schema_migrations (version, name, checksum, applied_at) VALUES (?, ?, ?, ?)",
+      )
+      .run(
+        migration.version,
+        migration.name,
+        migrationChecksum(migration),
+        new Date().toISOString(),
+      );
+  }
+
+  applyDatabaseMigrations(database);
+  const applied = database
+    .prepare("SELECT name FROM schema_migrations WHERE version = 8")
+    .get() as { name: string } | undefined;
+  assert.equal(applied?.name, "uploads");
+
+  const objects = database
+    .prepare(`
+      SELECT name FROM sqlite_master
+      WHERE name = 'uploads' OR name LIKE 'uploads\\_%' ESCAPE '\\'
+      ORDER BY name
+    `)
+    .all() as unknown as Array<{ name: string }>;
+  assert.deepEqual(objects.map((object) => object.name), [
+    "uploads",
+    "uploads_accounting",
+    "uploads_expiry",
+    "uploads_project",
+    "uploads_scope_guard_insert",
+    "uploads_scope_guard_update",
+    "uploads_thread",
+  ]);
+
+  const entitlementColumns = (
+    database
+      .prepare("SELECT name FROM pragma_table_info('entitlement_snapshots')")
+      .all() as unknown as Array<{ name: string }>
+  ).map((column) => column.name);
+  assert.ok(entitlementColumns.includes("storage_bytes_limit"));
+  assert.ok(entitlementColumns.includes("upload_bytes_period_limit"));
+  database.close();
+});
+
+test("the uploads schema binds a row to its thread or project scope", async (t) => {
+  const { store, tenantA, tenantB } = await admissionFixture(t);
+  const timestamp = new Date().toISOString();
+  const grant = store.findWorkspaceGrantForPath(tenantA.tenantId, tenantA.workspace);
+  assert.ok(grant);
+  const project = store.registerSavedProject({
+    tenantId: tenantA.tenantId,
+    name: "uploads-scope",
+    workspacePath: tenantA.workspace,
+    workspaceGrantId: grant.id,
+    createdByUserId: tenantA.userId,
+  });
+  store.db
+    .prepare(`
+      INSERT INTO thread_workspace_bindings (
+        tenant_id, user_id, thread_id, workspace_path, created_at, updated_at
+      ) VALUES (?, ?, 'thread-uploads', ?, ?, ?)
+    `)
+    .run(tenantA.tenantId, tenantA.userId, tenantA.workspace, timestamp, timestamp);
+
+  const insertUpload = (values: {
+    id: string;
+    tenantId: string;
+    userId: string;
+    threadId: string | null;
+    projectId: string | null;
+    workspacePath: string;
+  }): void => {
+    store.db
+      .prepare(`
+        INSERT INTO uploads (
+          id, tenant_id, user_id, thread_id, project_id, workspace_path, filename,
+          content_type, size_bytes, content_sha256, storage_key, encryption_iv,
+          encryption_tag, wrapped_data_key, status, created_at, updated_at, expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'notes.md', 'text/markdown', 11, ?, ?, 'iv', 'tag', 'key',
+                  'stored', ?, ?, ?)
+      `)
+      .run(
+        values.id,
+        values.tenantId,
+        values.userId,
+        values.threadId,
+        values.projectId,
+        values.workspacePath,
+        "a".repeat(64),
+        `blobs/aa/${values.id}`,
+        timestamp,
+        timestamp,
+        timestamp,
+      );
+  };
+
+  // Both composite foreign keys resolve: SQLite reports a parent-index mismatch
+  // at insert time, not when the table is created.
+  insertUpload({
+    id: "upload-thread",
+    tenantId: tenantA.tenantId,
+    userId: tenantA.userId,
+    threadId: "thread-uploads",
+    projectId: null,
+    workspacePath: tenantA.workspace,
+  });
+  // A NULL thread leaves the binding foreign key vacuously satisfied, which is
+  // what lets a project-scoped upload live in the same table.
+  insertUpload({
+    id: "upload-project",
+    tenantId: tenantA.tenantId,
+    userId: tenantA.userId,
+    threadId: null,
+    projectId: project.id,
+    workspacePath: tenantA.workspace,
+  });
+
+  assert.throws(
+    () =>
+      insertUpload({
+        id: "upload-scopeless",
+        tenantId: tenantA.tenantId,
+        userId: tenantA.userId,
+        threadId: null,
+        projectId: null,
+        workspacePath: tenantA.workspace,
+      }),
+    /upload scope or workspace mismatch/,
+  );
+  assert.throws(
+    () =>
+      insertUpload({
+        id: "upload-wrong-workspace",
+        tenantId: tenantA.tenantId,
+        userId: tenantA.userId,
+        threadId: "thread-uploads",
+        projectId: null,
+        workspacePath: tenantB.workspace,
+      }),
+    /upload scope or workspace mismatch/,
+  );
+  assert.throws(
+    () =>
+      insertUpload({
+        id: "upload-dangling-thread",
+        tenantId: tenantA.tenantId,
+        userId: tenantA.userId,
+        threadId: "thread-that-was-never-bound",
+        projectId: null,
+        workspacePath: tenantA.workspace,
+      }),
+    /upload scope or workspace mismatch/,
+  );
+
+  const stored = store.db
+    .prepare("SELECT id FROM uploads ORDER BY id")
+    .all() as unknown as Array<{ id: string }>;
+  assert.deepEqual(stored.map((row) => row.id), ["upload-project", "upload-thread"]);
+});
+
+test("a database carrying the uploads migration is refused by a build that predates it", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "agent-harness-downgrade-"));
+  t.after(async () => rm(directory, { recursive: true, force: true }));
+  const database = new DatabaseSync(join(directory, "v8.db"));
+  applyDatabaseMigrations(database);
+
+  // Stand up the previous build by loading a copy of this module with the
+  // uploads migration removed; the runner reads its list from module scope, so
+  // there is no other way to observe a downgrade.
+  const source = await readFile(new URL("../migrations.ts", import.meta.url), "utf8");
+  const olderSource = source.replace(/\n {2}\{\n {4}version: 8,\n[\s\S]*?\n {2}\},/, "");
+  const olderPath = join(directory, "migrations-v7.ts");
+  await writeFile(olderPath, olderSource);
+  const olderBuild = (await import(pathToFileURL(olderPath).href)) as {
+    DATABASE_MIGRATIONS: readonly { version: number }[];
+    applyDatabaseMigrations: (database: DatabaseSync) => void;
+  };
+  assert.equal(
+    olderBuild.DATABASE_MIGRATIONS.some((migration) => migration.version === 8),
+    false,
+  );
+
+  assert.throws(
+    () => olderBuild.applyDatabaseMigrations(database),
+    /migration 8 is newer than or unknown/i,
   );
   database.close();
 });

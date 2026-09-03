@@ -359,6 +359,83 @@ const TASK_MUTATION_IDEMPOTENCY_SCHEMA = `
     ON task_mutations(tenant_id, user_id, status, expires_at);
 `;
 
+const UPLOADS_SCHEMA = `
+  ALTER TABLE entitlement_snapshots ADD COLUMN storage_bytes_limit INTEGER;
+  ALTER TABLE entitlement_snapshots ADD COLUMN upload_bytes_period_limit INTEGER;
+
+  CREATE TABLE uploads (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    thread_id TEXT,
+    project_id TEXT,
+    workspace_path TEXT NOT NULL CHECK(length(workspace_path) > 0),
+    filename TEXT NOT NULL CHECK(length(filename) BETWEEN 1 AND 255),
+    content_type TEXT NOT NULL CHECK(length(content_type) BETWEEN 1 AND 128),
+    size_bytes INTEGER NOT NULL CHECK(size_bytes >= 0),
+    content_sha256 TEXT NOT NULL CHECK(length(content_sha256) = 64),
+    storage_key TEXT NOT NULL CHECK(length(storage_key) BETWEEN 1 AND 512),
+    encryption_iv TEXT NOT NULL,
+    encryption_tag TEXT NOT NULL,
+    wrapped_data_key TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN
+      ('reserving', 'stored', 'attached', 'extracted', 'failed', 'deleted')),
+    extraction_turn_id TEXT,
+    error_code TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    FOREIGN KEY (tenant_id, user_id)
+      REFERENCES users(tenant_id, id) ON DELETE CASCADE,
+    FOREIGN KEY (tenant_id, user_id, thread_id)
+      REFERENCES thread_workspace_bindings(tenant_id, user_id, thread_id) ON DELETE CASCADE,
+    FOREIGN KEY (tenant_id, project_id)
+      REFERENCES projects(tenant_id, id) ON DELETE CASCADE
+  );
+  CREATE INDEX uploads_thread
+    ON uploads(tenant_id, user_id, thread_id, created_at);
+  CREATE INDEX uploads_project
+    ON uploads(tenant_id, user_id, project_id, created_at);
+  CREATE INDEX uploads_accounting
+    ON uploads(tenant_id, status, created_at);
+  CREATE INDEX uploads_expiry
+    ON uploads(status, expires_at);
+
+  CREATE TRIGGER uploads_scope_guard_insert
+  BEFORE INSERT ON uploads
+  WHEN (NEW.thread_id IS NULL AND NEW.project_id IS NULL)
+    OR (NEW.thread_id IS NOT NULL AND NOT EXISTS (
+      SELECT 1 FROM thread_workspace_bindings
+      WHERE tenant_id = NEW.tenant_id AND user_id = NEW.user_id
+        AND thread_id = NEW.thread_id AND workspace_path = NEW.workspace_path
+    ))
+    OR (NEW.project_id IS NOT NULL AND NOT EXISTS (
+      SELECT 1 FROM project_workspaces
+      WHERE tenant_id = NEW.tenant_id AND project_id = NEW.project_id
+        AND canonical_path = NEW.workspace_path
+    ))
+  BEGIN
+    SELECT RAISE(ABORT, 'upload scope or workspace mismatch');
+  END;
+
+  CREATE TRIGGER uploads_scope_guard_update
+  BEFORE UPDATE OF tenant_id, user_id, thread_id, project_id, workspace_path ON uploads
+  WHEN (NEW.thread_id IS NULL AND NEW.project_id IS NULL)
+    OR (NEW.thread_id IS NOT NULL AND NOT EXISTS (
+      SELECT 1 FROM thread_workspace_bindings
+      WHERE tenant_id = NEW.tenant_id AND user_id = NEW.user_id
+        AND thread_id = NEW.thread_id AND workspace_path = NEW.workspace_path
+    ))
+    OR (NEW.project_id IS NOT NULL AND NOT EXISTS (
+      SELECT 1 FROM project_workspaces
+      WHERE tenant_id = NEW.tenant_id AND project_id = NEW.project_id
+        AND canonical_path = NEW.workspace_path
+    ))
+  BEGIN
+    SELECT RAISE(ABORT, 'upload scope or workspace mismatch');
+  END;
+`;
+
 export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
   { version: 1, name: "initial_control_plane", sql: INITIAL_SCHEMA },
   { version: 2, name: "production_foundation", sql: PRODUCTION_FOUNDATION_SCHEMA },
@@ -386,6 +463,11 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     version: 7,
     name: "task_mutation_idempotency",
     sql: TASK_MUTATION_IDEMPOTENCY_SCHEMA,
+  },
+  {
+    version: 8,
+    name: "uploads",
+    sql: UPLOADS_SCHEMA,
   },
 ] as const;
 

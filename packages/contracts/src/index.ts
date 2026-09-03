@@ -198,6 +198,100 @@ export interface ThreadDetailPayload {
   timeline: TimelineItem[];
 }
 
+/**
+ * Largest upload the control plane accepts, in bytes. The wire body is raw
+ * `application/octet-stream`, so this is enforced by the route's own byte
+ * counter rather than by Fastify's buffering `bodyLimit`.
+ */
+export const UPLOAD_MAX_BYTES = 20 * 1024 * 1024;
+
+/**
+ * Content types the server is willing to store. The client never declares a
+ * type; the server classifies the bytes it received and stores only its own
+ * classification.
+ */
+export const UPLOAD_ALLOWED_CONTENT_TYPES = [
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+  "text/tab-separated-values",
+  "application/json",
+  "application/x-ndjson",
+  "application/xml",
+] as const;
+
+export type UploadContentType = (typeof UPLOAD_ALLOWED_CONTENT_TYPES)[number];
+
+/**
+ * `reserving` holds a quota reservation while bytes stream in; `stored` is a
+ * durable blob; `attached` is claimed by a thread; `extracted` was read by a
+ * completed turn.
+ */
+export type UploadStatus =
+  | "reserving"
+  | "stored"
+  | "attached"
+  | "extracted"
+  | "failed"
+  | "deleted";
+
+/** An upload is bound either to one thread or to a saved project awaiting one. */
+export type UploadScope = "thread" | "project";
+
+export interface UploadSummary {
+  id: string;
+  scope: UploadScope;
+  threadId: string | null;
+  projectId: string | null;
+  /** Display label only. It never becomes a filesystem path component. */
+  filename: string;
+  contentType: UploadContentType;
+  sizeBytes: number;
+  status: UploadStatus;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+}
+
+export interface UploadListPayload {
+  uploads: UploadSummary[];
+}
+
+export interface UploadDetailPayload {
+  upload: UploadSummary;
+}
+
+/**
+ * Entitlement dimensions added for uploads. A durable snapshot stores them as
+ * nullable columns; NULL means "use the plan default" in `UPLOAD_PLAN_LIMITS`.
+ */
+export interface UploadEntitlementLimits {
+  /** Ceiling on the tenant's total stored upload bytes. */
+  storageBytesLimit: number;
+  /** Ceiling on upload bytes accepted within one entitlement period. */
+  uploadBytesPeriodLimit: number;
+}
+
+/** `Number.MAX_SAFE_INTEGER` is the "effectively unlimited" sentinel. */
+export const UPLOAD_PLAN_LIMITS: Readonly<Record<PlanId, UploadEntitlementLimits>> = {
+  free: {
+    storageBytesLimit: 64 * 1024 * 1024,
+    uploadBytesPeriodLimit: 128 * 1024 * 1024,
+  },
+  pro: {
+    storageBytesLimit: 512 * 1024 * 1024,
+    uploadBytesPeriodLimit: 2 * 1024 * 1024 * 1024,
+  },
+  team: {
+    storageBytesLimit: 2 * 1024 * 1024 * 1024,
+    uploadBytesPeriodLimit: 8 * 1024 * 1024 * 1024,
+  },
+  enterprise: {
+    storageBytesLimit: Number.MAX_SAFE_INTEGER,
+    uploadBytesPeriodLimit: Number.MAX_SAFE_INTEGER,
+  },
+};
+
 export interface UsageSummary {
   periodStart: string;
   periodEnd: string | null;

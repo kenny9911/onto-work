@@ -1,7 +1,17 @@
+import { homedir } from "node:os";
 import { resolve } from "node:path";
 
 const DEFAULT_PORT = 4310;
 const DEFAULT_SESSION_TTL_HOURS = 24 * 7;
+
+/**
+ * Uploads are durable customer documents, so they live outside both the
+ * process-scratch runtime tree and every granted workspace root. `buildApp`
+ * refuses to start when this path overlaps `ALLOWED_WORKSPACE_ROOTS`.
+ */
+export function defaultUploadDataDir(): string {
+  return resolve(homedir(), ".agent-harness", "uploads");
+}
 
 function integerFromEnv(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
@@ -33,6 +43,8 @@ export interface HarnessConfig {
   webOrigin: string;
   databasePath: string;
   runtimeDataDir: string;
+  /** Server-owned durable upload store; must not overlap `allowedWorkspaceRoots`. */
+  uploadDataDir: string;
   sessionTtlMs: number;
   sessionSecret: string;
   credentialEncryptionKey: string;
@@ -57,6 +69,7 @@ export function loadConfig(): HarnessConfig {
     webOrigin: process.env.WEB_ORIGIN ?? "http://127.0.0.1:4173",
     databasePath: resolve(process.env.DATABASE_PATH ?? "./data/agent-harness.db"),
     runtimeDataDir: resolve(process.env.RUNTIME_DATA_DIR ?? "./data/runtimes"),
+    uploadDataDir: resolve(process.env.UPLOAD_DATA_DIR || defaultUploadDataDir()),
     sessionTtlMs:
       integerFromEnv(process.env.SESSION_TTL_HOURS, DEFAULT_SESSION_TTL_HOURS) *
       60 *
