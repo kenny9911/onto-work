@@ -37,6 +37,8 @@ pnpm workspace: `apps/server` (Fastify control plane), `apps/web` (React/Vite), 
 
 The browser talks only to the control plane, which owns tenancy, entitlements, workspace authority, and model selection. **The browser can never supply a filesystem path, model, sandbox policy, or a raw `thread/start`.** `POST /api/tasks` takes an opaque saved-project UUID; `POST /api/codex/request` accepts exactly three methods via a Zod discriminated union (`turn/start`, `thread/resume`, `review/start`). Arbitrary app-server methods are not proxied. Preserve this when adding endpoints.
 
+`turn/start` also accepts `attachments` — **opaque upload UUIDs only**. The server resolves each to a path immediately before dispatch. Never widen the input union to `localImage`/`localAudio`/`mention`/`skill`: each carries a `PathBuf` the app-server reads with a bare `std::fs::read`, with no sandbox and no allow-list.
+
 ### Task start flow (`apps/server/src/routes/codex.ts` → `admission.ts` → `database.ts`)
 
 1. Saved project → active workspace grant → `resolveAllowedWorkspacePath` (realpath + containment in `ALLOWED_WORKSPACE_ROOTS`).
@@ -56,7 +58,15 @@ There are **two independent idempotency ledgers**, both driven by the `Idempoten
 
 ### Persistence (`migrations.ts`, `database.ts`)
 
-Ordered, checksummed migrations through version 7. **Never edit an applied migration** — the checksum check throws at startup, and an unknown/newer version is refused. Add a new numbered entry instead. `HarnessStore` is the only SQL surface; it enforces same-tenant actors on audit/usage writes.
+Ordered, checksummed migrations through version 8. **Never edit an applied migration** — the checksum check throws at startup, and an unknown/newer version is refused. Add a new numbered entry instead. `HarnessStore` is the only SQL surface; it enforces same-tenant actors on audit/usage writes.
+
+### Uploads (`apps/server/src/uploads/`, `routes/uploads.ts`)
+
+Bytes live under `UPLOAD_DATA_DIR`, which **must not overlap `ALLOWED_WORKSPACE_ROOTS` in either direction** — `buildApp` asserts this over `realpath`'d paths and refuses to start otherwise. Per-user shard uses the same double hash as the runtime tree; blob names are server-generated UUIDs; the client filename is a display label that never touches the filesystem. Blobs are AES-256-GCM at rest.
+
+Two things that look like bugs and are not: the upload route uses a **pass-through content-type parser, so Fastify's `bodyLimit` does not apply** and the route counts bytes itself (the payoff is that `requireUser` runs before any byte is read); and content type is sniffed from the bytes, never taken from the client, because the wire type is fixed to `application/octet-stream`.
+
+Extraction is an ordinary turn — uploading performs no model call and no dispatch. The server stages decrypted plaintext per turn, appends a server-authored envelope from `uploads/prompt.ts` **last**, and the agent reads the files with the shell, so content arrives as tool output rather than as an input item. Do not auto-dispatch on upload, and do not relax the `acceptForSession` refusal on a thread holding an attachment — those are the load-bearing controls against injection from file content.
 
 ### Web (`apps/web/src`)
 

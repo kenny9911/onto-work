@@ -71,6 +71,18 @@ Subscriptions belong to organizations. Stripe is an external payment event sourc
 
 Repositories, prompts, generated patches, `AGENTS.md`, `.codex` configuration, hooks, MCP servers, plugins, and skills are untrusted input. The current preview does not expose hooks, repository-selected plugins/skills, or arbitrary MCP servers as product capabilities. Future enablement requires an explicit, signed allow-list and permission policy. Project-local Codex configuration must not select provider endpoints, credentials, or a more permissive sandbox.
 
+### Uploaded content
+
+User-uploaded files are untrusted input of the same class as a repository, and they arrive by a path the user controls end to end. They are therefore given their own store rather than a workspace, and their content is never given instruction authority.
+
+Bytes are stored under `UPLOAD_DATA_DIR`, which the control plane creates at 0700 and which **must not contain, or be contained by, any entry of `ALLOWED_WORKSPACE_ROOTS`**. `buildApp` asserts this over `realpath`'d paths before the store is opened and refuses to start otherwise. Writing uploads into a bound workspace was rejected: it dirties the tree the user's own `git status` and `review/start { uncommittedChanges }` observe, it is visible to every thread and every grant-holder on that project rather than to the one thread that owns it, and it places durable customer data on a path the control plane does not own and therefore cannot retain, delete, or garbage-collect.
+
+No client-supplied byte becomes a path component. The blob name is a server-generated UUID, the staged extension comes from a fixed map keyed on the server's own content classification, and the client's filename is retained only as a length-capped, normalized display label. Content type is decided by the server from the bytes — the wire type is fixed to `application/octet-stream`, so there is nothing for a client to declare and nothing to reconcile. Blobs are encrypted at rest (AES-256-GCM, per-upload data key wrapped with the application credential key) and are never executed, interpreted, or linked by the control plane.
+
+Extraction is an ordinary approval-gated turn, not a separate pipeline. Uploading performs no model call and no dispatch. When a turn references an upload, the control plane resolves the opaque ID to a path server-side, stages decrypted plaintext for that turn alone, and appends a server-authored envelope that names the paths and states that their content is data. The agent reads them with its normal tools, so **the bytes reach the model as tool output rather than as an input item** — the lowest-trust channel available. The browser supplies opaque upload IDs only; it never supplies a path or a URL, and no `localImage`/`localAudio`/`mention`/`skill` input variant is accepted, because each of those carries a filesystem path that the app-server reads directly.
+
+**Residual risk, stated rather than solved.** `SandboxPolicy::has_full_disk_read_access()` is unconditionally true in the pinned Codex, so an agent can read any path the server's OS user can read. Placement of uploads is therefore a hygiene, authorization, and lifecycle decision — **not a containment one** — and encryption at rest bounds steady-state exposure to ciphertext plus one turn's staged plaintext in the reading user's own shard. This is invariant 3 restated for a new asset, it is pre-existing (thread transcripts and the SQLite file are already readable the same way), and the fix is per-tenant OS identity or kernel isolation, not anything the upload feature can do on its own.
+
 ## Security invariants
 
 The following are release-blocking invariants, not future enhancements:
@@ -83,6 +95,8 @@ The following are release-blocking invariants, not future enhancements:
 6. Provider requests and usage reconciliation share an idempotency/correlation ID.
 7. High-risk tool actions require an approval decision recorded against the same user, tenant, thread, turn, and item.
 8. Logs redact authorization headers, cookies, prompt content by policy, tool output secrets, and sensitive filesystem paths.
+9. Uploaded bytes are stored outside every configured workspace root, at server-derived paths; no client-supplied byte becomes a path component, and no client-supplied value selects a content type.
+10. Uploaded content never carries instruction authority. It reaches a model only as tool output inside an approval-gated turn, and a thread holding an attachment cannot grant session-wide approval authority — only per-command decisions.
 
 ## Production-foundation preview boundary
 
@@ -111,6 +125,7 @@ Before a preview is promoted beyond trusted pilots:
 - run a Codex `/v1/responses` compatibility suite against every enabled alias;
 - test quota reservation races, retries, cancellation, provider timeouts, and duplicate Stripe webhooks;
 - test sandbox escapes, symlink/path traversal, SSRF, egress restrictions, approval replay, and prompt-injected tool calls;
+- for uploads specifically: prove the store-versus-workspace-root assertion fails startup in both directions; prove a traversal, absolute, NUL, percent-encoded, or overlong filename never reaches the filesystem; plant a symlink and a hardlink at every directory component and at the target name and prove each is refused with nothing created outside the store; prove a tampered ciphertext fails its GCM tag before any plaintext path exists; race concurrent uploads against the last quota unit; prove another tenant's upload ID yields a 404 with no dispatch and no reservation; prove the server-authored envelope cannot be forged, including a marker split across input items or written with zero-width and normalization-foldable characters; and prove `acceptForSession` is refused while a thread holds an attachment while per-command approval still works;
 - restore an encrypted backup into an isolated environment and verify tenant deletion/retention behavior;
 - generate app-server TypeScript and JSON schemas from the pinned Codex binary and fail CI on an unexplained protocol diff.
 

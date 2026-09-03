@@ -58,6 +58,11 @@ Every durable record and authorization decision is keyed by organization. Produc
 | Double spend or quota race | Reserve quota transactionally before dispatch; idempotency key per attempt; immutable usage reconciliation | Distributed reservation service, provider invoice reconciliation, anomaly limits |
 | Supply-chain compromise | Pin Codex submodule and LiteLLM image version; lock dependencies; scan source/images; retain provenance | Verify signed releases/digests, SBOM and attestations, admission policy, reproducible builds |
 | Data remanence | Tenant retention policy; encrypted storage/backups; explicit workspace/runtime cleanup; deletion audit | Cryptographic erasure, legal-hold workflow, regularly tested deletion SLA |
+| Malicious upload path or filename | Client filename is a display label only, never a path component; blob names are server-generated UUIDs and extensions come from a server-decided content type; every directory component is created non-recursively and re-resolved, with `O_EXCL` plus an `nlink` check at the leaf and `fchmod` through a descriptor | `openat2`/`RESOLVE_BENEATH`-class atomic path resolution, or a store on a filesystem the runtime user cannot write |
+| Upload storage exhaustion | Route-level byte counter independent of `bodyLimit` (a streaming content-type parser bypasses it), declared-versus-actual length equality, throughput floor and wall clock, per-user concurrency cap, per-route rate limit, and a transactional storage reservation settled or released per attempt | Per-tenant object storage with hard quota enforcement, upload lifecycle SLOs, and abuse detection |
+| Upload content-type confusion | The wire type is fixed to `application/octet-stream` so the client declares nothing; the server classifies from the bytes and admits only a UTF-8 text allow-list; no binary parser and no magic-number dependency runs in the control plane | Archive and document support behind an isolated extraction worker, never in the trusted process |
+| Injection via uploaded file content | Bytes reach the model as tool output, never as an input item; a server-authored envelope frames them as data and is appended last; forgery of that envelope is refused across the concatenation of all input items after normalization; `acceptForSession` is refused while a thread holds an attachment; no turn is auto-dispatched on upload | Content provenance and policy engine; dual control for high-risk actions in a turn that consumed untrusted content |
+| Cross-tenant upload disclosure | Per-user double-hashed storage shard, composite foreign keys and scope triggers, re-authorization on every read with 404 rather than 403 so IDs are not oracle-able, and blobs encrypted at rest | Per-tenant OS identity or kernel isolation — the pinned Codex has unconditional full-disk read, so this is not solved by placement |
 | Local Ollama bridge compromise | “Local” means local to the isolated runtime host; no implicit access to a user's laptop | Authenticated outbound-only local runner/tunnel with device binding, consent, rotation, and revocation |
 
 ## Bootstrap administrator policy
@@ -86,6 +91,10 @@ The preview includes `pnpm reset-admin` only for deliberate local recovery. It i
 - Keep repository hooks, arbitrary MCP endpoints, plugins, and skills disabled until their permission and isolation model has been reviewed.
 - Do not expose global `thread/list` results. The control plane resolves only the product thread IDs owned by the requesting tenant.
 - Treat thread JSONL, SQLite state, terminal transcripts, patches, screenshots, and generated artifacts as tenant-confidential data.
+- `SandboxPolicy::has_full_disk_read_access()` is unconditionally true in the pinned Codex — the seatbelt profile carries a bare `(allow file-read*)` and the bubblewrap profile a `--ro-bind / /`. Nothing is hidden from the agent by where it is placed; only writes are constrained. Any control that depends on the agent not finding a file is not a control.
+- Uploaded files live under `UPLOAD_DATA_DIR`, which startup refuses to run with if it overlaps `ALLOWED_WORKSPACE_ROOTS` in either direction. Keeping them out of a workspace protects the user's tree, the review scope, and the retention story — not confidentiality from the agent.
+- The upload route uses a pass-through content-type parser, which means Fastify's `bodyLimit` does **not** apply to it. The route counts bytes itself. The compensating benefit is that the handler runs before any body byte is consumed, so authentication happens first; do not "simplify" this back to a buffering parser.
+- Extraction is deliberately not automatic. A person must send a turn before uploaded bytes are placed in front of a shell-capable agent.
 
 ## Target billing and entitlement invariants
 
@@ -114,6 +123,10 @@ Current Projects, Usage, Audit, and task-history reads remain narrow security bo
 9. Concurrent requests race the last quota unit and retry through a provider timeout.
 10. Logs, traces, crash dumps, browser developer tools, images, and build layers are scanned for seeded credentials and tenant content.
 11. Two virtual keys concurrently call one LiteLLM model while one request supplies a body provider key; prove that no dynamic route, cache entry, log, response, or subsequent request can inherit that credential.
+12. An upload carries a traversal, absolute, NUL-bearing, percent-encoded, overlong-UTF-8, or case-colliding filename; a repeated `x-upload-filename`, `content-length`, or `idempotency-key` header; a body longer or shorter than its declared `Content-Length`; or a symlink and a hardlink pre-planted at every directory component and at the target name.
+13. An uploaded file's content instructs the agent to run a command, read another path, or contact an endpoint; and a client attempts to forge or close the server envelope, including splitting the marker across input items and hiding it with zero-width, bidi, or normalization-foldable characters.
+14. A user reuses one `Idempotency-Key` for two different files, and races concurrent uploads against the last unit of a storage quota.
+15. A user attempts `acceptForSession` on a turn that consumed an upload, on the turn immediately after one, and while an approval is still in flight during dispatch.
 
 ## Preview-to-production release blockers
 
@@ -125,7 +138,8 @@ Current Projects, Usage, Audit, and task-history reads remain narrow security bo
 - [ ] At least one end-to-end Responses route passes streaming, tools, approvals, cancellation, and usage reconciliation.
 - [ ] Stripe test-mode signature, replay, ordering, and quota-race tests pass.
 - [ ] Audit records exist for login, role/admin changes, provider-route changes, approvals, subscription changes, and secret rotation metadata.
-- [ ] Backup restore and tenant deletion have been exercised.
+- [ ] Backup restore and tenant deletion have been exercised, including upload blobs and staged plaintext.
+- [ ] Upload path, quota, header, idempotency, envelope-forgery, and approval-scope tests pass, and the store-versus-workspace-root startup assertion fails closed in both directions.
 - [ ] Threat owner accepts every remaining risk in writing with an expiry date.
 
 ## Production hardening exit criteria
