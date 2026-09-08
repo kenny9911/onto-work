@@ -338,8 +338,8 @@ describe("App", () => {
     await waitFor(() => expect(restoredHeading).toHaveFocus());
 
     fireEvent.keyDown(window, { key: "n", metaKey: true });
-    expect(await screen.findByText("What should the harness build next?")).toBeInTheDocument();
-    const newTaskHeading = screen.getByRole("heading", { name: "Start a new task" });
+    expect(await screen.findByText("What would you like to work on?")).toBeInTheDocument();
+    const newTaskHeading = screen.getByRole("heading", { name: "New task" });
     await waitFor(() => expect(newTaskHeading).toHaveFocus());
     expect(window.location.pathname).toBe("/workspace");
   });
@@ -438,12 +438,12 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Capabilities" })).toBeInTheDocument();
     expect(await screen.findByText("≥1 models reported")).toBeInTheDocument();
-    expect(screen.getByText("No default model reported")).toBeInTheDocument();
+    expect(screen.getByText("Default model not provided")).toBeInTheDocument();
     expect(screen.queryByText("Default: Visible but not default")).not.toBeInTheDocument();
     expect(screen.getByText("≥1 profiles reported")).toBeInTheDocument();
-    expect(screen.getByText("1 shown as allowed in one or more of 2 workspace contexts")).toBeInTheDocument();
+    expect(screen.getByText("1 shown as allowed in one or more of 2 workspaces")).toBeInTheDocument();
     expect(screen.getByText("No optional features enabled")).toBeInTheDocument();
-    expect(screen.getByText("Bounded capability inventory")).toBeInTheDocument();
+    expect(screen.getByText("Some details are incomplete")).toBeInTheDocument();
     expect(screen.getByText(/Codex reported 1 skill load error;/)).toBeInTheDocument();
   });
 
@@ -485,7 +485,7 @@ describe("App", () => {
     expect(await screen.findByText(registeredProject.path)).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "n", metaKey: true });
-    await screen.findByText("What should the harness build next?");
+    await screen.findByText("What would you like to work on?");
     expect(screen.getByRole("combobox", { name: "Task project" }))
       .toHaveTextContent(registeredProject.name);
 
@@ -533,7 +533,7 @@ describe("App", () => {
       />,
     );
     const usageRegion = screen.getByRole("region", { name: "Usage content" });
-    expect(usageRegion).toHaveClass("min-h-0", "flex-1", "overflow-y-auto", "overscroll-contain");
+    expect(usageRegion).toHaveClass("management-scroll");
     expect(usageRegion).toHaveAttribute("tabindex", "0");
     expect(screen.getByRole("meter", { name: "Requests usage" })).toHaveAttribute(
       "aria-valuetext",
@@ -556,7 +556,7 @@ describe("App", () => {
     );
     expect(screen.queryByText("Unlimited routes")).not.toBeInTheDocument();
     expect(screen.queryByText("Priority runtimes")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Webhook-verified activation")).not.toHaveLength(0);
+    expect(screen.getAllByText("Access after payment confirmation")).not.toHaveLength(0);
   });
 
   it("isolates drafts by task, ignores editable shortcuts, and closes responsive overlays", async () => {
@@ -578,7 +578,7 @@ describe("App", () => {
     );
 
     fireEvent.keyDown(window, { key: "n", metaKey: true });
-    await screen.findByText("What should the harness build next?");
+    await screen.findByText("What would you like to work on?");
     prompt = screen.getByLabelText("Task prompt");
     expect(prompt).toHaveValue("");
     fireEvent.change(prompt, { target: { value: "Draft for a new task" } });
@@ -618,7 +618,7 @@ describe("App", () => {
       </TooltipProvider>,
     );
 
-    await screen.findByText("What should the harness build next?");
+    await screen.findByText("What would you like to work on?");
     fireEvent.change(screen.getByLabelText("Task prompt"), {
       target: { value: "Keep this optimistic request visible" },
     });
@@ -651,7 +651,7 @@ describe("App", () => {
       </TooltipProvider>,
     );
 
-    await screen.findByText("What should the harness build next?");
+    await screen.findByText("What would you like to work on?");
     const prompt = screen.getByLabelText("Task prompt");
     fireEvent.change(prompt, { target: { value: "Retry this logical task safely" } });
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));
@@ -851,7 +851,7 @@ describe("App", () => {
       .toBeInTheDocument();
     await waitFor(() => expect(dashboardMock).toHaveBeenCalledTimes(2), { timeout: 2_000 });
     expect(within(screen.getByRole("button", { name: /Authenticated workspace regression/ }))
-      .getByText("running")).toBeInTheDocument();
+      .getByText(/^running$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Interrupt active turn" })).toBeInTheDocument();
 
     act(() => {
@@ -864,7 +864,7 @@ describe("App", () => {
     await waitFor(() => expect(dashboardMock).toHaveBeenCalledTimes(3), { timeout: 2_000 });
     expect(screen.queryByRole("button", { name: "Interrupt active turn" })).not.toBeInTheDocument();
     expect(within(screen.getByRole("button", { name: /Authenticated workspace regression/ }))
-      .getByText("idle")).toBeInTheDocument();
+      .getByText(/^idle$/i)).toBeInTheDocument();
   });
 
   it("does not let late hydration erase a turn learned from SSE", async () => {
@@ -906,7 +906,7 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: "Interrupt active turn" }))
       .toBeInTheDocument();
     expect(within(screen.getByRole("button", { name: /Hydrated after SSE/ }))
-      .getByText("running")).toBeInTheDocument();
+      .getByText(/^running$/i)).toBeInTheDocument();
   });
 
   it("does not let late hydration resurrect a turn completed over SSE", async () => {
@@ -956,7 +956,7 @@ describe("App", () => {
     await screen.findByRole("heading", { name: "Stale active hydration" });
     expect(screen.queryByRole("button", { name: "Interrupt active turn" })).not.toBeInTheDocument();
     expect(within(screen.getByRole("button", { name: /Stale active hydration/ }))
-      .getByText("idle")).toBeInTheDocument();
+      .getByText(/^idle$/i)).toBeInTheDocument();
   });
 
   it("runs a requested follow-up hydration after the current read finishes", async () => {
@@ -1103,7 +1103,7 @@ describe("App", () => {
       </TooltipProvider>,
     );
 
-    await screen.findByText("What should the harness build next?");
+    await screen.findByText("What would you like to work on?");
     await waitFor(() => expect(eventSources).toHaveLength(1));
     fireEvent.change(screen.getByLabelText("Task prompt"), {
       target: { value: "Optimistic request stays with its runtime thread" },

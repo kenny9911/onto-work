@@ -3,7 +3,7 @@
 **Design target:** production-grade, multi-user agent operating system  
 **Product:** Agent Harness  
 **Foundation:** the open-source OpenAI Codex harness and `codex app-server`  
-**Implementation stack:** React 19, Vite, TypeScript, Tailwind CSS 4, Radix/shadcn-style primitives, Lucide icons, Geist Sans, and Geist Mono  
+**Implementation stack:** React 19, Vite, TypeScript, Tailwind CSS 4, Radix/shadcn-style primitives, Lucide icons, Open Sans, Source Han Sans CN, and JetBrains Mono
 **Primary canvas:** responsive desktop web application, with a usable narrow/mobile task surface
 
 ## Mission
@@ -312,8 +312,9 @@ Use this direction as the starting point, then refine it into a complete three-l
 
 Typography:
 
-- Geist Sans for interface and long-form agent output.
-- Geist Mono for code, commands, identifiers, timestamps, model names, tokens, cost, and compact utility labels.
+- Open Sans for English interface text and long-form agent output.
+- Source Han Sans CN for Chinese interface text and long-form agent output.
+- JetBrains Mono for code, commands, identifiers, timestamps, model names, tokens, cost, and compact utility labels.
 - Use a restrained scale optimized for long work sessions. Do not create oversized dashboard headings or marketing-style hero sections inside the product.
 
 Shape and depth:

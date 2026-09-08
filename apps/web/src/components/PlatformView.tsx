@@ -1,6 +1,7 @@
+import "./management.css";
 import { useEffect, useRef } from "react";
 import type { DashboardPayload } from "@agent-harness/contracts";
-import { FileText, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import {
   AvailabilityBadge,
   UnavailablePanel,
@@ -37,11 +38,11 @@ export function PlatformView({
 
   return (
     <>
-      <header className="flex min-h-20 shrink-0 items-center gap-3 border-b border-border px-4 py-4 sm:px-7">
+      <header className="management-header">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <h1
-              className="text-lg font-medium tracking-[-0.025em]"
+              className="management-heading"
               ref={headingRef}
               tabIndex={-1}
             >
@@ -49,102 +50,93 @@ export function PlatformView({
             </h1>
             <AvailabilityBadge state="FUTURE" />
           </div>
-          <p className="text-ui-body mt-0.5 line-clamp-2 text-muted-foreground sm:truncate">
-            Cross-tenant scope. Not implemented — this deployment has no platform
-            role separate from tenant administration.
+          <p className="management-subtitle">
+            Organization-wide administration and runtime oversight.
           </p>
         </div>
       </header>
 
       <div
         aria-label="Platform admin content"
-        className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-7"
+        className="management-scroll"
         role="region"
         tabIndex={0}
       >
+        <div className="management-content space-y-8">
         <section
-          className="flex items-start gap-3 rounded-lg border border-human/40 bg-human/[0.08] p-4"
+          className="management-panel flex items-start gap-4"
           role="note"
         >
-          <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-human" />
+          <span className="management-icon">
+            <ShieldCheck aria-hidden="true" className="size-5" />
+          </span>
           <div className="min-w-0">
-            <p className="text-ui-micro font-mono uppercase tracking-[0.14em] text-human">
-              Platform scope · all tenants
-            </p>
-            <p className="text-ui-body mt-1.5 text-[var(--ink-2)]">
-              Actions here would affect every organization, so they stay behind a
-              boundary that does not exist yet. Today an{" "}
-              <code className="font-mono text-[var(--ink-1)]">admin</code> is an
-              administrator <em>of one tenant</em>; there is no separate platform
-              role, session surface, or audited break-glass grant. Building this
-              screen against tenant-admin authority would misrepresent who can
-              see what.
+            <h2 className="text-ui-body font-semibold">Platform administration is not available yet</h2>
+            <p className="text-ui-body mt-2 max-w-3xl text-muted-foreground">
+              Your administrator access covers this workspace. Manage your team
+              and view runtime information below.
             </p>
           </div>
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+        <div className="grid gap-8 xl:grid-cols-2">
           <UnavailablePanel
-            reason="Listing organizations, plans, seats and entitlement snapshots across tenants needs a cross-tenant read API and a platform-administration boundary. Neither exists, and no row is shown rather than presenting this tenant as if it were the whole platform."
+            reason="A view across organizations is not available. You can manage members and access for your current workspace."
             title="Organizations"
           >
             <Button
-              className="mt-3"
+              className="mt-5"
               onClick={() => onNavigate("team")}
               size="sm"
               variant="outline"
             >
-              Open team and access for this tenant
+              Manage workspace team
             </Button>
           </UnavailablePanel>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Runtime facts the control plane genuinely reports, kept separate
                 from the fleet view this screen cannot yet provide. */}
-            <section className="rounded-lg border border-border bg-card/25 p-4">
-              <div className="flex items-center gap-2">
+            <section className="management-panel">
+              <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-ui-control font-medium">Runtime and jobs</h3>
                 <AvailabilityBadge state="READ-ONLY" />
               </div>
-              <dl className="mt-3 space-y-2">
-                <div className="flex items-center gap-3 border-b border-border pb-2">
+              <dl className="mt-5 space-y-4">
+                <div className="flex items-center gap-3 border-b border-border pb-4">
                   <dt className="text-ui-control text-muted-foreground">Runtime status</dt>
-                  <dd className="text-ui-code ml-auto font-mono">{dashboard.runtime.status}</dd>
+                  <dd className="text-ui-control ml-auto tabular-nums">{dashboard.runtime.status}</dd>
                 </div>
-                <div className="flex items-center gap-3 border-b border-border pb-2">
+                <div className="flex items-center gap-3 border-b border-border pb-4">
                   <dt className="text-ui-control text-muted-foreground">Supervised app-servers</dt>
-                  <dd className="text-ui-code ml-auto font-mono">{dashboard.runtime.activeRuntimes}</dd>
+                  <dd className="text-ui-control ml-auto tabular-nums">{dashboard.runtime.activeRuntimes}</dd>
                 </div>
                 <div className="flex items-center gap-3">
                   <dt className="text-ui-control text-muted-foreground">Active runs</dt>
-                  <dd className="text-ui-code ml-auto font-mono">
+                  <dd className="text-ui-control ml-auto tabular-nums">
                     {dashboard.usage.activeRuns} / {dashboard.usage.activeRunLimit}
                   </dd>
                 </div>
               </dl>
-              <p className="text-ui-meta mt-3 text-muted-foreground">
-                One host, one supervised process group. This is a local process
-                manager, not a fleet — capacity is a single number and it is
-                honest about that.
+              <p className="text-ui-control mt-5 text-muted-foreground">
+                These figures describe the runtime on this host. A view across
+                multiple hosts is not available.
               </p>
             </section>
 
             <UnavailablePanel
-              reason="Feature flags would need a platform-owned configuration store and a rollout audit trail. The deployment's only runtime switches are operator environment variables, which are intentionally not writable from a browser."
+              reason="Runtime configuration is managed by the server operator. Feature flags cannot be changed from this workspace."
               title="Feature flags"
             />
           </div>
         </div>
 
         <UnavailablePanel
-          reason="A time-limited, dual-approved grant that lets a platform administrator read into a tenant, written to both the platform and tenant audit logs. This requires the platform role boundary above, so no grant can be issued or displayed."
+          reason="Temporary access to another organization's workspace is not supported. No access grants can be created here."
           title="Break-glass grants"
         />
 
-        <p className="text-ui-meta flex items-center gap-2 text-muted-foreground">
-          <FileText aria-hidden="true" className="size-3.5 shrink-0" />
-          Scope and exit criteria are tracked in ADR-0001 and the threat model.
-        </p>
+        </div>
       </div>
     </>
   );

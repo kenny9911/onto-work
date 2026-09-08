@@ -118,12 +118,12 @@ describe("OperationsView", () => {
     expect(screen.getByText("Completed task")).toBeInTheDocument();
     expect(screen.getByText("Failed task")).toBeInTheDocument();
     expect(screen.queryByText("Running task")).not.toBeInTheDocument();
-    expect(screen.getByText(/No findings or file diffs are inferred/)).toBeInTheDocument();
+    expect(screen.getByText(/This view shows the task’s recorded output/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry failed step" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run review" }));
     expect(onStartReview).toHaveBeenCalledWith("thread-complete");
 
-    fireEvent.click(screen.getByRole("button", { name: "Follow-up turn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open task" }));
     expect(onSelectThread).toHaveBeenCalledWith("thread-complete");
   });
 
@@ -189,11 +189,11 @@ describe("OperationsView", () => {
       />,
     );
 
-    expect(screen.getByText("No agent hierarchy is reported")).toBeInTheDocument();
+    expect(screen.getByText("No delegated tasks to show")).toBeInTheDocument();
     expect(screen.getByText("Running task")).toBeInTheDocument();
     expect(screen.queryByText("Completed task")).not.toBeInTheDocument();
-    expect(screen.getAllByText("FUTURE")).toHaveLength(2);
-    expect(screen.getAllByText("LIVE")).toHaveLength(2);
+    expect(screen.queryByText("Start or message agents")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open Running task task" })).toBeInTheDocument();
   });
 
   it("renders every rooted and cyclic agent hierarchy component once", () => {
@@ -302,7 +302,7 @@ describe("OperationsView", () => {
         view="capabilities"
       />,
     );
-    expect(screen.getByText("Capability inventory is not connected")).toBeInTheDocument();
+    expect(screen.getByText("Tools and skills are unavailable")).toBeInTheDocument();
 
     rerender(
       <OperationsView
@@ -329,7 +329,7 @@ describe("OperationsView", () => {
 
     expect(screen.getByText("Repository review")).toBeInTheDocument();
     expect(screen.getByText("operator · 1.0.0")).toBeInTheDocument();
-    expect(screen.queryByText("Capability inventory is not connected")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tools and skills are unavailable")).not.toBeInTheDocument();
   });
 
   it("discloses bounded counts and distinguishes disabled optional features from unknown inventory", () => {
@@ -374,15 +374,15 @@ describe("OperationsView", () => {
     );
 
     const summary = screen.getByRole("region", { name: "Capability inventory summary" });
-    expect(within(summary).getByText("Reported MCP servers").parentElement).toHaveTextContent("≥1");
-    expect(within(summary).getByText("Reported tools").parentElement).toHaveTextContent("≥2");
-    expect(within(summary).getByText("Reported skills").parentElement).toHaveTextContent("≥1");
+    expect(within(summary).getByText("MCP servers").parentElement).toHaveTextContent("≥1");
+    expect(within(summary).getByText("Tools").parentElement).toHaveTextContent("≥2");
+    expect(within(summary).getByText("Skills").parentElement).toHaveTextContent("≥1");
     expect(screen.getByText("≥2 models reported")).toBeInTheDocument();
-    expect(screen.getByText("No default model reported")).toBeInTheDocument();
+    expect(screen.getByText("Default model not provided")).toBeInTheDocument();
     expect(screen.getByText("≥2 profiles reported")).toBeInTheDocument();
-    expect(screen.getByText("1 shown as allowed in one or more of 3 workspace contexts")).toBeInTheDocument();
+    expect(screen.getByText("1 shown as allowed in one or more of 3 workspaces")).toBeInTheDocument();
     expect(screen.getByText("No optional features enabled")).toBeInTheDocument();
-    expect(screen.getByText("Bounded capability inventory")).toBeInTheDocument();
+    expect(screen.getByText("Some details are incomplete")).toBeInTheDocument();
     expect(screen.getByText(/Counts prefixed with ≥ are lower bounds/)).toBeInTheDocument();
 
     rerender(
@@ -398,7 +398,7 @@ describe("OperationsView", () => {
         }}
       />,
     );
-    expect(screen.getByText("No provider feature inventory reported")).toBeInTheDocument();
+    expect(screen.getByText("Feature availability is unknown")).toBeInTheDocument();
     expect(screen.queryByText("No optional features enabled")).not.toBeInTheDocument();
   });
 });

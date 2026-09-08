@@ -189,7 +189,7 @@ Platform
 
 The signature interaction is the Run Spine: a semantic execution rail connecting turns, tool clusters, file changes, approvals, failures, and child-agent branches. It is paired with a bounded three-pane cockpit, resizable inspector, optional terminal dock, stable composer, and a human-attention queue.
 
-The token architecture is primitive → semantic → component. The accepted Claude Design direction uses graphite surfaces, lime for agent execution, violet for human or privileged decisions, amber for waiting/risk, green/cyan for healthy state, and red only for destructive or failed state. Light and dark themes are intentional variants. Geist Sans and Geist Mono remain the implementation fonts unless the design review establishes an accessible, licensed replacement.
+The token architecture is primitive → semantic → component. The accepted Claude Design direction uses graphite surfaces, lime for agent execution, violet for human or privileged decisions, amber for waiting/risk, green/cyan for healthy state, and red only for destructive or failed state. Light and dark themes are intentional variants. Open Sans is the English implementation font, Source Han Sans CN is the Chinese implementation font, and JetBrains Mono remains the code and operational-data font.
 
 ## Implementation sequence
 

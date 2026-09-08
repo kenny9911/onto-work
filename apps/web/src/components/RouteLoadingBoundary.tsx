@@ -8,6 +8,7 @@ import {
 } from "react";
 import { LoaderCircle, RefreshCw, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import "./management.css";
 
 const DEFAULT_PENDING_TIMEOUT_MS = 10_000;
 
@@ -51,21 +52,21 @@ function RouteLoadSurface({
         aria-describedby={descriptionId}
         aria-labelledby={headingId}
         aria-live={role === "alert" ? "assertive" : "polite"}
-        className="flex max-w-sm flex-col items-center text-center"
+        className="management-load-surface flex max-w-md flex-col items-center text-center"
         role={role}
       >
         {role === "alert" ? (
-          <TriangleAlert aria-hidden="true" className="mb-3 size-5 text-destructive" />
+          <TriangleAlert aria-hidden="true" className="mb-5 size-7 text-destructive" />
         ) : (
-          <LoaderCircle aria-hidden="true" className="mb-3 size-5 animate-spin text-muted-foreground" />
+          <LoaderCircle aria-hidden="true" className="mb-5 size-7 animate-spin text-muted-foreground" />
         )}
         <h2 className="text-ui-title font-medium tracking-[-0.02em]" id={headingId}>
           {heading}
         </h2>
-        <p className="text-ui-body mt-1.5 text-muted-foreground" id={descriptionId}>
+        <p className="text-ui-body mt-3 text-muted-foreground" id={descriptionId}>
           {description}
         </p>
-        <Button className="mt-4" onClick={onReload} size="sm" type="button" variant="outline">
+        <Button className="mt-6" onClick={onReload} type="button" variant="outline">
           <RefreshCw aria-hidden="true" />
           Reload interface
         </Button>
@@ -107,10 +108,10 @@ function RouteLoadingFallback({
       <div
         aria-label="Loading interface"
         aria-live="polite"
-        className="text-ui-control flex items-center gap-2 text-muted-foreground"
+        className="text-ui-control flex flex-col items-center gap-4 text-muted-foreground"
         role="status"
       >
-        <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+        <LoaderCircle aria-hidden="true" className="size-6 animate-spin" />
         Loading interface
       </div>
     </main>

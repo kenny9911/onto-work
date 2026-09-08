@@ -118,7 +118,7 @@ export type ToolInputProps = ComponentProps<"div"> & {
 
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
   <div className={cn("space-y-2 overflow-hidden", className)} {...props}>
-    <h4 className="font-medium text-ui-micro text-muted-foreground uppercase tracking-wide">
+    <h4 className="font-medium text-ui-micro text-muted-foreground">
       Parameters
     </h4>
     <div className="rounded-md bg-muted/50">
@@ -154,7 +154,7 @@ export const ToolOutput = ({
 
   return (
     <div className={cn("space-y-2", className)} {...props}>
-      <h4 className="font-medium text-ui-micro text-muted-foreground uppercase tracking-wide">
+      <h4 className="font-medium text-ui-micro text-muted-foreground">
         {errorText ? "Error" : "Result"}
       </h4>
       <div

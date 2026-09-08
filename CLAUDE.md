@@ -72,7 +72,7 @@ Extraction is an ordinary turn — uploading performs no model call and no dispa
 
 No router library: `lib/routes.ts` maps pathnames ↔ `AppView` over the History API, and `App.tsx` owns session, route, dashboard, and SSE state; `WorkspaceView` / `ControlPlaneView` / `OperationsView` are lazy-loaded. Live events arrive on `GET /api/codex/events` (SSE) and pass through `lib/codex-notifications.ts`, which is bounded by count *and* bytes and filters timeline rendering to the selected thread while still reconciling cross-task turn liveness. Path alias is `@/*` → `src/*`. UI is shadcn/ui (new-york) + Radix + Tailwind v4; add components under `components/ui`.
 
-`src/typography.contract.test.ts` is an enforced design contract: it pins the Geist/JetBrains Mono pairing, requires the `--text-ui-*` semantic tokens in `styles.css`, and fails any `text-[…]` under 12px in `App.tsx` or `components/`. Design rules it backs come from `docs/design/claude-design-handoff.md` and `claude-design-phase-2-contract.md`.
+`src/typography.contract.test.ts` is an enforced design contract: it pins Open Sans for English, the self-hosted Source Han Sans CN variable font for Chinese, and JetBrains Mono for code, paths, and identifiers; requires the `--text-ui-*` semantic tokens in `styles.css`; and fails any `text-[…]` under 12px in `App.tsx` or `components/`. Current visual rules come from `docs/design/onto-work-redesign.md`; the earlier handoff and phase-2 contract retain behavior guidance. The semantic metadata tokens also enforce a 12px minimum.
 
 ## Conventions and gotchas
 

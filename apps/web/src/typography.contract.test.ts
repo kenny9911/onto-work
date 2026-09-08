@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { readFileSync, readdirSync } from "node:fs";
 import { extname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -15,15 +17,29 @@ function sourceFiles(directory: string): string[] {
 }
 
 describe("typography contract", () => {
-  it("uses the font pairing from the Claude Design source", () => {
+  it("uses the approved English, Chinese, and code font roles", () => {
     const entry = readFileSync(join(sourceRoot, "main.tsx"), "utf8");
     const styles = readFileSync(join(sourceRoot, "styles.css"), "utf8");
+    const fontDirectory = join(sourceRoot, "assets", "fonts", "source-han-sans-cn");
 
-    expect(entry).toContain('import "@fontsource-variable/geist";');
     expect(entry).toContain('import "@fontsource-variable/jetbrains-mono";');
-    expect(entry).not.toContain("geist-mono");
-    expect(styles).toContain('"Geist", "Noto Sans SC"');
-    expect(styles).toContain('"JetBrains Mono Variable", "JetBrains Mono"');
+    expect(entry).toContain('import "@fontsource-variable/open-sans/wght.css";');
+    expect(entry).not.toContain("@fontsource-variable/geist");
+    expect(styles).toContain('font-family: "Source Han Sans CN";');
+    expect(styles).toContain('"Open Sans Variable", "Open Sans", "Source Han Sans CN"');
+    expect(styles).toContain(
+      '"JetBrains Mono Variable", "JetBrains Mono", "Source Han Sans CN"',
+    );
+    expect(styles).toContain("font-display: swap;");
+    expect(styles).toContain("unicode-range:");
+    expect(
+      readFileSync(join(fontDirectory, "SourceHanSansCN-VF.otf.woff2"))
+        .subarray(0, 4)
+        .toString("ascii"),
+    ).toBe("wOF2");
+    expect(readFileSync(join(fontDirectory, "LICENSE.txt"), "utf8")).toContain(
+      "SIL OPEN FONT LICENSE Version 1.1",
+    );
   });
 
   it("centralizes compact sizes instead of hiding readable text below 12px", () => {
@@ -39,6 +55,13 @@ describe("typography contract", () => {
       });
 
     expect(violations).toEqual([]);
+  });
+
+  it("keeps semantic metadata legible at 12px or larger", () => {
+    const styles = readFileSync(join(sourceRoot, "styles.css"), "utf8");
+    const sizes = [...styles.matchAll(/--text-ui-(?:micro|meta|code|control|body):\s*([\d.]+)rem/g)];
+    expect(sizes).toHaveLength(5);
+    for (const [, value] of sizes) expect(Number(value) * 16).toBeGreaterThanOrEqual(12);
   });
 
   it("defines semantic roles for telemetry, controls, prose, and titles", () => {

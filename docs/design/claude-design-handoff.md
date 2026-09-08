@@ -1,5 +1,7 @@
 # Claude Design handoff: Agent Harness Operations System
 
+> Visual direction superseded on 9 September 2026 by the [onto-work redesign](onto-work-redesign.md). The historical prototype and behavior rules below remain reference material.
+
 ## Source brief
 
 The production design request is captured in
@@ -28,12 +30,14 @@ The generated system deliberately uses a cool graphite instrument-panel palette:
 - violet means a human decision, administrative authority, or privileged scope;
 - amber means waiting, degraded health, budget pressure, or risk;
 - red is reserved for destructive or failed states;
-- Geist is the interface typeface and JetBrains Mono is used for operational data.
+- Open Sans is the English interface typeface, Source Han Sans CN covers Chinese,
+  and JetBrains Mono is used for code and operational data.
 
-This supersedes the brief's proposed Oxide/Tide accent pairing. The change is
-accepted because the new semantics are more legible in the dense operations
-cockpit and give Agent Harness a distinct identity. Product behavior, accessibility,
-and the Codex/Agent Harness responsibility boundary remain unchanged.
+The palette supersedes the brief's proposed Oxide/Tide accent pairing. The
+typography reflects a later user-approved implementation override. These changes
+are accepted because they remain legible in the dense operations cockpit and give
+Agent Harness a distinct identity. Product behavior, accessibility, and the
+Codex/Agent Harness responsibility boundary remain unchanged.
 
 ## Interaction smoke test
 

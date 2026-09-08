@@ -20,19 +20,20 @@ import { UPLOAD_MAX_BYTES } from "@agent-harness/contracts";
 import {
   Activity,
   Archive,
+  ArrowUp,
   ArrowRight,
   BrainCircuit,
-  Braces,
-  CheckCircle2,
   ChevronRight,
   CircleDot,
   Code2,
   FileDiff,
   Files,
-  Gauge,
   GitFork,
   GitBranch,
   MessageSquareText,
+  Sparkles,
+  Search,
+  FolderOpen,
   MoreHorizontal,
   PanelRight,
   Paperclip,
@@ -91,14 +92,12 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api, ApiClientError, idempotencyKey } from "@/lib/api";
-import { useCloseAtBreakpoint } from "@/lib/use-close-at-breakpoint";
 import { cn } from "@/lib/utils";
 import {
   eventAge,
-  runtimeStreamLabel,
   type RuntimeStreamState,
 } from "@/lib/runtime-stream";
-import { AvailabilityBadge } from "@/components/AvailabilityBadge";
+import "@/workspace.css";
 
 // Rich Markdown, diagram, and syntax-highlighting dependencies are intentionally
 // below the workspace boundary. A cold Vite optimizer (or a stale optimized
@@ -175,26 +174,6 @@ interface WorkspaceViewProps {
   runtimeStream: RuntimeStreamState;
 }
 
-const onboardingTimeline: TimelineItem[] = [
-  {
-    id: "welcome",
-    kind: "assistant",
-    title: "Agent Harness",
-    body:
-      "## Your harness is ready\n\nConnect a model route, choose a workspace, then describe the outcome you want. Each task runs through an isolated **Codex app-server** runtime and keeps approvals visible here.",
-    status: "completed",
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: "next-action",
-    kind: "system",
-    title: "Next action",
-    body: "Add a model route or start with a local Ollama model.",
-    status: "pending",
-    timestamp: new Date().toISOString(),
-  },
-];
-
 function providerLabel(provider: ProviderConnection | undefined): string {
   if (!provider) return "No model route";
   return provider.defaultModel || provider.name;
@@ -236,34 +215,6 @@ function conciseTime(timestamp: string): string {
   const date = new Date(timestamp);
   if (Number.isNaN(date.valueOf())) return "";
   return spineTimeFormatter.format(date);
-}
-
-function compactMetric(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}m`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(value >= 100_000 ? 0 : 1)}k`;
-  return value.toLocaleString();
-}
-
-function elapsedClock(timestamp: string | undefined): string {
-  if (!timestamp) return "00:00";
-  const started = Date.parse(timestamp);
-  if (!Number.isFinite(started)) return "00:00";
-  const seconds = Math.max(0, Math.floor((Date.now() - started) / 1_000));
-  const hours = Math.floor(seconds / 3_600);
-  const minutes = Math.floor((seconds % 3_600) / 60);
-  const remaining = seconds % 60;
-  return hours > 0
-    ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
-    : `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
-}
-
-function itemTone(item: TimelineItem): string {
-  if (item.kind === "approval") return "human";
-  if (item.status === "failed") return "fail";
-  if (item.status === "running") return "run";
-  if (item.status === "pending") return "wait";
-  if (item.status === "completed") return "verified";
-  return "neutral";
 }
 
 /**
@@ -333,7 +284,7 @@ function RuntimeStreamBanner({
           : `attempt ${runtimeStream.attempt}.`}
         {" Completed events are preserved on the server; the run continues without you."}
       </p>
-      <span className="text-ui-meta ml-auto shrink-0 font-mono text-[var(--ink-2)]">
+      <span className="text-ui-meta ml-auto shrink-0 text-[var(--ink-2)]">
         {age ? `last event ${age} ago` : "no events received yet"}
       </span>
       <Button
@@ -349,145 +300,19 @@ function RuntimeStreamBanner({
   );
 }
 
-/**
- * First-run orientation. Every step is derived from control-plane state the
- * dashboard already returns, so the list reflects the deployment rather than a
- * stored wizard position. It disappears once setup is complete.
- */
-function FirstRunChecklist({ dashboard }: { dashboard: DashboardPayload }) {
-  const steps = [
-    {
-      label: "Replace the bootstrap password",
-      detail: "The seeded credential stops working once you set your own.",
-      done: !dashboard.user.mustChangePassword,
-    },
-    {
-      label: "Connect a model route",
-      detail: "Runs are refused until an enabled default route exists.",
-      done: dashboard.providers.some((provider) => provider.enabled),
-    },
-    {
-      label: "Register a saved project",
-      detail: "Tasks start from an opaque project ID, never a browser-supplied path.",
-      done: dashboard.projects.length > 0,
-    },
-    {
-      label: "Run a task end to end",
-      detail: "Proves the pinned Codex runtime and your route agree.",
-      done: dashboard.threads.length > 0,
-    },
-  ];
-  const remaining = steps.filter((step) => !step.done).length;
-  if (remaining === 0) return null;
-
+function SetupNotice({ dashboard, hasAvailableProject }: { dashboard: DashboardPayload; hasAvailableProject: boolean }) {
+  const missingProvider = !dashboard.providers.some((provider) => provider.enabled);
+  const missingProject = !hasAvailableProject;
+  if (!missingProvider && !missingProject) return null;
   return (
-    <section className="mt-5 max-w-[560px] overflow-hidden rounded-lg border border-[var(--c-hair)] bg-[var(--c-plate)]">
-      <div className="flex items-center gap-2 border-b border-[var(--c-hair)] px-3 py-2">
-        <h3 className="text-ui-micro font-mono uppercase tracking-[0.12em] text-[var(--ink-4)]">
-          First run
-        </h3>
-        <span className="text-ui-meta font-mono text-[var(--ink-4)]">
-          {steps.length - remaining} of {steps.length} done
-        </span>
-        <span
-          aria-hidden="true"
-          className="ml-auto flex h-[3px] w-24 overflow-hidden rounded-full bg-[var(--c-surface)]"
-        >
-          <span
-            className="bg-[var(--c-run)]"
-            style={{ width: `${((steps.length - remaining) / steps.length) * 100}%` }}
-          />
-        </span>
-      </div>
-      <ol className="m-0 list-none divide-y divide-[var(--c-hair)] p-0">
-        {steps.map((step) => (
-          <li className="flex items-start gap-2.5 px-3 py-2" key={step.label}>
-            {step.done ? (
-              <CheckCircle2
-                aria-label="Done"
-                className="mt-0.5 size-3.5 shrink-0 text-[var(--c-run)]"
-              />
-            ) : (
-              <CircleDot
-                aria-label="Not done"
-                className="mt-0.5 size-3.5 shrink-0 text-[var(--ink-4)]"
-              />
-            )}
-            <div className="min-w-0">
-              <p
-                className={cn(
-                  "text-ui-control font-medium",
-                  step.done && "text-[var(--ink-3)] line-through",
-                )}
-              >
-                {step.label}
-              </p>
-              <p className="text-ui-meta mt-0.5 text-[var(--ink-4)]">{step.detail}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-/**
- * Pre-flight summary for a new task: where it will run and what the server has
- * already decided. Only facts the control plane actually holds appear here —
- * the design's sandbox, approval-mode and budget rows are omitted because the
- * task-start contract carries no such fields.
- */
-function NewTaskBriefing({
-  project,
-  provider,
-  thread,
-}: {
-  project: SavedProjectSummary | null;
-  provider: ProviderConnection | undefined;
-  thread: ThreadSummary | null;
-}) {
-  if (!project) return null;
-
-  return (
-    <section className="mt-5 max-w-[560px] overflow-hidden rounded-lg border border-[var(--c-hair)] bg-[var(--c-plate)]">
-      <h3 className="text-ui-micro border-b border-[var(--c-hair)] px-3 py-2 font-mono uppercase tracking-[0.12em] text-[var(--ink-4)]">
-        Where it runs
-      </h3>
-      <dl className="divide-y divide-[var(--c-hair)]">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <dt className="text-ui-control shrink-0 text-[var(--ink-3)]">Project</dt>
-          <dd className="text-ui-code ml-auto min-w-0 truncate font-mono text-[var(--ink-1)]">
-            {project.name}
-          </dd>
-        </div>
-        <div className="flex items-center gap-3 px-3 py-2">
-          <dt className="text-ui-control shrink-0 text-[var(--ink-3)]">Branch</dt>
-          <dd className="text-ui-code ml-auto min-w-0 truncate font-mono text-[var(--ink-1)]">
-            {project.branch ?? "not reported"}
-          </dd>
-        </div>
-        <div className="flex items-center gap-3 px-3 py-2">
-          <dt className="text-ui-control shrink-0 text-[var(--ink-3)]">Model route</dt>
-          <dd className="text-ui-code ml-auto min-w-0 truncate font-mono text-[var(--ink-1)]">
-            {provider ? `${provider.name} · ${thread?.model || providerLabel(provider)}` : "none connected"}
-          </dd>
-          <Shield
-            aria-label="Server-selected; a client cannot override it"
-            className="size-3 shrink-0 text-[var(--c-human)]"
-          />
-        </div>
-      </dl>
-      {project.dirty ? (
-        <p className="text-ui-body flex items-start gap-2 border-t border-[var(--c-wait-dim)] bg-[var(--c-wait-dim)] px-3 py-2 text-[var(--ink-1)]">
-          <ShieldAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-[var(--c-wait)]" />
-          <span>
-            Working tree is dirty. The agent runs directly in this checkout —
-            product-owned worktree isolation is not implemented, so uncommitted
-            work is in scope for the run.
-          </span>
-        </p>
-      ) : null}
-    </section>
+    <div className="workspace-setup-note" role="status">
+      <ShieldAlert aria-hidden="true" className="size-4 shrink-0" />
+      <p>{missingProvider && missingProject
+        ? "Connect a model and add a project in Settings to start your first task."
+        : missingProvider
+          ? "Connect a model in Settings to start your first task."
+          : "Add a project in Settings to give your task a place to work."}</p>
+    </div>
   );
 }
 
@@ -498,34 +323,12 @@ function NewTaskBriefing({
  */
 function StreamingNode({ model }: { model: string }) {
   return (
-    <li className="grid min-w-0 grid-cols-[26px_minmax(0,1fr)] gap-x-3.5">
-      <div aria-hidden="true" className="relative flex justify-center">
-        <span className="absolute top-[27px] bottom-0 w-px bg-gradient-to-b from-[var(--c-run-line)] to-transparent" />
-        <svg className="ah-spin relative z-10 size-[22px]" fill="none" viewBox="0 0 22 22">
-          <circle cx="11" cy="11" r="7.6" stroke="var(--c-run-dim)" strokeWidth="1.8" />
-          <path
-            d="M11 3.4 A7.6 7.6 0 0 1 18.6 11"
-            stroke="var(--c-run)"
-            strokeLinecap="round"
-            strokeWidth="1.8"
-          />
-        </svg>
-      </div>
-      <div className="min-w-0 pb-4">
-        <div className="flex h-[22px] items-center gap-2">
-          <span className="text-ui-control font-semibold">Agent</span>
-          <span className="text-ui-micro font-mono uppercase tracking-[0.12em] text-[var(--c-run)]">
-            Streaming
-          </span>
-          <span className="text-ui-meta min-w-0 truncate font-mono text-[var(--ink-4)]">{model}</span>
-        </div>
-        <p className="text-ui-body mt-1.5 text-[var(--ink-2)]">
-          The turn is running on the server.
-          <span
-            aria-hidden="true"
-            className="ah-caret ml-1 inline-block h-3.5 w-[7px] translate-y-[2px] bg-[var(--c-run)]"
-          />
-        </p>
+    <li className="workspace-message workspace-message--streaming" role="status">
+      <div className="workspace-message-avatar"><Spinner className="size-4" /></div>
+      <div className="min-w-0">
+        <div className="workspace-message-heading"><span>Onto</span><span className="workspace-message-meta">Working</span></div>
+        <p className="mt-2 text-ui-body text-muted-foreground">Working on your task<span className="ah-caret">…</span></p>
+        <span className="sr-only">{model}</span>
       </div>
     </li>
   );
@@ -533,7 +336,6 @@ function StreamingNode({ model }: { model: string }) {
 
 function RunSpineNode({
   item,
-  index,
   last,
   suppressHeader = false,
   children,
@@ -541,60 +343,32 @@ function RunSpineNode({
   item: TimelineItem;
   index: number;
   last: boolean;
-  /** A grouped node supplies its own summary instead of one item's title. */
   suppressHeader?: boolean;
   children: ReactNode;
 }) {
   const Icon = timelineKindIcons[item.kind];
+  const conversational = item.kind === "user" || item.kind === "assistant";
   const attention = item.kind === "approval" && item.status === "pending";
-  const tone = itemTone(item);
   return (
-    <li className="grid min-w-0 grid-cols-[26px_minmax(0,1fr)] gap-x-3.5">
-      <div aria-hidden="true" className="relative flex justify-center">
-        {!last ? (
-          <span className="absolute bottom-0 top-[27px] w-px bg-[var(--c-run-line)]" />
-        ) : null}
-        <span
-          className={cn(
-            "relative z-10 grid size-[22px] place-items-center rounded-[5px] border bg-[var(--c-surface)]",
-            tone === "human" && "border-[var(--c-human)] text-[var(--c-human)]",
-            tone === "fail" && "border-[color-mix(in_oklab,var(--c-fail)_45%,transparent)] text-[var(--c-fail)]",
-            tone === "run" && "border-[var(--c-run-line)] bg-[var(--c-run-dim)] text-[var(--c-run)]",
-            tone === "wait" && "border-[color-mix(in_oklab,var(--c-wait)_40%,transparent)] text-[var(--c-wait)]",
-            tone === "verified" && "border-[color-mix(in_oklab,var(--c-verified)_42%,transparent)] text-[var(--c-verified)]",
-            tone === "neutral" && "border-[var(--c-line)] text-[var(--ink-3)]",
-          )}
-        >
-          {item.kind === "user" ? (
-            <span className="font-mono text-ui-micro">T{index + 1}</span>
-          ) : (
-            <Icon className="size-3" />
-          )}
-        </span>
+    <li
+      className={cn("workspace-message", `workspace-message--${item.kind}`, last && "workspace-message--last")}
+      id={`event-${item.id}`}
+    >
+      <div aria-hidden="true" className={cn("workspace-message-avatar", attention && "text-[var(--c-human)]")}>
+        {item.kind === "assistant" ? <Sparkles className="size-4" /> : <Icon className="size-4" />}
       </div>
-      <div className="min-w-0 pb-4">
-        {suppressHeader ? null : (
-        <div className="mb-1.5 flex min-h-[22px] items-center gap-2">
-          <span className="text-ui-control font-semibold text-[var(--ink-1)]">{item.title}</span>
-          <span className="font-mono text-ui-meta text-[var(--ink-4)]">
-            {timelineKindLabels[item.kind].toLowerCase()} · {conciseTime(item.timestamp)}
-          </span>
-          {item.status ? (
-            <span
-              className={cn(
-                "inline-flex min-h-5 items-center rounded-[3px] border px-1.5 font-mono text-ui-micro uppercase tracking-[0.08em]",
-                tone === "run" && "border-[var(--c-run-dim)] bg-[var(--c-run-dim)] text-[var(--c-run)]",
-                tone === "wait" && "border-[var(--c-wait-dim)] bg-[var(--c-wait-dim)] text-[var(--c-wait)]",
-                tone === "fail" && "border-[var(--c-fail-dim)] bg-[var(--c-fail-dim)] text-[var(--c-fail)]",
-                tone === "human" && "border-[var(--c-human-dim)] bg-[var(--c-human-dim)] text-[var(--c-human)]",
-                tone === "verified" && "border-border bg-transparent text-[var(--ink-3)]",
-              )}
-            >
-              {attention ? "attention" : item.status}
-            </span>
-          ) : null}
-        </div>
-        )}
+      <div className="min-w-0">
+        {!suppressHeader ? (
+          <div className="workspace-message-heading">
+            <span>{item.kind === "user" ? "You" : item.kind === "assistant" ? "Onto" : item.title}</span>
+            {conversational ? <time className="workspace-message-meta">{conciseTime(item.timestamp)}</time> : null}
+            {!conversational && item.status ? (
+              <span className={cn("workspace-message-meta", item.status === "failed" && "text-[var(--c-fail)]", attention && "text-[var(--c-human)]")}>
+                {attention ? "Needs your approval" : item.status}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         {children}
       </div>
     </li>
@@ -635,6 +409,7 @@ function groupTimeline(items: readonly TimelineItem[]): SpineGroup[] {
 function CommandCluster({ items }: { items: readonly TimelineItem[] }) {
   const [open, setOpen] = useState(false);
   const failed = items.filter((item) => item.status === "failed").length;
+  const running = items.some((item) => item.status === "running" || item.status === "pending");
 
   return (
     <div className="mt-1.5">
@@ -649,16 +424,16 @@ function CommandCluster({ items }: { items: readonly TimelineItem[] }) {
           className={cn("size-3 shrink-0 text-[var(--ink-3)] transition-transform", open && "rotate-90")}
         />
         <span className="text-ui-control font-medium">Command sequence</span>
-        <span className="text-ui-meta font-mono text-[var(--ink-3)]">
+        <span className="text-ui-meta text-[var(--ink-3)]">
           {items.length} commands
         </span>
         <span
           className={cn(
-            "text-ui-micro ml-auto shrink-0 font-mono uppercase tracking-[0.12em]",
+            "text-ui-micro ml-auto shrink-0",
             failed ? "text-[var(--c-fail)]" : "text-[var(--c-verified)]",
           )}
         >
-          {failed ? `${failed} failed` : "complete"}
+          {failed ? `${failed} failed` : running ? "In progress" : "Complete"}
         </span>
       </button>
       {open ? (
@@ -686,7 +461,7 @@ function TimelineEntry({
 }) {
   if (item.kind === "user") {
     return (
-      <div className="mt-2 rounded-md border border-[var(--c-hair)] bg-[var(--c-plate)] px-3 py-2.5 text-ui-body text-[var(--ink-1)]">
+      <div className="workspace-user-body text-ui-body">
         <Suspense fallback={<p className="whitespace-pre-wrap">{item.body}</p>}>
           <MessageResponse>{item.body}</MessageResponse>
         </Suspense>
@@ -696,7 +471,7 @@ function TimelineEntry({
 
   if (item.kind === "assistant") {
     return (
-      <div className="mt-1 text-ui-body text-[var(--ink-2)] [&_code]:rounded-[3px] [&_code]:bg-[var(--c-surface)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-ui-code [&_code]:text-[var(--ink-1)]">
+      <div className="workspace-response text-ui-body text-[var(--ink-1)] [&_code]:rounded-[3px] [&_code]:bg-[var(--c-surface)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-ui-code [&_code]:text-[var(--ink-1)]">
         <Suspense fallback={<p className="whitespace-pre-wrap">{item.body}</p>}>
           <MessageResponse>{item.body}</MessageResponse>
         </Suspense>
@@ -729,7 +504,7 @@ function TimelineEntry({
             <p className="border-b border-[var(--c-hair)] px-3 py-2 text-ui-control font-medium text-[var(--ink-2)]">
               {item.title}
             </p>
-            <pre className="overflow-x-auto whitespace-pre-wrap p-3 font-mono text-ui-code text-[var(--ink-3)]">
+            <pre className="font-mono overflow-x-auto whitespace-pre-wrap p-3 text-ui-code text-[var(--ink-3)]">
               {item.body}
             </pre>
           </div>
@@ -747,7 +522,7 @@ function TimelineEntry({
           />
           <ToolContent>
             {item.metadata ? <ToolInput input={item.metadata} /> : null}
-            <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-ui-code text-[var(--ink-3)]">
+            <pre className="font-mono overflow-x-auto whitespace-pre-wrap text-ui-code text-[var(--ink-3)]">
               {item.body}
             </pre>
           </ToolContent>
@@ -767,37 +542,27 @@ function TimelineEntry({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-ui-control font-semibold text-[var(--ink-1)]">Approval required</p>
-              <span className="rounded-[3px] border border-[var(--c-human-dim)] bg-[var(--c-human-dim)] px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-[0.08em] text-[var(--c-human)]">
+              <span className="rounded-[3px] border border-[var(--c-human-dim)] bg-[var(--c-human-dim)] px-1.5 py-0.5 text-ui-micro text-[var(--c-human)]">
                 {waiting ? "Needs you" : item.status}
               </span>
             </div>
-            <p className="mt-1 font-mono text-ui-meta text-[var(--ink-3)]">
+            <p className="mt-1 text-ui-meta text-[var(--ink-3)]">
               {item.title}
             </p>
           </div>
         </div>
         <p className="whitespace-pre-wrap px-3.5 py-3 text-ui-body text-[var(--ink-2)]">{item.body}</p>
-        <div className="grid grid-cols-2 border-y border-[var(--c-hair)] bg-[var(--c-surface)]/35">
-          <div className="border-r border-[var(--c-hair)] px-3.5 py-2">
-            <p className="font-mono text-ui-micro uppercase tracking-[0.14em] text-[var(--ink-4)]">Policy source</p>
-            <p className="mt-1 text-ui-control text-[var(--ink-2)]">Organization policy · supervised</p>
-          </div>
-          <div className="px-3.5 py-2">
-            <p className="font-mono text-ui-micro uppercase tracking-[0.14em] text-[var(--ink-4)]">Side effects</p>
-            <p className="mt-1 text-ui-control text-[var(--c-wait)]">Review before execution</p>
-          </div>
-        </div>
         <div className="flex flex-wrap items-center gap-2 px-3.5 py-2.5">
           <Button
-            className="h-8 bg-[var(--c-human)] px-3 text-ui-control font-semibold text-white hover:brightness-110"
+            className="h-9 rounded-lg bg-primary px-4 text-ui-control font-semibold text-primary-foreground hover:bg-primary/90"
             disabled={!waiting}
             onClick={() => void onApproval(item, "accept")}
             size="sm"
           >
-            Approve once <span className="font-mono text-ui-micro opacity-70">A</span>
+            Approve once
           </Button>
           <Button
-            className="h-8 border-[var(--c-line)] px-3 text-ui-control"
+            className="h-9 rounded-lg border-[var(--c-line)] px-3 text-ui-control"
             disabled={!waiting}
             onClick={() => void onApproval(item, "acceptForSession")}
             size="sm"
@@ -806,20 +571,17 @@ function TimelineEntry({
             Approve for this session
           </Button>
           <Button
-            className="h-8 px-3 text-ui-control"
+            className="h-9 rounded-lg px-3 text-ui-control"
             disabled={!waiting}
             onClick={() => void onApproval(item, "decline")}
             size="sm"
             variant="ghost"
           >
-            Deny <span className="font-mono text-ui-micro opacity-70">D</span>
-          </Button>
-          <Button className="h-8 border-[var(--c-hair)] px-3 text-ui-control" disabled size="sm" title="Command editing is not exposed by this runtime" variant="outline">
-            Edit command…
+            Deny
           </Button>
         </div>
-        <p className="px-3.5 pb-3 text-center text-ui-meta text-[var(--ink-3)]">
-          Session grants expire when the task ends. They are never written to the project profile.
+        <p className="px-3.5 pb-3 text-ui-meta text-[var(--ink-3)]">
+          Approve only if you are comfortable with the requested action.
         </p>
       </div>
     );
@@ -832,409 +594,150 @@ function TimelineEntry({
   );
 }
 
-function ParallelBranch({
-  threads,
-}: {
-  threads: readonly ThreadSummary[];
-}) {
+function ParallelBranch({ threads }: { threads: readonly ThreadSummary[] }) {
   if (!threads.length) return null;
   return (
-    <li className="grid min-w-0 grid-cols-[26px_minmax(0,1fr)] gap-x-3.5">
-      <div aria-hidden="true" className="relative flex justify-center">
-        <span className="absolute bottom-0 top-[27px] w-px bg-[var(--c-run-line)]" />
-        <span className="relative z-10 grid size-[22px] place-items-center rounded-full border border-[var(--c-line)] bg-[var(--c-plate)] text-[var(--ink-2)]">
-          <GitFork className="size-3" />
-        </span>
-      </div>
-      <div className="min-w-0 pb-4">
-        <div className="flex min-h-[22px] items-center gap-2">
-          <span className="text-ui-title font-semibold">Parallel branch</span>
-          <span className="font-mono text-ui-meta text-[var(--ink-4)]">
-            {threads.length} child agent{threads.length === 1 ? "" : "s"} · shares parent budget
-          </span>
-          <span className="ml-auto font-mono text-ui-control text-[var(--c-info)]">Supervise all →</span>
-        </div>
-        <div className="mt-2 flex flex-col gap-1.5 border-l border-dashed border-[var(--c-run-line)] pl-3">
-          {threads.map((thread) => {
-            const tone = thread.status === "running"
-              ? "run"
-              : thread.status === "waiting"
-                ? "wait"
-                : thread.status === "failed"
-                  ? "fail"
-                  : "neutral";
-            return (
-              <div
-                className="flex min-w-0 items-center gap-2.5 rounded-md border border-[var(--c-hair)] bg-[var(--c-plate)] px-2.5 py-2"
-                key={thread.id}
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "size-[7px] shrink-0 rounded-full",
-                    tone === "run" && "running-dot bg-[var(--c-run)]",
-                    tone === "wait" && "bg-[var(--c-wait)]",
-                    tone === "fail" && "bg-[var(--c-fail)]",
-                    tone === "neutral" && "bg-[var(--ink-4)]",
-                  )}
-                />
-                <span className="shrink-0 truncate text-ui-control font-medium">
-                  {thread.agentNickname ?? thread.title}
-                </span>
-                <span
-                  className={cn(
-                    "rounded-[3px] border px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-[0.08em]",
-                    tone === "run" && "border-[var(--c-run-dim)] bg-[var(--c-run-dim)] text-[var(--c-run)]",
-                    tone === "wait" && "border-[var(--c-wait-dim)] bg-[var(--c-wait-dim)] text-[var(--c-wait)]",
-                    tone === "fail" && "border-[var(--c-fail-dim)] bg-[var(--c-fail-dim)] text-[var(--c-fail)]",
-                    tone === "neutral" && "border-border bg-transparent text-[var(--ink-3)]",
-                  )}
-                >
-                  {thread.status}
-                </span>
-                <span className="min-w-0 truncate font-mono text-ui-meta text-[var(--ink-3)]">
-                  {thread.preview || thread.agentRole || "child task"}
-                </span>
-                <span className="ml-auto shrink-0 font-mono text-ui-code text-[var(--ink-4)]">
-                  {thread.model}
-                </span>
+    <li className="workspace-message workspace-message--branches">
+      <div aria-hidden="true" className="workspace-message-avatar"><GitFork className="size-4" /></div>
+      <div className="min-w-0">
+        <div className="workspace-message-heading"><span>Related agents</span><span className="workspace-message-meta">{threads.length} task{threads.length === 1 ? "" : "s"}</span></div>
+        <div className="mt-3 space-y-2">
+          {threads.map((thread) => (
+            <div className="rounded-xl border border-border bg-card px-4 py-3" key={thread.id}>
+              <div className="flex items-center gap-2">
+                <span className={cn("size-1.5 shrink-0 rounded-full", thread.status === "running" ? "bg-[var(--c-run)]" : "bg-muted-foreground")} />
+                <span className="min-w-0 flex-1 truncate text-ui-control font-medium">{thread.agentNickname ?? thread.title}</span>
+                <span className="text-ui-meta text-muted-foreground">{thread.status}</span>
               </div>
-            );
-          })}
+              {thread.preview ? <p className="mt-1.5 line-clamp-2 text-ui-control text-muted-foreground">{thread.preview}</p> : null}
+            </div>
+          ))}
         </div>
       </div>
     </li>
   );
 }
 
-function InspectorTabs({
-  dashboard,
-  activeThread,
-  timeline,
-}: Pick<WorkspaceViewProps, "dashboard" | "activeThread" | "timeline">) {
-  const defaultProvider = dashboard.providers.find((provider) => provider.isDefault && provider.enabled)
-    ?? dashboard.providers.find((provider) => provider.enabled);
-  const project = activeThread?.projectId
-    ? dashboard.projects.find((candidate) => candidate.id === activeThread.projectId)
-    : undefined;
-  const { fileChanges, commandCount, pendingApprovals } = useMemo(() => {
-    const changes: TimelineItem[] = [];
-    let commands = 0;
-    let approvals = 0;
-    for (const item of timeline) {
-      if (item.kind === "file_change") changes.push(item);
-      if (item.kind === "command") commands += 1;
-      if (item.kind === "approval" && item.status === "pending") approvals += 1;
-    }
-    return {
-      fileChanges: changes,
-      commandCount: commands,
-      pendingApprovals: approvals,
-    };
-  }, [timeline]);
-  const childAgents = activeThread
-    ? dashboard.threads.filter((thread) => thread.parentThreadId === activeThread.id)
-    : [];
-  const totalTokens = dashboard.usage.inputTokens + dashboard.usage.outputTokens;
-
+function InspectorEmpty({ icon: Icon, title, children }: { icon: typeof Files; title: string; children: ReactNode }) {
   return (
-    <Tabs className="flex min-h-0 flex-1 flex-col" defaultValue="files">
-      <div className="shrink-0 overflow-x-auto border-b border-[var(--c-hair)] px-1">
-        <TabsList aria-label="Task inspector" className="h-10 min-w-max gap-0 rounded-none border-0 bg-transparent p-0">
-          <TabsTrigger className="h-10 rounded-none border-b-2 border-transparent px-2.5 text-ui-control font-normal data-[state=active]:border-[var(--c-run)] data-[state=active]:bg-transparent" value="files">Files <span className="ml-1 font-mono text-ui-micro text-[var(--ink-4)]">{fileChanges.length}</span></TabsTrigger>
-          <TabsTrigger className="h-10 rounded-none border-b-2 border-transparent px-2.5 text-ui-control font-normal data-[state=active]:border-[var(--c-run)] data-[state=active]:bg-transparent" value="diff">Diff</TabsTrigger>
-          <TabsTrigger className="h-10 rounded-none border-b-2 border-transparent px-2.5 text-ui-control font-normal data-[state=active]:border-[var(--c-run)] data-[state=active]:bg-transparent" value="context">Context</TabsTrigger>
-          <TabsTrigger className="h-10 rounded-none border-b-2 border-transparent px-2.5 text-ui-control font-normal data-[state=active]:border-[var(--c-run)] data-[state=active]:bg-transparent" value="agents">Agents <span className="ml-1 font-mono text-ui-micro text-[var(--ink-4)]">{childAgents.length}</span></TabsTrigger>
-          <TabsTrigger className="h-10 rounded-none border-b-2 border-transparent px-2.5 text-ui-control font-normal data-[state=active]:border-[var(--c-run)] data-[state=active]:bg-transparent" value="usage">Usage</TabsTrigger>
-          <TabsTrigger className="h-10 rounded-none border-b-2 border-transparent px-2.5 text-ui-control font-normal data-[state=active]:border-[var(--c-run)] data-[state=active]:bg-transparent" value="events">Events <span className="ml-1 font-mono text-ui-micro text-[var(--ink-4)]">{timeline.length}</span></TabsTrigger>
-        </TabsList>
-      </div>
+    <div className="workspace-inspector-empty">
+      <Icon aria-hidden="true" className="size-6 text-muted-foreground" />
+      <p className="mt-4 text-ui-control font-medium">{title}</p>
+      <p className="mt-1.5 text-ui-control text-muted-foreground">{children}</p>
+    </div>
+  );
+}
 
-      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-4" value="context">
-        <div className="space-y-6">
-          {/* Token totals are metered server-side, but no provider reports its
-              context-window size to the control plane, so the design's
-              proportional meter would need an invented denominator. */}
+function InspectorTabs({ dashboard, activeThread, timeline }: Pick<WorkspaceViewProps, "dashboard" | "activeThread" | "timeline">) {
+  const project = dashboard.projects.find((candidate) => candidate.id === activeThread?.projectId);
+  const fileChanges = timeline.filter((item) => item.kind === "file_change");
+  const childAgents = dashboard.threads.filter((thread) => activeThread && thread.parentThreadId === activeThread.id);
+  return (
+    <Tabs className="flex min-h-0 flex-1 flex-col gap-0" defaultValue="files">
+      <TabsList aria-label="Task inspector" className="workspace-inspector-tabs">
+        <TabsTrigger value="files">Files{fileChanges.length ? <span className="ml-1 text-ui-meta">{fileChanges.length}</span> : null}</TabsTrigger>
+        <TabsTrigger value="context">Context</TabsTrigger>
+        <TabsTrigger value="agents">Agents</TabsTrigger>
+        <TabsTrigger value="events">Activity</TabsTrigger>
+      </TabsList>
+      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-5" value="files">
+        {fileChanges.length ? (
+          <div className="space-y-3">
+            <p className="text-ui-meta text-muted-foreground">{fileChanges.length} reported change{fileChanges.length === 1 ? "" : "s"}</p>
+            {fileChanges.map((change) => (
+              <details className="workspace-file-detail" key={change.id}>
+                <summary><FileDiff aria-hidden="true" className="size-4 shrink-0" /><span className="min-w-0 break-all font-mono text-ui-code">{change.title}</span><ChevronRight aria-hidden="true" className="ml-auto size-4 shrink-0" /></summary>
+                <pre className="overflow-x-auto whitespace-pre-wrap border-t border-border p-3 font-mono text-ui-code text-muted-foreground">{change.body || "No change details were included in this event."}</pre>
+              </details>
+            ))}
+          </div>
+        ) : <InspectorEmpty icon={Files} title="No file changes reported">Files changed during this task will appear here.</InspectorEmpty>}
+      </TabsContent>
+      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-5" value="context">
+        <div className="workspace-context-sections">
           <section>
-            <p className="mb-3 font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">
-              Context window
-            </p>
-            <div className="rounded-lg border border-border/80 bg-card/25 p-3">
-              <div className="flex items-baseline gap-2">
-                <span className="font-mono text-[15px] text-[var(--ink-1)]">
-                  {compactMetric(totalTokens)}
-                </span>
-                <span className="text-ui-meta font-mono text-muted-foreground">
-                  tokens this period
-                </span>
-              </div>
-              <dl className="mt-2.5 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--c-human)]" />
-                  <dt className="text-ui-meta text-muted-foreground">Input</dt>
-                  <dd className="text-ui-meta ml-auto font-mono">
-                    {dashboard.usage.inputTokens.toLocaleString()}
-                  </dd>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--c-run)]" />
-                  <dt className="text-ui-meta text-muted-foreground">Output</dt>
-                  <dd className="text-ui-meta ml-auto font-mono">
-                    {dashboard.usage.outputTokens.toLocaleString()}
-                  </dd>
-                </div>
-              </dl>
-              <p className="text-ui-meta mt-2.5 text-muted-foreground">
-                Window size is not reported by the runtime, so this is a metered
-                total rather than a share of a limit. Compaction is a Codex
-                operation and is not exposed here.
-              </p>
-            </div>
+            <h3>Project</h3>
+            <p className="text-ui-control font-medium">{project?.name ?? activeThread?.projectName ?? "No project selected"}</p>
+            {project?.branch ? <p className="mt-2 flex items-center gap-2 font-mono text-ui-code text-muted-foreground"><GitBranch className="size-3.5" />{project.branch}</p> : null}
+            {project?.path ? <p className="mt-2 break-all font-mono text-ui-code text-muted-foreground">{project.path}</p> : null}
           </section>
           <section>
-            <p className="mb-3 font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">Environment</p>
-            <div className="space-y-3 rounded-lg border border-border/80 bg-card/25 p-3">
-              <div className="flex items-start gap-2.5">
-                <TerminalSquare className="mt-0.5 size-3.5 text-primary" />
-                <div className="min-w-0">
-                  <p className="text-ui-control font-medium">Local runtime</p>
-                  <p className="mt-0.5 truncate font-mono text-ui-meta text-muted-foreground">
-                    {dashboard.runtime.status} · isolated home
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <GitBranch className="mt-0.5 size-3.5 text-muted-foreground" />
-                <div className="min-w-0">
-                  <p className="truncate text-ui-control font-medium">
-                    {project?.name ?? activeThread?.projectName ?? "Project not reported"}
-                  </p>
-                  <p className="mt-0.5 truncate font-mono text-ui-code text-muted-foreground">
-                    {project?.branch ?? "Branch not reported"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <Shield className="mt-0.5 size-3.5 text-muted-foreground" />
-                <div>
-                  <p className="text-ui-control font-medium">Approval policy</p>
-                  <p className="mt-0.5 font-mono text-ui-meta text-muted-foreground">Not reported</p>
-                </div>
-              </div>
-            </div>
+            <h3>Model</h3>
+            <p className="text-ui-control">{activeThread?.model || "Selected by your workspace settings"}</p>
+            {activeThread?.reasoningEffort ? <p className="mt-1 text-ui-meta text-muted-foreground">Reasoning effort: {activeThread.reasoningEffort}</p> : null}
           </section>
-
           <section>
-            <p className="mb-3 font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">Model route</p>
-            <div className="rounded-lg border border-border/80 bg-card/25 p-3">
-              <div className="flex items-center gap-2">
-                <Braces className="size-3.5 text-primary" />
-                <span className="truncate text-ui-control font-medium">
-                  {activeThread?.model || "Task model not reported"}
-                </span>
-              </div>
-              <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3 font-mono text-ui-meta text-muted-foreground">
-                <span>Current default</span>
-                <span>{providerLabel(defaultProvider)}</span>
-              </div>
-            </div>
+            <h3>Permissions</h3>
+            <p className="text-ui-control text-muted-foreground">Permissions are managed by the server. Requests that need your approval appear in the conversation.</p>
           </section>
-
           <section>
-            <p className="mb-3 font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">Harness</p>
-            <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-ui-meta">
-              <dt className="text-muted-foreground">Codex upstream</dt>
-              <dd className="font-mono">6127478</dd>
-              <dt className="text-muted-foreground">Transport</dt>
-              <dd className="font-mono">JSONL</dd>
-              <dt className="text-muted-foreground">Session scope</dt>
-              <dd className="font-mono">user</dd>
+            <h3>Runtime</h3>
+            <p className="flex items-center gap-2 text-ui-control"><span className={cn("size-1.5 rounded-full", dashboard.runtime.status === "ready" ? "bg-[var(--c-run)]" : "bg-[var(--c-wait)]")} />{dashboard.runtime.status}</p>
+            {dashboard.runtime.message ? <p className="mt-2 text-ui-control text-muted-foreground">{dashboard.runtime.message}</p> : null}
+          </section>
+          <section>
+            <h3>Workspace usage this period</h3>
+            <dl className="workspace-context-facts">
+              <div><dt>Requests</dt><dd>{dashboard.usage.requestsUsed.toLocaleString()} / {dashboard.usage.requestLimit.toLocaleString()}</dd></div>
+              <div><dt>Input tokens</dt><dd>{dashboard.usage.inputTokens.toLocaleString()}</dd></div>
+              <div><dt>Output tokens</dt><dd>{dashboard.usage.outputTokens.toLocaleString()}</dd></div>
             </dl>
+            <p className="mt-3 text-ui-meta text-muted-foreground">Totals include all tasks in your workspace.</p>
           </section>
         </div>
       </TabsContent>
-
-      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-3" value="files">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="font-mono text-ui-micro uppercase tracking-[0.12em] text-[var(--ink-4)]">
-            Changed files · {fileChanges.length}
-          </span>
-          {fileChanges.length ? <span className="ml-auto font-mono text-ui-meta text-[var(--syn-add)]">reported</span> : null}
-        </div>
-        {fileChanges.length ? (
-          <div className="space-y-0.5">
-            {fileChanges.map((change) => (
-              <button className="flex w-full items-center gap-2 rounded-[5px] px-2 py-1.5 text-left hover:bg-[var(--c-surface)]" key={change.id} type="button">
-                <span className="grid size-[18px] shrink-0 place-items-center rounded-[3px] bg-[color-mix(in_oklab,var(--c-info)_14%,transparent)] font-mono text-ui-micro text-[var(--c-info)]">M</span>
-                <span className="min-w-0 truncate font-mono text-ui-code text-[var(--ink-2)]">{change.title}</span>
-                <span className="ml-auto flex shrink-0 gap-px"><span className="h-1 w-3.5 rounded-[1px] bg-[var(--syn-add)]" /><span className="h-1 w-1.5 rounded-[1px] bg-[var(--syn-del)]" /></span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-md border border-dashed border-[var(--c-hair)] px-4 py-8 text-center">
-            <Files className="mx-auto size-4 text-[var(--ink-4)]" />
-            <p className="mt-3 text-ui-control font-medium">No file changes reported</p>
-            <p className="mt-1 text-ui-meta text-[var(--ink-3)]">Runtime file-change events appear here as they arrive.</p>
-          </div>
-        )}
-        <div className="mt-4 border-t border-[var(--c-hair)] pt-3">
-          <p className="mb-2 font-mono text-ui-micro uppercase tracking-[0.12em] text-[var(--ink-4)]">Run spine minimap</p>
-          <ol className="space-y-1">
-            {timeline.slice(-10).map((item) => (
-              <li className="flex min-w-0 items-center gap-2 px-1 py-0.5" key={item.id}>
-                <span className={cn("size-2 shrink-0 rounded-[2px]", item.kind === "approval" ? "bg-[var(--c-human)]" : item.status === "failed" ? "bg-[var(--c-fail)]" : item.status === "running" ? "bg-[var(--c-run)]" : item.kind === "command" ? "bg-[var(--ink-3)]" : "bg-[var(--c-info)]")} />
-                <span className="min-w-0 truncate text-ui-meta text-[var(--ink-2)]">
-                  {timelineKindLabels[item.kind]}
-                  {item.status ? ` · ${item.status}` : ""}
-                </span>
-                <time className="ml-auto shrink-0 font-mono text-ui-meta text-[var(--ink-4)]">{conciseTime(item.timestamp)}</time>
+      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-5" value="agents">
+        {childAgents.length ? (
+          <div className="space-y-3">{childAgents.map((agent) => (
+            <div className="rounded-xl border border-border p-4" key={agent.id}>
+              <p className="text-ui-control font-medium">{agent.agentNickname ?? agent.title}</p>
+              <p className="mt-1.5 text-ui-meta text-muted-foreground">{agent.agentRole ?? agent.model} · {agent.status}</p>
+              {agent.preview ? <p className="mt-2 text-ui-control text-muted-foreground">{agent.preview}</p> : null}
+            </div>
+          ))}</div>
+        ) : <InspectorEmpty icon={UsersRound} title="No child agents reported">Agents started by this task will appear here.</InspectorEmpty>}
+      </TabsContent>
+      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-5" value="events">
+        {timeline.length ? (
+          <ol className="workspace-event-list" aria-label="Recent run events">
+            {timeline.slice(-30).map((item) => (
+              <li key={item.id}>
+                <span aria-hidden="true" className={cn("mt-2 size-1.5 shrink-0 rounded-full", item.status === "failed" ? "bg-[var(--c-fail)]" : item.kind === "approval" ? "bg-[var(--c-human)]" : "bg-muted-foreground")} />
+                <div className="min-w-0 flex-1"><p className="break-words text-ui-control font-medium">{item.title}</p><p className="mt-1 text-ui-meta text-muted-foreground">{timelineKindLabels[item.kind]}{item.status ? ` · ${item.status}` : ""}</p></div>
+                <time className="shrink-0 text-ui-meta text-muted-foreground">{conciseTime(item.timestamp)}</time>
               </li>
             ))}
           </ol>
-        </div>
-      </TabsContent>
-
-      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-3" value="diff">
-        {fileChanges.length ? (
-          <div className="space-y-2">
-            {fileChanges.map((change) => (
-              <article className="overflow-hidden rounded-md border border-[var(--c-hair)] bg-[var(--term-bg)]" key={change.id}>
-                <div className="flex items-center gap-2 border-b border-[var(--c-hair)] px-2.5 py-2"><Code2 className="size-3.5 text-[var(--c-info)]" /><h3 className="truncate font-mono text-ui-code">{change.title}</h3></div>
-                <pre className="overflow-x-auto whitespace-pre-wrap p-2.5 font-mono text-ui-code text-[var(--ink-3)]">{change.body || "The runtime reported a file change without path details."}</pre>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-md border border-dashed border-[var(--c-hair)] px-4 py-8 text-center"><FileDiff className="mx-auto size-4 text-[var(--ink-4)]" /><p className="mt-3 text-ui-control font-medium">No diff reported</p><p className="mt-1 text-ui-meta text-[var(--ink-3)]">Diffs remain empty until Codex emits a file-change event.</p></div>
-        )}
-      </TabsContent>
-
-      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-3" value="agents">
-        {childAgents.length ? (
-          <div className="space-y-2">
-            {childAgents.map((agent) => (
-              <div className="rounded-md border border-[var(--c-hair)] bg-[var(--c-plate)] p-3" key={agent.id}>
-                <div className="flex items-center gap-2">
-                  <span className={cn("size-2 rounded-full", agent.status === "running" ? "bg-[var(--c-run)]" : agent.status === "waiting" ? "bg-[var(--c-wait)]" : agent.status === "failed" ? "bg-[var(--c-fail)]" : "bg-[var(--ink-4)]")} />
-                  <span className="truncate text-ui-control font-medium">{agent.agentNickname ?? agent.title}</span>
-                  <span className="ml-auto font-mono text-ui-micro uppercase text-[var(--ink-3)]">{agent.status}</span>
-                </div>
-                <p className="mt-1.5 truncate font-mono text-ui-meta text-[var(--ink-4)]">{agent.agentRole ?? agent.model}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-md border border-dashed border-[var(--c-hair)] px-4 py-8 text-center"><UsersRound className="mx-auto size-4 text-[var(--ink-4)]" /><p className="mt-3 text-ui-control font-medium">No child agents reported</p><p className="mt-1 text-ui-meta text-[var(--ink-3)]">Parallel branches appear when Codex reports ancestry.</p></div>
-        )}
-      </TabsContent>
-
-      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-3" value="usage">
-        <div className="grid grid-cols-2 overflow-hidden rounded-md border border-[var(--c-hair)]">
-          {[
-            ["Input", dashboard.usage.inputTokens],
-            ["Output", dashboard.usage.outputTokens],
-            ["Total", totalTokens],
-            ["Requests", dashboard.usage.requestsUsed],
-          ].map(([label, value], index) => (
-            <div className={cn("p-3", index % 2 === 0 && "border-r border-[var(--c-hair)]", index < 2 && "border-b border-[var(--c-hair)]")} key={String(label)}>
-              <p className="font-mono text-ui-micro uppercase tracking-[0.14em] text-[var(--ink-4)]">{label}</p>
-              <p className="mt-1.5 font-mono text-[13px]">{Number(value).toLocaleString()}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 rounded-md border border-[var(--c-hair)] bg-[var(--c-plate)] p-3">
-          <div className="flex items-center justify-between"><span className="flex items-center gap-2 text-ui-control"><Gauge className="size-3.5 text-[var(--c-wait)]" />Request budget</span><span className="font-mono text-ui-meta text-[var(--c-wait)]">{Math.round((dashboard.usage.requestsUsed / Math.max(1, dashboard.usage.requestLimit)) * 100)}%</span></div>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--c-line)]"><span className="block h-full bg-[var(--c-wait)]" style={{ width: `${Math.min(100, (dashboard.usage.requestsUsed / Math.max(1, dashboard.usage.requestLimit)) * 100)}%` }} /></div>
-        </div>
-        {/* Admission binds one server-selected route per run and records it on
-            the usage event, so this is the route that actually served the task
-            rather than the tenant's current default. */}
-        <div className="mt-3 rounded-md border border-[var(--c-hair)] bg-[var(--c-surface)] p-3">
-          <p className="text-ui-micro font-mono uppercase tracking-[0.12em] text-[var(--ink-4)]">
-            Route actually used
-          </p>
-          <p className="text-ui-code mt-1.5 font-mono text-[var(--ink-1)]">
-            {defaultProvider
-              ? `${defaultProvider.name} → ${activeThread?.model || providerLabel(defaultProvider)}`
-              : "No model route is connected"}
-          </p>
-          <p className="text-ui-meta mt-1.5 text-[var(--ink-3)]">
-            Server-selected at admission. A client cannot override it, and the
-            control plane records no fallback hops because it never retries a run
-            on a second route.
-          </p>
-        </div>
-      </TabsContent>
-
-      <TabsContent className="min-h-0 flex-1 overflow-y-auto p-3" value="events">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-border/80 bg-card/25 p-3">
-            <Activity className="size-3.5 text-primary" />
-            <p className="mt-3 text-lg font-medium">{timeline.length}</p>
-            <p className="text-ui-meta text-muted-foreground">Visible events</p>
-          </div>
-          <div className="rounded-lg border border-border/80 bg-card/25 p-3">
-            <TerminalSquare className="size-3.5 text-muted-foreground" />
-            <p className="mt-3 text-lg font-medium">{commandCount}</p>
-            <p className="text-ui-meta text-muted-foreground">Commands</p>
-          </div>
-        </div>
-        <div className="mt-4 rounded-lg border border-border/80 bg-card/25 p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-ui-control font-medium">Human attention</span>
-            <span className={cn("font-mono text-ui-meta", pendingApprovals ? "text-amber-300" : "text-muted-foreground")}>
-              {pendingApprovals ? `${pendingApprovals} waiting` : "clear"}
-            </span>
-          </div>
-        </div>
-        <ol className="mt-5 space-y-3" aria-label="Recent run events">
-          {timeline.slice(-8).map((item) => (
-            <li className="flex items-start gap-2.5" key={item.id}>
-              <span aria-hidden="true" className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", item.status === "failed" ? "bg-red-400" : item.status === "running" ? "bg-primary" : "bg-[var(--healthy)]")} />
-              <span className="min-w-0">
-                <span className="block truncate text-ui-control font-medium">{item.title}</span>
-                <span className="mt-0.5 block font-mono text-ui-meta capitalize text-muted-foreground">
-                  {timelineKindLabels[item.kind]} · {item.status ?? "event"}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ol>
+        ) : <InspectorEmpty icon={Activity} title="No activity yet">Task activity will appear here as it happens.</InspectorEmpty>}
       </TabsContent>
     </Tabs>
   );
 }
 
-function TaskInspector({
-  dashboard,
-  activeThread,
-  timeline,
-  open,
-  onOpenChange,
-}: Pick<WorkspaceViewProps, "dashboard" | "activeThread" | "timeline"> & {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  return (
-    <>
-      <aside aria-label="Task inspector" className="hidden min-h-0 w-[340px] shrink-0 border-l border-[var(--c-hair)] bg-[var(--c-plate)] min-[1180px]:flex min-[1180px]:flex-col">
-        <span className="sr-only">Task inspector</span>
+function TaskInspector({ dashboard, activeThread, timeline, open, onOpenChange }: Pick<WorkspaceViewProps, "dashboard" | "activeThread" | "timeline"> & { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [wide, setWide] = useState(() => window.matchMedia("(min-width: 1180px)").matches);
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1180px)");
+    const update = () => setWide(media.matches);
+    media.addEventListener("change", update);
+    update();
+    return () => media.removeEventListener("change", update);
+  }, []);
+  if (wide) {
+    return open ? (
+      <aside aria-label="Task inspector" className="workspace-inspector">
+        <div className="workspace-inspector-heading"><h2>Task inspector</h2><Button aria-label="Close task inspector" onClick={() => onOpenChange(false)} size="icon-sm" variant="ghost"><X className="size-4" /></Button></div>
         <InspectorTabs activeThread={activeThread} dashboard={dashboard} timeline={timeline} />
       </aside>
-
-      <Dialog onOpenChange={onOpenChange} open={open}>
-        <DialogContent className="bottom-0 left-auto right-0 top-0 h-dvh w-[min(92vw,360px)] max-w-none translate-x-0 translate-y-0 gap-0 border-y-0 border-r-0 bg-[var(--c-plate)] p-0 sm:rounded-none min-[1180px]:hidden">
-          <DialogTitle className="sr-only">Task inspector</DialogTitle>
-          <DialogDescription className="sr-only">
-            Inspect task context, reported file changes, and run activity.
-          </DialogDescription>
-          <div className="flex min-h-0 flex-1 flex-col pt-10">
-            <InspectorTabs activeThread={activeThread} dashboard={dashboard} timeline={timeline} />
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+    ) : null;
+  }
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="workspace-inspector-dialog bottom-0 left-auto right-0 top-0 h-dvh max-h-none w-[min(94vw,400px)] max-w-none translate-x-0 translate-y-0 gap-0 rounded-none border-y-0 border-r-0 bg-card p-0 sm:rounded-none">
+        <DialogHeader className="border-b border-border px-5 py-5 text-left"><DialogTitle className="text-ui-control">Task inspector</DialogTitle><DialogDescription className="sr-only">Files, context, agents, and activity for this task.</DialogDescription></DialogHeader>
+        <InspectorTabs activeThread={activeThread} dashboard={dashboard} timeline={timeline} />
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1472,7 +975,7 @@ function ComposerAttachmentTray({
                 </TooltipTrigger>
                 <TooltipContent>{filename}</TooltipContent>
               </Tooltip>
-              <span className="text-ui-micro shrink-0 font-mono text-[var(--ink-4)]">
+              <span className="text-ui-micro shrink-0 text-[var(--ink-4)]">
                 {formatBytes(upload?.sizeBytes ?? 0)}
               </span>
               <Button
@@ -1503,7 +1006,7 @@ function ComposerAttachmentTray({
                 className="text-ui-meta mt-1 flex items-center gap-1.5 text-[var(--c-fail)]"
                 role="status"
               >
-                <span className="shrink-0 font-mono">{upload?.errorCode ?? "upload_failed"}</span>
+                <span className="shrink-0">{upload?.errorCode ?? "upload_failed"}</span>
                 <span className="min-w-0 flex-1 truncate">{upload?.error}</span>
                 {upload?.file && upload.target ? (
                   <Button
@@ -1544,7 +1047,6 @@ export function WorkspaceView({
   onDraftChange,
   onFork,
   onInterrupt,
-  onOpenSidebar,
   onReloadProjects,
   onRename,
   onRetryRuntimeStream,
@@ -1566,14 +1068,12 @@ export function WorkspaceView({
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
-  const [composerMode, setComposerMode] = useState<"read" | "write">("write");
   const [dockOpen, setDockOpen] = useState(false);
   const activeProvider = dashboard.providers.find((provider) => provider.isDefault && provider.enabled)
     ?? dashboard.providers.find((provider) => provider.enabled);
   const hasActiveTask = activeThreadId !== null || timeline.length > 0;
-  const displayedTimeline = hasActiveTask ? timeline : onboardingTimeline;
-  const spineGroups = useMemo(() => groupTimeline(displayedTimeline), [displayedTimeline]);
-  const taskTitle = activeThread?.title ?? (hasActiveTask ? "New task" : "Start a new task");
+  const spineGroups = useMemo(() => groupTimeline(timeline), [timeline]);
+  const taskTitle = activeThread?.title ?? "New task";
   const status = activeTurnId ? "running" : activeThread?.status ?? (isSending ? "running" : "idle");
   const pendingApproval = timeline.findLast(
     (item) => item.kind === "approval" && item.status === "pending",
@@ -1593,11 +1093,6 @@ export function WorkspaceView({
   const childThreads = activeThread
     ? dashboard.threads.filter((thread) => thread.parentThreadId === activeThread.id)
     : [];
-  const turnCount = Math.max(1, timeline.filter((item) => item.kind === "user").length);
-  const budgetPercent = Math.min(
-    100,
-    Math.round((dashboard.usage.requestsUsed / Math.max(1, dashboard.usage.requestLimit)) * 100),
-  );
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -1606,7 +1101,6 @@ export function WorkspaceView({
     return () => cancelAnimationFrame(frame);
   }, [activeThreadId]);
 
-  useCloseAtBreakpoint("(min-width: 1180px)", setInspectorOpen);
 
   // A file is uploaded the moment it is attached, against the thread when one
   // exists and against the saved project otherwise — the project-scoped row is
@@ -1865,429 +1359,180 @@ export function WorkspaceView({
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1">
-      <main
-        className="flex min-h-0 min-w-0 flex-1 flex-col bg-background"
-        id="main-content"
-        tabIndex={-1}
-      >
-        <header className="shrink-0 border-b border-[var(--c-hair)] bg-[var(--c-plate)]">
-          <div className="flex items-start gap-3.5 px-3 py-2 sm:px-4 sm:pb-2 sm:pt-2.5">
+    <div className="workspace-view flex min-h-0 min-w-0 flex-1">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-background" id="main-content" tabIndex={-1}>
+        <header className="workspace-task-header">
+          <div className="workspace-task-heading-row">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className={cn("text-ui-micro inline-flex min-h-5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[4px] border px-2 font-mono uppercase tracking-[0.1em]", status === "running" ? "border-[var(--c-run-line)] bg-[var(--c-run-dim)] text-[var(--c-run)]" : status === "failed" ? "border-[var(--c-fail-dim)] bg-[var(--c-fail-dim)] text-[var(--c-fail)]" : status === "waiting" ? "border-[var(--c-wait-dim)] bg-[var(--c-wait-dim)] text-[var(--c-wait)]" : "border-[color-mix(in_oklab,var(--c-verified)_40%,transparent)] bg-[color-mix(in_oklab,var(--c-verified)_14%,transparent)] text-[var(--c-verified)]")}>
-                  <span className={cn("size-[7px] rounded-full", status === "running" && "running-dot bg-[var(--c-run)]", status === "failed" && "bg-[var(--c-fail)]", status === "waiting" && "bg-[var(--c-wait)]", status !== "running" && status !== "failed" && status !== "waiting" && "bg-[var(--c-verified)]")} />
-                  {status === "running" ? `Running · turn ${turnCount}` : status}
-                </span>
-                <h1 className="text-ui-title min-w-0 truncate font-semibold tracking-[-0.015em]" ref={headingRef} tabIndex={-1}>{taskTitle}</h1>
-                <Button aria-label="Rename task" className="size-[22px] shrink-0 text-[var(--ink-4)]" disabled={!activeThreadId} onClick={() => { setRenameValue(activeThread?.title ?? ""); setRenameOpen(true); }} size="icon-sm" variant="ghost"><Pencil className="size-3" /></Button>
+              <div className="flex min-w-0 items-center gap-3">
+                <h1 className="workspace-task-title" ref={headingRef} tabIndex={-1}>{taskTitle}</h1>
+                {hasActiveTask ? <span className={cn("workspace-task-status", status === "running" && "text-[var(--c-run)]", status === "failed" && "text-[var(--c-fail)]")}><span className={cn("size-1.5 rounded-full bg-current", status === "running" && "running-dot")} />{status}</span> : null}
               </div>
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <span className="text-ui-code inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-[4px] border border-[var(--c-hair)] px-2 font-mono text-[var(--ink-2)]"><GitBranch className="size-3 text-[var(--ink-4)]" />{taskProject?.branch ?? "branch not reported"}</span>
-                <span className="text-ui-code inline-flex h-6 items-center whitespace-nowrap rounded-[4px] border border-[var(--c-hair)] px-2 font-mono text-[var(--ink-2)]">worktree · {selectedSavedProject?.headCommit?.slice(0, 7) ?? "managed"}</span>
-                <span className="text-ui-code inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-[4px] border border-[var(--c-run-line)] bg-[var(--c-run-dim)] px-2 font-mono text-[var(--ink-1)]"><span className="size-[5px] rounded-full bg-[var(--c-run)]" />{activeProvider?.name ?? "No model route"} · {activeThread?.model || providerLabel(activeProvider)}{activeThread?.reasoningEffort ? <span className="text-[var(--ink-4)]">effort:{activeThread.reasoningEffort}</span> : null}</span>
-                <span className="text-ui-control inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-[4px] border border-[var(--c-hair)] px-2 text-[var(--ink-2)]"><Shield className="size-3 text-[var(--c-human)]" />Supervised · approvals surfaced</span>
-              </div>
+              {hasActiveTask && taskProject ? <p className="workspace-task-project"><FolderOpen className="size-3.5 shrink-0" /><span className="min-w-0 truncate" title={taskProject.name}>{taskProject.name}</span>{taskProject.branch ? <><span aria-hidden="true" className="shrink-0">/</span><span className="min-w-0 truncate font-mono text-ui-code" title={taskProject.branch}>{taskProject.branch}</span></> : null}</p> : null}
             </div>
-
-            <div className="hidden shrink-0 items-stretch overflow-hidden rounded-md border border-[var(--c-hair)] lg:flex">
-              <div className="min-w-[104px] border-r border-[var(--c-hair)] px-3 py-1.5"><p className="text-ui-micro font-mono uppercase tracking-[0.12em] text-[var(--ink-4)]">Elapsed</p><p className="text-ui-control mt-0.5 font-mono">{elapsedClock(activeThread?.updatedAt)}</p></div>
-              <div className="min-w-[132px] border-r border-[var(--c-hair)] px-3 py-1.5"><div className="flex justify-between gap-2"><p className="text-ui-micro font-mono uppercase tracking-[0.12em] text-[var(--ink-4)]">Budget</p><span className="text-ui-meta font-mono text-[var(--c-wait)]">{budgetPercent}%</span></div><p className="text-ui-code mt-0.5 font-mono">{compactMetric(dashboard.usage.requestsUsed)} / {compactMetric(dashboard.usage.requestLimit)} req</p><div className="mt-1 h-[3px] w-20 rounded-full bg-[var(--c-line)]"><span className="block h-full rounded-full bg-[var(--c-wait)]" style={{ width: `${budgetPercent}%` }} /></div></div>
-              <div className="min-w-[88px] px-3 py-1.5"><p className="text-ui-micro font-mono uppercase tracking-[0.12em] text-[var(--ink-4)]">Tokens</p><p className="text-ui-control mt-0.5 font-mono">{compactMetric(dashboard.usage.inputTokens + dashboard.usage.outputTokens)}</p></div>
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button aria-label="Task actions" className="mt-0.5" disabled={!activeThreadId || taskActionPending !== null} size="icon-sm" variant="outline"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 border-border bg-[var(--c-raise)]">
-                {activeTurnId ? <DropdownMenuItem onSelect={() => void onInterrupt().catch((cause: unknown) => setActionError(cause instanceof Error ? cause.message : "The turn could not be interrupted."))}><Square className="fill-current" /> Interrupt turn</DropdownMenuItem> : null}
-                <DropdownMenuItem onSelect={() => { setActionError(null); setRenameValue(activeThread?.title ?? ""); setRenameOpen(true); }}><Pencil /> Rename task</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void onFork().catch((cause: unknown) => setActionError(cause instanceof Error ? cause.message : "The task could not be forked."))}><GitFork /> Fork task</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-[var(--c-wait)]" onSelect={() => { setActionError(null); setArchiveOpen(true); }}><Archive /> Archive task</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button aria-label="Open task inspector" className="mt-0.5 min-[1180px]:hidden" onClick={() => setInspectorOpen(true)} size="icon-sm" variant="outline"><PanelRight className="size-4" /></Button>
-          </div>
-          <div className="flex items-center gap-2.5 px-4 pb-2">
-            <span className="text-ui-micro font-mono uppercase tracking-[0.12em] text-[var(--ink-4)]">Goal</span>
-            <span className="text-ui-control min-w-0 flex-1 truncate text-[var(--ink-2)]">{activeThread?.preview || (hasActiveTask ? "Task outcome is reported by the active Codex thread." : "Choose a project and describe the outcome you want the harness to deliver.")}</span>
-            <span className="text-ui-meta shrink-0 font-mono text-[var(--ink-4)]">{timeline.filter((item) => item.status === "completed").length} checks recorded</span>
+            {pendingApproval ? <Button aria-label="Go to pending approval" className="workspace-approval-shortcut" onClick={() => document.getElementById(`event-${pendingApproval.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} size="sm" variant="outline"><ShieldAlert className="size-4" /><span className="hidden sm:inline">Approval needed</span></Button> : null}
+            {activeThreadId ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><Button aria-label="Task actions" disabled={taskActionPending !== null} size="icon-sm" variant="ghost"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  {activeTurnId ? <DropdownMenuItem onSelect={() => void onInterrupt().catch((cause: unknown) => setActionError(cause instanceof Error ? cause.message : "The turn could not be interrupted."))}><Square className="fill-current" />Interrupt turn</DropdownMenuItem> : null}
+                  <DropdownMenuItem onSelect={() => { setActionError(null); setRenameValue(activeThread?.title ?? ""); setRenameOpen(true); }}><Pencil />Rename task</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => void onFork().catch((cause: unknown) => setActionError(cause instanceof Error ? cause.message : "The task could not be forked."))}><GitFork />Fork task</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => { setActionError(null); setArchiveOpen(true); }}><Archive />Archive task</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+            {hasActiveTask ? <Button aria-label={inspectorOpen ? "Close task inspector" : "Open task inspector"} aria-expanded={inspectorOpen} className={cn("shrink-0", inspectorOpen && "bg-muted")} onClick={() => setInspectorOpen((open) => !open)} size="icon-sm" variant="ghost"><PanelRight className="size-4" /></Button> : null}
           </div>
           <RuntimeStreamBanner onRetry={onRetryRuntimeStream} runtimeStream={runtimeStream} />
         </header>
 
-        {actionError ? (
-          <div className="text-ui-meta shrink-0 border-b border-red-400/15 bg-red-400/[0.05] px-4 py-2 text-red-200" role="alert">
-            {actionError}
-          </div>
-        ) : null}
-
+        {actionError ? <div className="workspace-error-banner" role="alert">{actionError}</div> : null}
         <div aria-atomic="true" aria-live="polite" className="sr-only">
-          {isSending
-            ? "Sending request…"
-            : pendingApproval
-            ? `${pendingApproval.title}. Waiting for your decision.`
-            : dashboard.runtime.status === "degraded"
-              ? `Runtime needs attention. ${dashboard.runtime.message ?? ""}`
-              : ""}
+          {isSending ? "Sending request…" : pendingApproval ? `${pendingApproval.title}. Waiting for your decision.` : dashboard.runtime.status === "degraded" ? `Runtime needs attention. ${dashboard.runtime.message ?? ""}` : ""}
         </div>
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <div className="min-h-0 flex-1 overflow-hidden">
-          <Conversation aria-label="Run Spine activity" aria-live="off" className="h-full min-h-0">
-            <ConversationContent
-              className="mx-auto w-full max-w-[820px] gap-0 px-5 pb-6 pt-[18px]"
-              scrollClassName="overflow-y-auto overscroll-contain"
-            >
-              {!hasActiveTask ? (
-                <div className="mb-6 pt-4">
-                  <div className="text-ui-micro mb-4 flex items-center gap-2 font-mono uppercase tracking-[0.14em] text-[var(--ink-4)]"><span className="h-px w-7 bg-[var(--c-hair)]" />Workspace ready</div>
-                  <h2 className="max-w-xl text-2xl font-medium tracking-[-0.035em] text-[var(--ink-1)] sm:text-3xl">What should the harness build next?</h2>
-                  <FirstRunChecklist dashboard={dashboard} />
-                  <NewTaskBriefing
-                    project={selectedSavedProject}
-                    provider={activeProvider}
-                    thread={activeThread}
+          <div className={cn("workspace-main-column", !hasActiveTask && "workspace-main-column--welcome")}>
+            {!hasActiveTask ? (
+              <div className="workspace-welcome">
+                <div aria-hidden="true" className="workspace-welcome-mark"><Sparkles className="size-7" strokeWidth={1.4} /></div>
+                <h2>What would you like<br className="sm:hidden" /> to work on?</h2>
+                <p>Bring an idea, a question, or a task.<br className="sm:hidden" /> Let's make progress.</p>
+              </div>
+            ) : (
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <Conversation aria-label="Run Spine activity" aria-live="off" className="h-full min-h-0">
+                  <ConversationContent className="workspace-conversation mx-auto w-full max-w-[820px] gap-0 px-5 pb-8 pt-8 sm:px-8" scrollClassName="overflow-y-auto overscroll-contain">
+                    {!timeline.length ? <div className="workspace-transcript-empty"><MessageSquareText aria-hidden="true" className="size-6 text-muted-foreground" /><p className="mt-4 text-ui-control font-medium">No run events in this snapshot</p><p className="mt-2 max-w-md text-ui-body text-muted-foreground">New activity will appear here. Earlier messages are not included in this task snapshot.</p></div> : null}
+                    <ol aria-label="Run Spine" className="m-0 list-none p-0">
+                      {spineGroups.map((group, index) => {
+                        const last = index === spineGroups.length - 1 && !activeTurnId;
+                        const deferOffscreenEntry = spineGroups.length > 24 && index < spineGroups.length - 12;
+                        const anchor = group.kind === "commands" ? group.items[0]! : group.item;
+                        return (
+                          <RunSpineNode index={index} item={anchor} key={anchor.id} last={last} suppressHeader={group.kind === "commands"}>
+                            <div className={cn(deferOffscreenEntry && "[contain-intrinsic-size:auto_180px] [content-visibility:auto]")}>
+                              {group.kind === "commands" ? <CommandCluster items={group.items} /> : <TimelineEntry item={group.item} last={last} onApproval={onApproval} />}
+                            </div>
+                          </RunSpineNode>
+                        );
+                      })}
+                      {activeTurnId ? <StreamingNode model={activeThread?.model || providerLabel(activeProvider)} /> : null}
+                      <ParallelBranch threads={childThreads} />
+                    </ol>
+                  </ConversationContent>
+                  <ConversationScrollButton className="bottom-4" />
+                </Conversation>
+              </div>
+            )}
+
+            <div className={cn("workspace-composer-region", !hasActiveTask && "workspace-composer-region--welcome")}>
+              {dashboard.runtime.status === "degraded" ? <div className="workspace-runtime-note" role="alert"><ShieldAlert className="mt-0.5 size-4 shrink-0" /><div><p className="text-ui-control font-medium">Runtime needs attention</p><p className="mt-1 text-ui-control">{dashboard.runtime.message}</p></div></div> : null}
+              <PromptInput
+                accept={UPLOAD_ACCEPT}
+                aria-busy={isSending}
+                className="workspace-prompt mx-auto w-full max-w-[820px]"
+                convertAttachmentsToDataUrls={false}
+                maxFileSize={UPLOAD_MAX_BYTES}
+                maxFiles={MAX_COMPOSER_ATTACHMENTS}
+                multiple
+                onError={handleAttachmentError}
+                onSubmit={handleSubmit}
+              >
+                <PromptInputBody>
+                  <PromptInputTextarea
+                    aria-label="Task prompt"
+                    className={cn("workspace-prompt-textarea text-ui-body", !hasActiveTask && "workspace-prompt-textarea--welcome")}
+                    onChange={(event) => { setAttachmentNotice(null); onDraftChange(event.target.value); }}
+                    placeholder={activeProvider ? activeTurnId ? "Add direction while your task is running…" : hasActiveTask ? "Continue this task…" : "Describe what you'd like to do…" : "Connect a model in Settings to get started…"}
+                    readOnly={isSending}
+                    value={draft}
                   />
-                </div>
-              ) : null}
-
-              {dashboard.runtime.status === "degraded" ? (
-                <div className="mb-4 rounded-md border border-[var(--c-fail-dim)] bg-[var(--c-fail-dim)] px-4 py-3" role="alert">
-                  <p className="text-ui-control font-medium text-[var(--c-fail)]">Runtime needs attention</p>
-                  <p className="text-ui-body mt-1 text-[var(--ink-2)]">
-                    {dashboard.runtime.message}
-                  </p>
-                </div>
-              ) : null}
-
-              {hasActiveTask && !timeline.length ? (
-                <div className="rounded-md border border-dashed border-[var(--c-hair)] px-4 py-8 text-center">
-                  <Activity className="mx-auto size-4 text-muted-foreground" />
-                  <p className="text-ui-control mt-3 font-medium">No run events in this snapshot</p>
-                  <p className="text-ui-body mx-auto mt-1 max-w-md text-muted-foreground">
-                    New runtime events will appear here. Older task history is not available in the current dashboard snapshot.
-                  </p>
-                </div>
-              ) : null}
-
-              <ol aria-label="Run Spine" className="m-0 list-none p-0">
-                {spineGroups.map((group, index) => {
-                  const last = index === spineGroups.length - 1 && !activeTurnId;
-                  const deferOffscreenEntry =
-                    spineGroups.length > 24 && index < spineGroups.length - 12;
-                  const anchor = group.kind === "commands" ? group.items[0]! : group.item;
-                  return (
-                    <RunSpineNode
-                      index={index}
-                      item={anchor}
-                      key={anchor.id}
-                      last={last}
-                      suppressHeader={group.kind === "commands"}
+                </PromptInputBody>
+                <ComposerAttachmentTray disabled={isSending} onRetry={retryUpload} uploads={uploads} />
+                {attachmentNotice ? <p className="px-5 pb-2 text-ui-meta text-[var(--c-wait)]" role="status">{attachmentNotice}</p> : null}
+                {!activeThreadId && savedProjectsError ? <div className="flex items-center gap-2 px-5 pb-2 text-ui-meta text-[var(--c-fail)]" role="alert"><span className="min-w-0 flex-1">{savedProjectsError}</span><Button onClick={() => void onReloadProjects()} size="sm" type="button" variant="ghost">Retry</Button></div> : null}
+                {!activeThreadId && !savedProjectsLoading && !savedProjectsError && !availableSavedProjects.length ? <p className="px-5 pb-2 text-ui-meta text-[var(--c-wait)]" role="status">Register and enable a saved project before starting a task.</p> : null}
+                <PromptInputFooter className="workspace-prompt-footer flex-wrap gap-2">
+                  <PromptInputTools className="min-w-0 flex-wrap gap-1.5">
+                    <ComposerAttachControl
+                      disabled={isSending || activeTurnId !== null || uploadTarget === null}
+                      onAttach={attachUploads}
+                      onDetach={detachUpload}
+                      projectToken={selectedProjectId}
+                      resetToken={activeThreadId}
+                      tooltip={activeTurnId ? "Attachments can be added when the current turn finishes" : uploadTarget === null ? "Choose a project before attaching a file" : "Attach text, Markdown, CSV, or JSON files"}
+                    />
+                    {!activeThreadId ? (
+                      <Select disabled={savedProjectsLoading || !availableSavedProjects.length || isSending} onValueChange={onSelectProject} value={selectedProjectId ?? undefined}>
+                        <SelectTrigger aria-label="Task project" className="workspace-project-select text-ui-control" size="sm"><FolderOpen className="size-4 shrink-0" /><SelectValue placeholder={savedProjectsLoading ? "Loading projects…" : "Choose project"} /></SelectTrigger>
+                        <SelectContent>{availableSavedProjects.map((project) => <SelectItem className="text-ui-control" key={project.id} value={project.id}>{project.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    ) : null}
+                    <Tooltip><TooltipTrigger asChild><span className="workspace-model-label">{activeThread?.model || providerLabel(activeProvider)}</span></TooltipTrigger><TooltipContent>The model is selected in your workspace settings.</TooltipContent></Tooltip>
+                  </PromptInputTools>
+                  <div className="ml-auto flex shrink-0 items-center gap-2">
+                    {activeTurnId ? <Button aria-label="Interrupt active turn" className="h-9 gap-1.5 rounded-full px-3 text-ui-control text-[var(--c-fail)]" disabled={taskActionPending !== null} onClick={() => void onInterrupt().catch((cause: unknown) => setActionError(cause instanceof Error ? cause.message : "The turn could not be interrupted."))} type="button" variant="outline"><Square className="size-3 fill-current" />{taskActionPending === "interrupt" ? "Stopping…" : "Stop"}</Button> : null}
+                    <PromptInputSubmit
+                      className="workspace-submit"
+                      disabled={isSending || attachmentsUploading || (activeTurnId !== null && storedUploadIds.length > 0) || !draft.trim() || !activeProvider || (!activeThreadId && !selectedSavedProject)}
+                      status={isSending ? "submitted" : "ready"}
                     >
-                      <div
-                        className={cn(
-                          deferOffscreenEntry &&
-                            "[contain-intrinsic-size:auto_180px] [content-visibility:auto]",
-                        )}
-                      >
-                        {group.kind === "commands" ? (
-                          <CommandCluster items={group.items} />
-                        ) : (
-                          <TimelineEntry item={group.item} last={last} onApproval={onApproval} />
-                        )}
-                      </div>
-                    </RunSpineNode>
-                  );
-                })}
-                {activeTurnId ? (
-                  <StreamingNode model={activeThread?.model || providerLabel(activeProvider)} />
-                ) : null}
-                <ParallelBranch threads={childThreads} />
-              </ol>
-            </ConversationContent>
-            <ConversationScrollButton className="bottom-4" />
-          </Conversation>
+                      {isSending ? <Spinner className="size-4" /> : <ArrowUp className="size-5" />}
+                    </PromptInputSubmit>
+                  </div>
+                </PromptInputFooter>
+              </PromptInput>
+              <div className="workspace-composer-help">
+                <Tooltip><TooltipTrigger asChild><span className="inline-flex items-center gap-1.5" tabIndex={0}><Shield className="size-3.5" />You control approvals</span></TooltipTrigger><TooltipContent>When an action needs approval, you can review and allow or deny it in the conversation.</TooltipContent></Tooltip>
+                <span className="hidden sm:inline">Shift + Enter for a new line</span>
+                {hasActiveTask ? <button aria-controls="terminal-dock" aria-expanded={dockOpen} className="inline-flex items-center gap-1.5 hover:text-foreground" onClick={() => setDockOpen((open) => !open)} type="button"><TerminalSquare className="size-3.5" />Command output</button> : null}
+              </div>
+              {hasActiveTask && dockOpen ? (
+                <section className="workspace-command-dock" id="terminal-dock">
+                  <div className="workspace-command-dock-heading"><h2>Command output</h2><Button aria-label="Close terminal dock" onClick={() => setDockOpen(false)} size="icon-sm" variant="ghost"><X className="size-4" /></Button></div>
+                  <div className="max-h-56 overflow-y-auto">
+                    {timeline.some((item) => item.kind === "command") ? timeline.filter((item) => item.kind === "command").slice(-10).map((item) => <details className="border-t border-border p-3 first:border-t-0" key={item.id}><summary className="cursor-pointer text-ui-control">{item.title}<span className="ml-2 text-ui-meta text-muted-foreground">{item.status}</span></summary><pre className="mt-3 overflow-x-auto whitespace-pre-wrap font-mono text-ui-code text-muted-foreground">{item.body}</pre></details>) : <p className="p-4 text-ui-control text-muted-foreground">Commands run during this task will appear here.</p>}
+                  </div>
+                </section>
+              ) : null}
             </div>
 
-            <div className="shrink-0 border-t border-[var(--c-hair)] bg-[var(--c-plate)] px-4 pb-2 pt-2.5 sm:px-5">
-          <PromptInput
-            accept={UPLOAD_ACCEPT}
-            aria-busy={isSending}
-            className="mx-auto w-full max-w-[820px] [&>[data-slot=input-group]]:overflow-hidden [&>[data-slot=input-group]]:rounded-[7px] [&>[data-slot=input-group]]:border-[var(--c-line)] [&>[data-slot=input-group]]:bg-[var(--c-surface)] [&>[data-slot=input-group]]:shadow-none"
-            convertAttachmentsToDataUrls={false}
-            maxFileSize={UPLOAD_MAX_BYTES}
-            maxFiles={MAX_COMPOSER_ATTACHMENTS}
-            multiple
-            onError={handleAttachmentError}
-            onSubmit={handleSubmit}
-          >
-            <div className="order-first flex w-full items-center gap-1.5 border-b border-[var(--c-hair)] px-2 py-1.5">
-              <span className="text-ui-code inline-flex h-6 min-w-0 items-center gap-1.5 rounded-[4px] border border-[var(--c-hair)] bg-[var(--c-plate)] px-1.5 font-mono text-[var(--ink-2)]"><GitBranch className="size-3 text-[var(--ink-4)]" /><span className="truncate">{taskProject?.branch ?? "working tree"}</span></span>
-              <span className="text-ui-code inline-flex h-6 min-w-0 items-center rounded-[4px] border border-[var(--c-run-line)] bg-[var(--c-run-dim)] px-2 font-mono text-[var(--ink-1)]"><span className="truncate">{activeThread?.model || providerLabel(activeProvider)}</span></span>
-              <span
-                className={cn(
-                  "text-ui-meta hidden font-mono sm:inline",
-                  runtimeStream.status === "live"
-                    ? "text-[var(--ink-4)]"
-                    : runtimeStream.status === "offline"
-                      ? "text-[var(--c-fail)]"
-                      : "text-[var(--c-wait)]",
-                )}
-              >
-                runtime · {runtimeStreamLabel(runtimeStream.status)}
-              </span>
-            </div>
-            <PromptInputBody>
-              <PromptInputTextarea
-                aria-label="Task prompt"
-                className="text-ui-body min-h-[58px] px-3 py-2.5"
-                onChange={(event) => {
-                  setAttachmentNotice(null);
-                  onDraftChange(event.target.value);
-                }}
-                placeholder={activeProvider
-                  ? activeTurnId
-                    ? "Steer the run, or type / for skills and @ for files…"
-                    : "Describe the outcome for this task…"
-                  : "Connect a model route to start a task…"}
-                readOnly={isSending}
-                value={draft}
-              />
-            </PromptInputBody>
-            <ComposerAttachmentTray
-              disabled={isSending}
-              onRetry={retryUpload}
-              uploads={uploads}
-            />
-            {attachmentNotice ? (
-              <p className="text-ui-meta px-4 pb-1 text-amber-200" role="status">
-                {attachmentNotice}
-              </p>
-            ) : null}
-            {!activeThreadId && savedProjectsError ? (
-              <div className="text-ui-meta flex items-center gap-2 px-4 pb-1 text-red-200" role="alert">
-                <span className="min-w-0 flex-1">{savedProjectsError}</span>
-                <Button
-                  className="text-ui-control h-7 shrink-0 px-2"
-                  onClick={() => void onReloadProjects()}
-                  type="button"
-                  variant="ghost"
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : null}
-            {!activeThreadId && !savedProjectsLoading && !savedProjectsError && !availableSavedProjects.length ? (
-              <p className="text-ui-meta px-4 pb-1 text-amber-200" role="status">
-                Register and enable a saved project before starting a task.
-              </p>
-            ) : null}
-            <PromptInputFooter className="flex-wrap gap-1.5 border-t border-[var(--c-hair)] px-2 py-1.5">
-              <PromptInputTools className="flex-wrap gap-1.5">
-                <ComposerAttachControl
-                  disabled={isSending || activeTurnId !== null || uploadTarget === null}
-                  onAttach={attachUploads}
-                  onDetach={detachUpload}
-                  projectToken={selectedProjectId}
-                  resetToken={activeThreadId}
-                  tooltip={
-                    activeTurnId
-                      ? "Attachments start a new turn — the active run only accepts steering"
-                      : uploadTarget === null
-                        ? "Choose an available saved project to attach a file"
-                        : "Attach UTF-8 text files the agent reads from disk"
-                  }
-                />
-                {!activeThreadId ? (
-                  <Select
-                    disabled={savedProjectsLoading || !availableSavedProjects.length || isSending}
-                    onValueChange={onSelectProject}
-                    value={selectedProjectId ?? undefined}
-                  >
-                    <SelectTrigger
-                      aria-label="Task project"
-                      className="text-ui-control h-7 w-[min(44vw,180px)] border-[var(--c-hair)] bg-[var(--c-plate)] px-2 shadow-none"
-                      size="sm"
-                    >
-                      <SelectValue
-                        placeholder={savedProjectsLoading ? "Loading projects…" : "Choose project"}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableSavedProjects.map((project) => (
-                        <SelectItem className="text-ui-control" key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : null}
-                <span
-                  className="text-ui-control flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[5px] border border-[var(--c-hair)] px-2 text-[var(--ink-2)]"
-                  title="New tasks use the tenant's default model route"
-                >
-                  <span className="size-[5px] rounded-full bg-[var(--c-run)]" />
-                  {providerLabel(activeProvider)}
-                </span>
-                <span className="text-ui-micro ml-0.5 font-mono uppercase tracking-[0.12em] text-[var(--ink-4)]">Mode</span>
-                {(["read", "write"] as const).map((mode) => (
-                  <button className={cn("text-ui-control h-7 rounded-[5px] border px-2.5 capitalize", composerMode === mode ? "border-[var(--c-line)] bg-[var(--c-plate)] text-[var(--ink-1)]" : "border-transparent text-[var(--ink-3)] hover:text-[var(--ink-1)]")} key={mode} onClick={() => setComposerMode(mode)} type="button">{mode}</button>
-                ))}
-                <button aria-disabled="true" className="text-ui-control h-7 cursor-not-allowed rounded-[5px] border border-transparent px-2.5 text-[var(--ink-4)]" title="Full access is blocked by organization policy" type="button">Full</button>
-              </PromptInputTools>
-              <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                {activeTurnId ? (
-                  <Button aria-label="Interrupt active turn" className="text-ui-control h-7 gap-1.5 border-[var(--c-fail)] px-2.5 text-[var(--c-fail)] hover:bg-[var(--c-fail-dim)]" disabled={taskActionPending !== null} onClick={() => void onInterrupt().catch((cause: unknown) => setActionError(cause instanceof Error ? cause.message : "The turn could not be interrupted."))} type="button" variant="outline"><Square className="size-2.5 fill-current" />{taskActionPending === "interrupt" ? "Interrupting…" : "Interrupt"}</Button>
-                ) : null}
-                <PromptInputSubmit
-                  className="text-ui-control h-7 w-auto min-w-[88px] shrink-0 gap-1.5 rounded-[5px] bg-[var(--c-run)] px-3 font-semibold text-[var(--c-bg)] hover:brightness-105"
-                  disabled={
-                    isSending
-                    || attachmentsUploading
-                    || (activeTurnId !== null && storedUploadIds.length > 0)
-                    || !draft.trim()
-                    || !activeProvider
-                    || (!activeThreadId && !selectedSavedProject)
-                  }
-                  status={isSending ? "submitted" : "ready"}
-                >
-                  {isSending ? (activeTurnId ? "Steering…" : "Starting…") : activeTurnId ? "Steer run" : "Start task"}
-                  <ArrowRight className="size-3" />
-                </PromptInputSubmit>
-              </div>
-            </PromptInputFooter>
-          </PromptInput>
-          <div className="text-ui-meta mx-auto mt-1.5 flex max-w-[820px] flex-wrap items-center gap-x-3 gap-y-1 px-0.5 font-mono text-[var(--ink-4)]">
-            <span>⏎ {activeTurnId ? "steer" : "start"} · ⇧⏎ newline · ⌘. interrupt</span>
-            <span>full access requires org admin</span>
-            <span>{activeTurnId ? "Steering is queued into the current turn — it does not interrupt the tool in flight." : "A new isolated Codex task will start in the selected worktree."}</span>
-            <button
-              aria-controls="terminal-dock"
-              aria-expanded={dockOpen}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-sm text-[var(--ink-3)] transition-colors hover:text-[var(--ink-1)]"
-              onClick={() => setDockOpen((open) => !open)}
-              type="button"
-            >
-              <TerminalSquare aria-hidden="true" className="size-3" />
-              Terminal dock
-              <span className="text-[var(--c-wait)]">
-                {dashboard.runtime.activeRuntimes} session{dashboard.runtime.activeRuntimes === 1 ? "" : "s"}
-              </span>
-            </button>
-            </div>
-            {dockOpen ? (
-              <div
-                className="ah-rise mx-auto mt-2 max-w-[820px] overflow-hidden rounded-md border border-[var(--c-line)]"
-                id="terminal-dock"
-              >
-                <div className="flex items-center gap-2 border-b border-[var(--c-hair)] bg-[var(--c-plate)] px-2.5 py-1.5">
-                  <span className="text-ui-meta font-mono text-[var(--ink-2)]">
-                    Supervised runtime
-                  </span>
-                  <span className="text-ui-meta font-mono text-[var(--ink-4)]">
-                    {dashboard.runtime.status} · {dashboard.runtime.activeRuntimes} app-server
-                    {dashboard.runtime.activeRuntimes === 1 ? "" : "s"}
-                  </span>
-                  <AvailabilityBadge state="FUTURE" />
-                  <Button
-                    aria-label="Close terminal dock"
-                    className="ml-auto size-5"
-                    onClick={() => setDockOpen(false)}
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <X className="size-3" />
-                  </Button>
+            {!hasActiveTask ? (
+              <div className="workspace-starters">
+                <div className="workspace-suggestion-grid">
+                  {[
+                    { icon: Search, label: "Understand a project", prompt: "Explore this project and explain how it works. Highlight the main components and where I should start." },
+                    { icon: Code2, label: "Build something", prompt: "Help me build a new feature in this project. First, explore the codebase and help me plan the approach." },
+                    { icon: FileDiff, label: "Review my changes", prompt: "Review the current changes in this project. Look for bugs, missing edge cases, and ways to simplify the implementation." },
+                  ].map(({ icon: Icon, label, prompt }) => <button className="workspace-suggestion" disabled={isSending} key={label} onClick={() => { onDraftChange(prompt); document.querySelector<HTMLTextAreaElement>('[aria-label="Task prompt"]')?.focus(); }} type="button"><Icon aria-hidden="true" className="size-[18px]" /><span>{label}</span><ArrowRight aria-hidden="true" className="workspace-suggestion-arrow size-4" /></button>)}
                 </div>
-                <div className="bg-[var(--term-bg)] px-3 py-2.5">
-                  <p className="text-ui-body text-[var(--ink-2)]">
-                    An interactive shell into the task sandbox is not exposed by
-                    the runtime API, so no session is attached here.
-                  </p>
-                  <p className="text-ui-meta mt-1.5 font-mono text-[var(--ink-4)]">
-                    Command output is already in the Run Spine above — every
-                    executed command arrives as a timeline event with its exit
-                    status.
-                  </p>
-                </div>
+                <SetupNotice dashboard={dashboard} hasAvailableProject={availableSavedProjects.length > 0} />
+                {selectedSavedProject?.dirty ? <p className="workspace-checkout-note"><GitBranch className="mt-0.5 size-3.5 shrink-0" />This project has uncommitted changes. Your task will work in the current checkout.</p> : null}
               </div>
             ) : null}
           </div>
-        </div>
-
-          <TaskInspector
-            activeThread={activeThread}
-            dashboard={dashboard}
-            onOpenChange={setInspectorOpen}
-            open={inspectorOpen}
-            timeline={timeline}
-          />
+          <TaskInspector activeThread={activeThread} dashboard={dashboard} onOpenChange={setInspectorOpen} open={inspectorOpen} timeline={timeline} />
         </div>
       </main>
 
-      <Dialog
-        onOpenChange={(open) => {
-          setRenameOpen(open);
-          if (!open) setActionError(null);
-        }}
-        open={renameOpen}
-      >
-        <DialogContent className="border-border bg-[#191c21] sm:max-w-md">
+      <Dialog onOpenChange={(open) => { setRenameOpen(open); if (!open) setActionError(null); }} open={renameOpen}>
+        <DialogContent className="border-border bg-card sm:max-w-md">
           <form onSubmit={submitRename}>
-            <DialogHeader>
-              <DialogTitle>Rename task</DialogTitle>
-              <DialogDescription>
-                The name is stored by the Codex runtime and does not need to be unique.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-3 py-5">
-              <label className="text-ui-control grid gap-2 text-muted-foreground">
-                Task name
-                <Input
-                  autoFocus
-                  maxLength={120}
-                  onChange={(event) => setRenameValue(event.target.value)}
-                  value={renameValue}
-                />
-              </label>
-              {actionError ? <p className="text-ui-meta text-red-300" role="alert">{actionError}</p> : null}
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setRenameOpen(false)} type="button" variant="ghost">Cancel</Button>
-              <Button disabled={!renameValue.trim() || taskActionPending !== null} type="submit">
-                {taskActionPending === "rename" ? "Renaming…" : "Rename"}
-              </Button>
-            </DialogFooter>
+            <DialogHeader><DialogTitle>Rename task</DialogTitle><DialogDescription>Give this task a name that's easy to find later.</DialogDescription></DialogHeader>
+            <div className="grid gap-3 py-6"><label className="grid gap-2 text-ui-control">Task name<Input autoFocus maxLength={120} onChange={(event) => setRenameValue(event.target.value)} value={renameValue} /></label>{actionError ? <p className="text-ui-control text-[var(--c-fail)]" role="alert">{actionError}</p> : null}</div>
+            <DialogFooter><Button onClick={() => setRenameOpen(false)} type="button" variant="ghost">Cancel</Button><Button disabled={!renameValue.trim() || taskActionPending !== null} type="submit">{taskActionPending === "rename" ? "Renaming…" : "Rename"}</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-
-      <Dialog
-        onOpenChange={(open) => {
-          setArchiveOpen(open);
-          if (!open) setActionError(null);
-        }}
-        open={archiveOpen}
-      >
-        <DialogContent className="border-border bg-[#191c21] sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Archive this task?</DialogTitle>
-            <DialogDescription>
-              Codex moves the persisted task and its spawned descendants into archived storage. Files in the workspace are not deleted.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="text-ui-body rounded-md border border-amber-300/15 bg-amber-300/[0.04] px-3 py-2.5 text-amber-100/75">
-            Restore is supported by the server API; the archived-task browser is still being added to the shell.
-          </div>
-          {actionError ? <p className="text-ui-meta text-red-300" role="alert">{actionError}</p> : null}
-          <DialogFooter>
-            <Button onClick={() => setArchiveOpen(false)} type="button" variant="ghost">Cancel</Button>
-            <Button disabled={taskActionPending !== null} onClick={() => void confirmArchive()} type="button" variant="outline">
-              {taskActionPending === "archive" ? "Archiving…" : "Archive task"}
-            </Button>
-          </DialogFooter>
+      <Dialog onOpenChange={(open) => { setArchiveOpen(open); if (!open) setActionError(null); }} open={archiveOpen}>
+        <DialogContent className="border-border bg-card sm:max-w-md">
+          <DialogHeader><DialogTitle>Archive this task?</DialogTitle><DialogDescription>This task and its related agents will move to the archive. Your project files will stay where they are.</DialogDescription></DialogHeader>
+          <p className="rounded-xl bg-muted p-4 text-ui-control text-muted-foreground">Archived tasks can be restored through the server API. An archive browser isn't available yet.</p>
+          {actionError ? <p className="text-ui-control text-[var(--c-fail)]" role="alert">{actionError}</p> : null}
+          <DialogFooter><Button onClick={() => setArchiveOpen(false)} type="button" variant="ghost">Cancel</Button><Button disabled={taskActionPending !== null} onClick={() => void confirmArchive()} type="button">{taskActionPending === "archive" ? "Archiving…" : "Archive task"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

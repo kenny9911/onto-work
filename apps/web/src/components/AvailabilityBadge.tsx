@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import "./management.css";
 
 /**
  * How much of a surface is actually backed by the control plane.
@@ -10,21 +10,19 @@ import { cn } from "@/lib/utils";
  */
 export type Availability = "LIVE" | "READ-ONLY" | "FUTURE";
 
-const availabilityStyles: Record<Availability, string> = {
-  LIVE: "border-primary/20 bg-primary/[0.08] text-primary",
-  "READ-ONLY": "border-cyan-400/20 bg-cyan-400/[0.07] text-cyan-300",
-  FUTURE: "border-[var(--waiting)]/20 bg-[var(--waiting)]/[0.07] text-[var(--waiting)]",
+const availabilityLabels: Record<Availability, string> = {
+  LIVE: "Live",
+  "READ-ONLY": "Read only",
+  FUTURE: "Not available",
 };
 
 export function AvailabilityBadge({ state }: { state: Availability }) {
   return (
     <span
-      className={cn(
-        "text-ui-micro inline-flex shrink-0 items-center rounded-sm border px-1.5 py-0.5 font-mono font-medium tracking-[0.12em]",
-        availabilityStyles[state],
-      )}
+      className="management-availability"
+      data-availability={state}
     >
-      {state}
+      {availabilityLabels[state]}
     </span>
   );
 }
@@ -43,8 +41,8 @@ export function UnavailablePanel({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-dashed border-border bg-card/25 p-4">
-      <div className="flex items-center gap-2">
+    <section className="management-unavailable">
+      <div className="flex flex-wrap items-center gap-3">
         <h3 className="text-ui-control font-medium">{title}</h3>
         <AvailabilityBadge state="FUTURE" />
       </div>

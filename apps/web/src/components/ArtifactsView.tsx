@@ -1,5 +1,6 @@
+import "./management.css";
 import { useEffect, useRef } from "react";
-import { FileStack } from "lucide-react";
+import { ArrowUpRight, FileStack } from "lucide-react";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { Button } from "@/components/ui/button";
 
@@ -24,11 +25,11 @@ export function ArtifactsView({ onOpenWorkspace }: { onOpenWorkspace: () => void
 
   return (
     <>
-      <header className="flex min-h-20 shrink-0 items-center gap-3 border-b border-border px-4 py-4 sm:px-7">
+      <header className="management-header">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <h1
-              className="text-lg font-medium tracking-[-0.025em]"
+              className="management-heading"
               ref={headingRef}
               tabIndex={-1}
             >
@@ -36,37 +37,30 @@ export function ArtifactsView({ onOpenWorkspace }: { onOpenWorkspace: () => void
             </h1>
             <AvailabilityBadge state="FUTURE" />
           </div>
-          <p className="text-ui-body mt-0.5 line-clamp-2 text-muted-foreground sm:truncate">
-            Deliverables produced by a run, separate from the source changes in a
-            task diff.
+          <p className="management-subtitle">
+            Documents and deliverables created through your work.
           </p>
         </div>
       </header>
 
       <div
         aria-label="Artifacts content"
-        className="grid min-h-0 flex-1 place-items-center overflow-y-auto overscroll-contain p-6 sm:p-10"
+        className="management-scroll grid place-items-center"
         role="region"
         tabIndex={0}
       >
-        <div className="max-w-[420px] text-center">
-          <FileStack
-            aria-hidden="true"
-            className="mx-auto mb-3 size-8 text-[var(--ink-4)]"
-            strokeWidth={1.2}
-          />
-          <p className="text-ui-title font-semibold">No artifacts in this project yet</p>
-          <p className="text-ui-body mt-2 text-muted-foreground">
-            Artifacts appear here when an agent writes a file that is a
-            deliverable rather than a source change — a design note, a benchmark,
-            a generated migration. Nothing is created for you in advance.
+        <div className="management-empty w-full max-w-[600px]">
+          <span className="mb-6 grid size-16 place-items-center rounded-2xl bg-muted">
+            <FileStack aria-hidden="true" className="size-7 text-foreground" strokeWidth={1.4} />
+          </span>
+          <h2 className="text-ui-title font-semibold">Your deliverables will have a home here</h2>
+          <p className="text-ui-body mt-3 max-w-md text-muted-foreground">
+            The artifact library is not available yet. You can find files and
+            changes in the task where they were created.
           </p>
-          <p className="text-ui-meta mt-3 text-[var(--ink-4)]">
-            The runtime does not yet mark a file change as a deliverable, so this
-            list stays empty instead of repeating the task diff.
-          </p>
-          <Button className="mt-4" onClick={onOpenWorkspace} size="sm" variant="outline">
-            Open the running task
+          <Button className="mt-7" onClick={onOpenWorkspace} variant="outline">
+            Open task
+            <ArrowUpRight aria-hidden="true" className="size-4" />
           </Button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import "./management.css";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   PROVIDER_CATALOG,
@@ -20,8 +21,10 @@ import {
   CloudCog,
   CreditCard,
   FolderGit2,
+  FolderOpen,
+  GitBranch,
   Gauge,
-  KeyRound,
+  UserCheck,
   LoaderCircle,
   Pencil,
   Plus,
@@ -31,7 +34,6 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { UnavailablePanel } from "@/components/AvailabilityBadge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -74,27 +76,27 @@ export type SavedProjectCacheChange =
 const titles: Record<ControlPlaneViewId, { title: string; subtitle: string }> = {
   projects: {
     title: "Projects",
-    subtitle: "Saved workspace registry, repository state, and runtime task activity.",
+    subtitle: "Your saved workspaces, repositories, and active work.",
   },
   providers: {
     title: "Model routes",
-    subtitle: "Connect Responses-compatible endpoints or use the operator-managed LiteLLM gateway.",
+    subtitle: "Choose the models and providers your team works with.",
   },
   team: {
     title: "Team",
-    subtitle: "Manage workspace access without sharing runtime state or provider credentials.",
+    subtitle: "Manage the people who can access this workspace.",
   },
   usage: {
     title: "Usage",
-    subtitle: "Server-metered requests, concurrency, seats, and Codex token events.",
+    subtitle: "See requests, tokens, and capacity for your current billing period.",
   },
   billing: {
     title: "Billing",
-    subtitle: "Review server-issued entitlements and open Stripe billing when configured.",
+    subtitle: "Manage your plan and review the limits included in your subscription.",
   },
   audit: {
     title: "Audit log",
-    subtitle: "Tenant-scoped control-plane, approval, provider, member, and billing events.",
+    subtitle: "A record of changes to your workspace, team, and settings.",
   },
 };
 
@@ -116,16 +118,16 @@ function PageHeader({
   }, [view]);
 
   return (
-    <header className="flex min-h-20 shrink-0 items-center gap-3 border-b border-border px-4 py-4 sm:px-7">
+    <header className="management-header">
       <div className="min-w-0 flex-1">
         <h1
-          className="text-lg font-medium tracking-[-0.025em]"
+          className="management-heading"
           ref={headingRef}
           tabIndex={-1}
         >
           {copy.title}
         </h1>
-        <p className="mt-0.5 truncate text-ui-control text-muted-foreground">{copy.subtitle}</p>
+        <p className="management-subtitle">{copy.subtitle}</p>
       </div>
       {action}
     </header>
@@ -142,7 +144,7 @@ function PageScrollRegion({
   return (
     <div
       aria-label={`${titles[view].title} content`}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-7"
+      className="management-scroll"
       role="region"
       tabIndex={0}
     >
@@ -154,8 +156,8 @@ function PageScrollRegion({
 function ProviderGlyph({ provider }: { provider: ProviderCatalogItem }) {
   const Icon = provider.local ? ServerCog : provider.family === "router" ? CloudCog : Boxes;
   return (
-    <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-secondary/60">
-      <Icon className="size-4 text-[#c8cdd3]" />
+    <span className="management-icon">
+      <Icon className="size-4 text-foreground" />
     </span>
   );
 }
@@ -211,12 +213,12 @@ function AddProviderDialog({ onSaved }: { onSaved: () => Promise<void> }) {
       <DialogTrigger asChild>
         <Button className="gap-2" size="sm"><Plus className="size-3.5" /> Add route</Button>
       </DialogTrigger>
-      <DialogContent className="border-border bg-[#191c21] sm:max-w-[520px]">
+      <DialogContent className="management-dialog border-border bg-card sm:max-w-[520px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add a model route</DialogTitle>
             <DialogDescription>
-              Secrets are encrypted by the control plane. Gateway-backed providers use the LiteLLM endpoint fixed by the server operator.
+              Connect a provider for new tasks. Credentials are encrypted and stored securely on the server.
             </DialogDescription>
           </DialogHeader>
 
@@ -304,7 +306,7 @@ function AddProviderDialog({ onSaved }: { onSaved: () => Promise<void> }) {
               Use as the default route for new tasks
             </label>
 
-            {error ? <p role="alert" className="text-ui-body text-red-300">{error}</p> : null}
+            {error ? <p role="alert" className="text-ui-body text-destructive">{error}</p> : null}
           </div>
 
           <DialogFooter>
@@ -355,25 +357,25 @@ function ProvidersView({
     <>
       <PageHeader action={dashboard.user.role === "admin" ? <AddProviderDialog onSaved={onRefresh} /> : undefined} view="providers" />
       <PageScrollRegion view="providers">
-        <div className="mx-auto max-w-5xl">
-          <section className="mb-8 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-border bg-card/30 p-4">
-              <p className="font-mono text-ui-micro uppercase tracking-[0.15em] text-muted-foreground">Enabled routes</p>
+        <div className="management-content">
+          <section className="mb-8 management-metrics">
+            <div className="management-panel">
+              <p className="text-ui-meta text-muted-foreground">Enabled routes</p>
               <p className="mt-2 text-2xl font-medium tracking-tight">{enabledProviders.length}</p>
             </div>
-            <div className="rounded-lg border border-border bg-card/30 p-4">
-              <p className="font-mono text-ui-micro uppercase tracking-[0.15em] text-muted-foreground">Active route</p>
-              <p className="mt-2 truncate text-sm font-medium">{activeProvider?.name ?? "Not configured"}</p>
+            <div className="management-panel">
+              <p className="text-ui-meta text-muted-foreground">Active route</p>
+              <p className="mt-2 truncate text-ui-control font-medium">{activeProvider?.name ?? "Not configured"}</p>
             </div>
-            <div className="rounded-lg border border-border bg-card/30 p-4">
-              <p className="font-mono text-ui-micro uppercase tracking-[0.15em] text-muted-foreground">Credential boundary</p>
-              <p className="mt-2 text-sm font-medium">Server-side encrypted</p>
+            <div className="management-panel">
+              <p className="text-ui-meta text-muted-foreground">Credentials</p>
+              <p className="mt-2 text-ui-control font-medium">Encrypted on the server</p>
             </div>
           </section>
 
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-ui-control font-medium">Provider catalog</h2>
-            <span className="font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">Responses facade</span>
+            <span className="text-ui-meta text-muted-foreground">Available providers</span>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {PROVIDER_CATALOG.map((provider) => {
@@ -384,32 +386,32 @@ function ProvidersView({
                   ? "Configured"
                   : "Disabled";
               return (
-                <article className="rounded-lg border border-border bg-card/25 p-4" key={provider.id}>
+                <article className="management-panel" key={provider.id}>
                   <div className="flex items-start gap-3">
                     <ProviderGlyph provider={provider} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-medium">{provider.name}</h3>
-                        <span className={cn("rounded-sm px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-wider", provider.nativeCodex ? "bg-emerald-500/10 text-emerald-300" : "bg-human/10 text-human")}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-ui-control font-medium">{provider.name}</h3>
+                        <span className={cn("rounded-full px-2 py-0.5 text-ui-meta", provider.nativeCodex ? "bg-[var(--c-run-dim)] text-[var(--healthy)]" : "bg-human/10 text-human")}>
                           {provider.nativeCodex ? "native" : "gateway"}
                         </span>
-                        {connection?.isDefault ? <span className="ml-auto font-mono text-ui-micro uppercase tracking-wider text-primary">default</span> : null}
+                        {connection?.isDefault ? <span className="ml-auto text-ui-meta text-primary">default</span> : null}
                       </div>
-                      <p className="mt-1.5 line-clamp-2 text-ui-body text-muted-foreground">{provider.description}</p>
+                      <p className="mt-2 text-ui-body text-muted-foreground">{provider.description}</p>
                     </div>
                   </div>
                   <div className="mt-4 border-t border-border/70 pt-3">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="flex min-w-0 items-center gap-1.5 font-mono text-ui-meta text-muted-foreground">
+                      <span className="flex min-w-0 items-center gap-1.5 text-ui-meta text-muted-foreground">
                         <span
                           aria-hidden="true"
                           className={cn(
                             "size-1.5 shrink-0 rounded-full",
                             connection?.enabled
-                              ? "bg-emerald-400"
+                              ? "bg-[var(--healthy)]"
                               : connection
-                                ? "bg-amber-400"
-                                : "bg-[#555d67]",
+                                ? "bg-[var(--waiting)]"
+                                : "bg-muted-foreground",
                           )}
                         />
                         <span className="shrink-0">{connectionStatus}</span>
@@ -434,7 +436,7 @@ function ProvidersView({
                       ) : null}
                     </div>
                     {providerError && providerError.id === connection?.id ? (
-                      <p className="mt-2 text-ui-body text-red-300" role="alert">
+                      <p className="mt-2 text-ui-body text-destructive" role="alert">
                         {providerError.message}
                       </p>
                     ) : null}
@@ -444,35 +446,10 @@ function ProvidersView({
             })}
           </div>
 
-          {/* Routing behaviour from the binding design. The control plane picks
-              exactly one server-selected route per run and records it on the
-              usage event; there is no fallback chain, no hop history and no
-              synthetic request. Each panel says so rather than drawing an empty
-              policy list or a zeroed chart. */}
-          <div className="mt-8 grid gap-3 lg:grid-cols-2">
-            <UnavailablePanel
-              reason="Ordered fallback with per-hop timeouts and a capability floor. Admission resolves a single route before a run starts and refuses the run if that route is not entitled, so there is no second attempt to order. Adding a chain also needs the side-effect boundary below to be enforced server-side."
-              title="Fallback policy"
-            >
-              <p className="text-ui-meta mt-3 rounded-md border border-human/40 bg-human/[0.06] p-3 text-[var(--ink-2)]">
-                <span className="font-medium text-[var(--ink-1)]">Side-effect boundary.</span>{" "}
-                When it exists, fallback must stop permanently once a turn has
-                produced a non-idempotent effect: the turn fails with the reason
-                instead of silently re-running on another provider.
-              </p>
-            </UnavailablePanel>
-
-            <div className="space-y-3">
-              <UnavailablePanel
-                reason="Requests per hour, fallback-hop rate and error mix over 24h. Usage events record the route and model actually used, but they are aggregated per entitlement period only — there is no time-bucketed query, so no chart is drawn."
-                title="Route analytics"
-              />
-              <UnavailablePanel
-                reason="Sending a probe request through a route to see which hop answers. The server exposes no provider test endpoint, and issuing a real model call from this screen would consume tenant quota without a usage reservation."
-                title="Test console"
-              />
-            </div>
-          </div>
+          <p className="mt-8 border-t border-border pt-5 text-ui-control text-muted-foreground">
+            Each task uses one model route. Connection tests and automatic retries
+            through another provider are not available yet.
+          </p>
         </div>
       </PageScrollRegion>
     </>
@@ -505,11 +482,11 @@ function AddUserDialog({ onCreated }: { onCreated: () => Promise<void> }) {
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild><Button className="gap-2" size="sm"><Plus className="size-3.5" /> Add member</Button></DialogTrigger>
-      <DialogContent className="border-border bg-[#191c21] sm:max-w-md">
+      <DialogContent className="management-dialog border-border bg-card sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add a team member</DialogTitle>
-            <DialogDescription>The member receives an isolated Codex home and must rotate this temporary password.</DialogDescription>
+            <DialogDescription>Give someone access to your workspace. They will choose a new password at their first sign-in.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-5">
             <label className="grid gap-2 text-ui-control text-muted-foreground">Display name<Input onChange={(event) => setDisplayName(event.target.value)} required value={displayName} /></label>
@@ -521,7 +498,7 @@ function AddUserDialog({ onCreated }: { onCreated: () => Promise<void> }) {
                 <SelectContent><SelectItem value="member">Member</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
               </Select>
             </label>
-            {error ? <p role="alert" className="text-ui-body text-red-300">{error}</p> : null}
+            {error ? <p role="alert" className="text-ui-body text-destructive">{error}</p> : null}
           </div>
           <DialogFooter><Button onClick={() => setOpen(false)} type="button" variant="ghost">Cancel</Button><Button type="submit">Create member</Button></DialogFooter>
         </form>
@@ -574,25 +551,25 @@ function TeamView({ dashboard }: Pick<ControlPlaneViewProps, "dashboard">) {
     <>
       <PageHeader action={<AddUserDialog onCreated={loadUsers} />} view="team" />
       <PageScrollRegion view="team">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-border bg-card/30 p-4"><Users className="size-4 text-primary" /><p className="mt-4 text-2xl font-medium">{users.length || "—"}</p><p className="mt-1 text-ui-control text-muted-foreground">Workspace members</p></div>
-            <div className="rounded-lg border border-border bg-card/30 p-4"><ShieldCheck className="size-4 text-emerald-400" /><p className="mt-4 text-sm font-medium">Isolated runtimes</p><p className="mt-1 text-ui-control text-muted-foreground">One Codex home per user</p></div>
-            <div className="rounded-lg border border-border bg-card/30 p-4"><KeyRound className="size-4 text-[#9aa3ad]" /><p className="mt-4 text-sm font-medium">Tenant-scoped keys</p><p className="mt-1 text-ui-control text-muted-foreground">Never returned to the browser</p></div>
+        <div className="management-content">
+          <div className="mb-8 management-metrics">
+            <div className="management-panel"><Users className="size-4 text-primary" /><p className="mt-4 text-2xl font-medium">{loading || error ? "—" : users.length}</p><p className="mt-1 text-ui-control text-muted-foreground">Workspace members</p></div>
+            <div className="management-panel"><UserCheck className="size-4 text-[var(--healthy)]" /><p className="mt-4 text-2xl font-medium">{loading || error ? "—" : users.filter((member) => member.status === "active").length}</p><p className="mt-1 text-ui-control text-muted-foreground">Active members</p></div>
+            <div className="management-panel"><ShieldCheck className="size-4 text-muted-foreground" /><p className="mt-4 text-2xl font-medium">{loading || error ? "—" : users.filter((member) => member.role === "admin").length}</p><p className="mt-1 text-ui-control text-muted-foreground">Administrators</p></div>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-border bg-card/25">
-            <div className="grid grid-cols-[1fr_110px_110px_80px] gap-3 border-b border-border px-4 py-3 font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="management-list">
+            <div className="management-table-heading hidden grid-cols-[minmax(0,1fr)_100px_110px_100px] gap-4 border-b border-border text-muted-foreground md:grid">
               <span>Member</span><span>Role</span><span>Status</span><span />
             </div>
             {loading ? <p className="p-5 text-ui-body text-muted-foreground">Loading team…</p> : null}
-            {error ? <p role="alert" className="p-5 text-ui-body text-red-300">{error}</p> : null}
+            {error ? <p role="alert" className="p-5 text-ui-body text-destructive">{error}</p> : null}
             {users.map((member) => (
-              <div className="grid grid-cols-[1fr_110px_110px_80px] items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0" key={member.id}>
-                <div className="flex min-w-0 items-center gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-ui-meta font-medium">{member.displayName.slice(0, 2).toUpperCase()}</span><span className="min-w-0"><span className="block truncate text-ui-control font-medium">{member.displayName}</span><span className="block truncate font-mono text-ui-meta text-muted-foreground">@{member.username}</span></span></div>
+              <div className="grid grid-cols-2 items-center gap-4 border-b border-border last:border-b-0 md:grid-cols-[minmax(0,1fr)_100px_110px_100px]" key={member.id}>
+                <div className="col-span-2 flex min-w-0 items-center gap-3 md:col-span-1"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-ui-meta font-medium">{member.displayName.slice(0, 2).toUpperCase()}</span><span className="min-w-0"><span className="block truncate text-ui-control font-medium">{member.displayName}</span><span className="block truncate text-ui-meta text-muted-foreground">@{member.username}</span></span></div>
                 <span className="text-ui-control capitalize text-muted-foreground">{member.role}</span>
-                <span className="flex items-center gap-1.5 text-ui-control capitalize text-muted-foreground"><span aria-hidden="true" className={cn("size-1.5 rounded-full", member.status === "active" ? "bg-emerald-400" : "bg-red-400")} />{member.status}</span>
-                {member.id !== dashboard.user.id ? <Button aria-label={`${member.status === "active" ? "Suspend" : "Restore"} ${member.displayName}`} disabled={loading || pendingUserId !== null} onClick={() => void updateStatus(member.id, member.status === "active" ? "suspended" : "active")} size="sm" variant="ghost">{pendingUserId === member.id ? "Updating…" : member.status === "active" ? "Suspend" : "Restore"}</Button> : <span className="text-right font-mono text-ui-micro text-muted-foreground">YOU</span>}
+                <span className="flex items-center gap-1.5 text-ui-control capitalize text-muted-foreground"><span aria-hidden="true" className={cn("size-1.5 rounded-full", member.status === "active" ? "bg-[var(--healthy)]" : "bg-destructive")} />{member.status}</span>
+                {member.id !== dashboard.user.id ? <Button aria-label={`${member.status === "active" ? "Suspend" : "Restore"} ${member.displayName}`} disabled={loading || pendingUserId !== null} onClick={() => void updateStatus(member.id, member.status === "active" ? "suspended" : "active")} size="sm" variant="ghost">{pendingUserId === member.id ? "Updating…" : member.status === "active" ? "Suspend" : "Restore"}</Button> : <span className="text-right text-ui-meta text-muted-foreground">You</span>}
               </div>
             ))}
           </div>
@@ -646,12 +623,12 @@ function AddProjectDialog({
       <DialogTrigger asChild>
         <Button className="gap-2" size="sm"><Plus className="size-3.5" /> Register project</Button>
       </DialogTrigger>
-      <DialogContent className="border-border bg-[#191c21] sm:max-w-[520px]">
+      <DialogContent className="management-dialog border-border bg-card sm:max-w-[520px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Register an existing workspace</DialogTitle>
             <DialogDescription>
-              The server resolves the canonical path and requires an active organization workspace grant before saving it.
+              Save a directory your organization has granted access to, so your team can start tasks there.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-5">
@@ -662,7 +639,7 @@ function AddProjectDialog({
                 className="h-10 bg-background/40"
                 maxLength={160}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Agent Harness"
+                placeholder="Product website"
                 required
                 value={name}
               />
@@ -683,7 +660,7 @@ function AddProjectDialog({
                 Registration does not create, clone, or move the directory.
               </span>
             </div>
-            {error ? <p className="text-ui-body text-red-300" role="alert">{error}</p> : null}
+            {error ? <p className="text-ui-body text-destructive" role="alert">{error}</p> : null}
           </div>
           <DialogFooter>
             <Button onClick={() => setOpen(false)} type="button" variant="ghost">Cancel</Button>
@@ -739,12 +716,12 @@ function ProjectSettingsDialog({
           <Pencil className="size-3" /> Manage
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-border bg-[#191c21] sm:max-w-[480px]">
+      <DialogContent className="management-dialog border-border bg-card sm:max-w-[480px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Manage saved project</DialogTitle>
             <DialogDescription>
-              Rename this registry entry or control whether it is available for new work. Its canonical path cannot be edited.
+              Change this project’s name or make it available for new tasks. The workspace location stays the same.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-5">
@@ -759,8 +736,8 @@ function ProjectSettingsDialog({
               />
             </label>
             <div className="rounded-md border border-border/80 bg-background/25 px-3 py-2.5">
-              <p className="font-mono text-ui-micro uppercase tracking-[0.13em] text-muted-foreground">Canonical path</p>
-              <p className="mt-1.5 break-all font-mono text-ui-code text-[#c5cad0]">{project.path}</p>
+              <p className="text-ui-meta text-muted-foreground">Workspace location</p>
+              <p className="mt-1.5 break-all font-mono text-ui-code text-foreground">{project.path}</p>
             </div>
             <label className="flex items-start gap-3 rounded-md border border-border/80 bg-background/25 px-3 py-3 text-ui-control">
               <input
@@ -776,7 +753,7 @@ function ProjectSettingsDialog({
                 </span>
               </span>
             </label>
-            {error ? <p className="text-ui-body text-red-300" role="alert">{error}</p> : null}
+            {error ? <p className="text-ui-body text-destructive" role="alert">{error}</p> : null}
           </div>
           <DialogFooter>
             <Button onClick={() => setOpen(false)} type="button" variant="ghost">Cancel</Button>
@@ -789,12 +766,12 @@ function ProjectSettingsDialog({
 }
 
 function projectAvailabilityStyle(project: SavedProjectSummary): string {
-  if (!project.enabled) return "border-border bg-white/[0.04] text-muted-foreground";
+  if (!project.enabled) return "border-border bg-muted text-muted-foreground";
   if (project.availability === "available") {
-    return "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300";
+    return "border-[var(--c-verified)]/20 bg-[var(--healthy)]/[0.07] text-[var(--healthy)]";
   }
   if (project.availability === "workspace_grant_revoked") {
-    return "border-red-400/20 bg-red-400/[0.07] text-red-300";
+    return "border-destructive/20 bg-destructive/[0.07] text-destructive";
   }
   return "border-[var(--waiting)]/20 bg-[var(--waiting)]/[0.07] text-[var(--waiting)]";
 }
@@ -890,30 +867,30 @@ function ProjectsView({
         view="projects"
       />
       <PageScrollRegion view="projects">
-        <div className="mx-auto max-w-5xl">
-          <section className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-border bg-card/30 p-4">
+        <div className="management-content">
+          <section className="management-metrics">
+            <div className="management-panel">
               <FolderGit2 className="size-4 text-primary" />
               <p className="mt-4 text-2xl font-medium">{loading ? "—" : projects.length}</p>
-              <p className="mt-1 text-ui-control text-muted-foreground">Saved project registry</p>
+              <p className="mt-1 text-ui-control text-muted-foreground">Saved projects</p>
             </div>
-            <div className="rounded-lg border border-border bg-card/30 p-4">
+            <div className="management-panel">
               <ShieldCheck className="size-4 text-[var(--healthy)]" />
               <p className="mt-4 text-2xl font-medium">{loading ? "—" : `${availableProjects}/${enabledProjects}`}</p>
-              <p className="mt-1 text-ui-control text-muted-foreground">Available / enabled projects</p>
+              <p className="mt-1 text-ui-control text-muted-foreground">Available / enabled</p>
             </div>
-            <div className="rounded-lg border border-border bg-card/30 p-4">
+            <div className="management-panel">
               <Activity className="size-4 text-human" />
               <p className="mt-4 text-2xl font-medium">{activeTasks}</p>
-              <p className="mt-1 text-ui-control text-muted-foreground">Runtime-derived active task states</p>
+              <p className="mt-1 text-ui-control text-muted-foreground">Active tasks</p>
             </div>
           </section>
 
           <div className="mt-7 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 className="text-sm font-medium">Saved projects</h2>
+              <h2 className="text-ui-control font-medium">Saved projects</h2>
               <p className="mt-1 text-ui-body text-muted-foreground">
-                Durable organization registry. Repository details are inspected on the server for each read.
+                Keep the workspaces your team returns to in one place.
               </p>
             </div>
             <Button className="gap-2" disabled={loading} onClick={() => void refreshProjects()} size="sm" variant="outline">
@@ -922,8 +899,8 @@ function ProjectsView({
           </div>
 
           {error ? (
-            <div className="mt-4 flex items-start gap-3 rounded-lg border border-red-400/20 bg-red-400/[0.045] p-4" role="alert">
-              <CircleAlert className="mt-0.5 size-4 shrink-0 text-red-300" />
+            <div className="mt-4 flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/[0.045] p-4" role="alert">
+              <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
               <div className="min-w-0 flex-1">
                 <p className="text-ui-control font-medium">
                   {projects.length ? "Saved project refresh failed" : "Saved project registry unavailable"}
@@ -935,15 +912,15 @@ function ProjectsView({
           ) : null}
 
           {loading ? (
-            <div aria-busy="true" className="mt-4 grid min-h-44 place-items-center rounded-lg border border-border bg-card/20">
+            <div aria-busy="true" className="mt-4 grid min-h-44 place-items-center rounded-2xl border border-border bg-card">
               <div className="flex items-center gap-2 text-ui-control text-muted-foreground">
                 <LoaderCircle className="size-3.5 animate-spin" /> Loading saved projects
               </div>
             </div>
           ) : !error && projects.length === 0 ? (
-            <div className="mt-4 rounded-lg border border-dashed border-border bg-card/20 p-8 text-center">
+            <div className="mt-4 management-empty">
               <FolderGit2 className="mx-auto size-5 text-muted-foreground" />
-              <h3 className="mt-3 text-sm font-medium">No saved projects</h3>
+              <h3 className="mt-3 text-ui-control font-medium">No saved projects</h3>
               <p className="mx-auto mt-2 max-w-md text-ui-body text-muted-foreground">
                 {dashboard.user.role === "admin"
                   ? "Register an existing directory covered by an organization workspace grant."
@@ -951,51 +928,72 @@ function ProjectsView({
               </p>
             </div>
           ) : projects.length ? (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="mt-5 space-y-4">
               {projects.map((project) => (
-                <article className="rounded-lg border border-border bg-card/25 p-5" key={project.id}>
+                <article className="management-panel" key={project.id}>
                   <div className="flex items-start gap-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-secondary/60">
-                      <FolderGit2 className="size-4 text-primary" />
+                    <span className="management-icon">
+                      {project.isGitRepository ? <FolderGit2 className="size-4 text-primary" /> : <FolderOpen className="size-4 text-primary" />}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="min-w-0 truncate text-sm font-medium">{project.name}</h3>
-                        <span className={cn("rounded-sm border px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-wider", projectAvailabilityStyle(project))}>
+                        <h3 className="min-w-0 truncate text-ui-control font-medium">{project.name}</h3>
+                        <span className={cn("rounded-full border px-2 py-0.5 text-ui-meta", projectAvailabilityStyle(project))}>
                           {projectAvailabilityLabel(project)}
                         </span>
                       </div>
-                      <p className="mt-1 truncate font-mono text-ui-meta text-muted-foreground" title={project.path}>{project.path}</p>
+                      <p className="mt-1 truncate font-mono text-ui-code text-muted-foreground" title={project.path}>{project.path}</p>
                     </div>
                     {dashboard.user.role === "admin" ? <ProjectSettingsDialog onUpdated={updateProject} project={project} /> : null}
                   </div>
 
-                  <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/70 pt-4 text-ui-control">
-                    <div>
-                      <dt className="font-mono text-ui-micro uppercase tracking-[0.13em] text-muted-foreground">Repository</dt>
-                      <dd className="mt-1.5 truncate capitalize">{project.repositoryStatus.replaceAll("_", " ")}</dd>
+                  {project.repositoryStatus === "repository" ? (
+                    <div className="mt-5 border-t border-border pt-4">
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-ui-control text-muted-foreground">
+                        <span>Git repository</span>
+                        {project.branch ? (
+                          <span className="inline-flex min-w-0 items-center gap-2">
+                            <GitBranch aria-hidden="true" className="size-3.5 shrink-0" />
+                            <span className="truncate font-mono text-ui-code text-foreground">{project.branch}</span>
+                          </span>
+                        ) : null}
+                        {project.dirty !== null ? (
+                          <span className={project.dirty ? "text-[var(--waiting)]" : undefined}>
+                            {project.dirty ? "Uncommitted changes" : "Working tree clean"}
+                          </span>
+                        ) : null}
+                      </div>
+                      {project.headCommit || project.upstream || project.remoteUrl ? (
+                        <details className="management-project-disclosure mt-4">
+                          <summary className="w-fit cursor-pointer text-ui-control text-muted-foreground">Repository details</summary>
+                          <dl className="management-project-details">
+                            {project.headCommit ? (
+                              <div>
+                                <dt className="text-ui-meta text-muted-foreground">Commit</dt>
+                                <dd className="mt-1.5 truncate font-mono text-ui-code">{project.headCommit.slice(0, 10)}</dd>
+                              </div>
+                            ) : null}
+                            {project.upstream ? (
+                              <div>
+                                <dt className="text-ui-meta text-muted-foreground">Upstream</dt>
+                                <dd className="mt-1.5 truncate font-mono text-ui-code">{project.upstream}</dd>
+                              </div>
+                            ) : null}
+                            {project.remoteUrl ? (
+                              <div>
+                                <dt className="text-ui-meta text-muted-foreground">Origin</dt>
+                                <dd className="mt-1.5 break-all font-mono text-ui-code">{project.remoteUrl}</dd>
+                              </div>
+                            ) : null}
+                          </dl>
+                        </details>
+                      ) : null}
                     </div>
-                    <div>
-                      <dt className="font-mono text-ui-micro uppercase tracking-[0.13em] text-muted-foreground">Working tree</dt>
-                      <dd className={cn("mt-1.5", project.dirty === true && "text-[var(--waiting)]")}>{project.dirty === null ? "Not reported" : project.dirty ? "Dirty" : "Clean"}</dd>
-                    </div>
-                    <div>
-                      <dt className="font-mono text-ui-micro uppercase tracking-[0.13em] text-muted-foreground">Branch</dt>
-                      <dd className="mt-1.5 truncate font-mono text-ui-code">{project.branch ?? "Not reported"}</dd>
-                    </div>
-                    <div>
-                      <dt className="font-mono text-ui-micro uppercase tracking-[0.13em] text-muted-foreground">Commit</dt>
-                      <dd className="mt-1.5 truncate font-mono text-ui-code">{project.headCommit?.slice(0, 10) ?? "Not reported"}</dd>
-                    </div>
-                    <div>
-                      <dt className="font-mono text-ui-micro uppercase tracking-[0.13em] text-muted-foreground">Upstream</dt>
-                      <dd className="mt-1.5 truncate font-mono text-ui-code">{project.upstream ?? "Not reported"}</dd>
-                    </div>
-                    <div>
-                      <dt className="font-mono text-ui-micro uppercase tracking-[0.13em] text-muted-foreground">Origin</dt>
-                      <dd className="mt-1.5 truncate font-mono text-ui-code" title={project.remoteUrl ?? undefined}>{project.remoteUrl ?? "Not reported"}</dd>
-                    </div>
-                  </dl>
+                  ) : (
+                    <p className="mt-5 border-t border-border pt-4 text-ui-control text-muted-foreground">
+                      {project.repositoryStatus === "not_repository" ? "Folder workspace" : "Repository details are unavailable"}
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
@@ -1033,10 +1031,10 @@ function UsageMeter({
     ? `${normalizedValue.toLocaleString()} of ${limit.toLocaleString()} used (${percentage}%)`
     : `${normalizedValue.toLocaleString()} used; no limit reported`;
   return (
-    <div className="rounded-lg border border-border bg-card/25 p-4">
+    <div className="management-panel">
       <div className="flex items-center justify-between gap-3">
         <span className="text-ui-control font-medium">{label}</span>
-        <span className="font-mono text-ui-meta text-muted-foreground">
+        <span className="text-ui-meta text-muted-foreground">
           {compactNumber.format(normalizedValue)} / {hasLimit ? compactNumber.format(limit) : "—"}
         </span>
       </div>
@@ -1052,12 +1050,12 @@ function UsageMeter({
         <div
           className={cn(
             "h-full rounded-full",
-            percentage >= 90 ? "bg-red-400" : percentage >= 70 ? "bg-[var(--waiting)]" : "bg-primary",
+            percentage >= 90 ? "bg-destructive" : percentage >= 70 ? "bg-[var(--waiting)]" : "bg-primary",
           )}
           style={{ width: `${visualPercentage}%` }}
         />
       </div>
-      <p className="mt-2 font-mono text-ui-meta text-muted-foreground">
+      <p className="mt-2 text-ui-meta text-muted-foreground">
         {hasLimit ? `${percentage}% used` : "Limit unavailable"}
       </p>
     </div>
@@ -1073,22 +1071,22 @@ function UsageView({
     <>
       <PageHeader view="usage" />
       <PageScrollRegion view="usage">
-        <div className="mx-auto max-w-5xl">
-          <section className="mb-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-border bg-card/30 p-4">
+        <div className="management-content">
+          <section className="mb-8 management-metrics">
+            <div className="management-panel">
               <Gauge className="size-4 text-primary" />
               <p className="mt-4 text-2xl font-medium">{compactNumber.format(totalTokens)}</p>
-              <p className="mt-1 text-ui-control text-muted-foreground">Settled input + output tokens</p>
+              <p className="mt-1 text-ui-control text-muted-foreground">Total tokens used</p>
             </div>
-            <div className="rounded-lg border border-border bg-card/30 p-4">
+            <div className="management-panel">
               <Activity className="size-4 text-[var(--healthy)]" />
               <p className="mt-4 text-2xl font-medium">{usage.activeRuns}</p>
-              <p className="mt-1 text-ui-control text-muted-foreground">Active reserved runs</p>
+              <p className="mt-1 text-ui-control text-muted-foreground">Active runs</p>
             </div>
-            <div className="rounded-lg border border-border bg-card/30 p-4">
+            <div className="management-panel">
               <Users className="size-4 text-human" />
               <p className="mt-4 text-2xl font-medium">{usage.seatsUsed}</p>
-              <p className="mt-1 text-ui-control text-muted-foreground">Active workspace seats</p>
+              <p className="mt-1 text-ui-control text-muted-foreground">Seats in use</p>
             </div>
           </section>
 
@@ -1098,19 +1096,19 @@ function UsageView({
             <UsageMeter label="Seats" limit={usage.seatLimit} value={usage.seatsUsed} />
           </section>
 
-          <section className="mt-6 overflow-hidden rounded-lg border border-border bg-card/25">
-            <div className="grid grid-cols-2 gap-4 border-b border-border px-4 py-3 font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground sm:grid-cols-4">
+          <section className="mt-6 management-list">
+            <div className="management-table-heading grid grid-cols-2 gap-4 border-b border-border text-ui-meta text-muted-foreground sm:grid-cols-4">
               <span>Input tokens</span><span>Output tokens</span><span>Period start</span><span>Period end</span>
             </div>
             <div className="grid grid-cols-2 gap-4 px-4 py-4 text-ui-control sm:grid-cols-4">
-              <span className="font-mono">{usage.inputTokens.toLocaleString()}</span>
-              <span className="font-mono">{usage.outputTokens.toLocaleString()}</span>
+              <span className="tabular-nums">{usage.inputTokens.toLocaleString()}</span>
+              <span className="tabular-nums">{usage.outputTokens.toLocaleString()}</span>
               <span>{new Date(usage.periodStart).toLocaleDateString()}</span>
               <span>{usage.periodEnd ? new Date(usage.periodEnd).toLocaleDateString() : "Open-ended"}</span>
             </div>
           </section>
           <div className="mt-6 rounded-lg border border-[var(--waiting)]/20 bg-[var(--waiting)]/[0.045] p-4 text-ui-body text-muted-foreground">
-            Tokens are settled from exact Codex turn events. Currency cost is intentionally unavailable until route-specific, versioned pricing and provider reconciliation are configured.
+            Cost estimates are unavailable until pricing is configured for your model routes.
           </div>
         </div>
       </PageScrollRegion>
@@ -1146,27 +1144,27 @@ function AuditView() {
     <>
       <PageHeader view="audit" />
       <PageScrollRegion view="audit">
-        <div className="mx-auto max-w-5xl">
+        <div className="management-content">
           <div className="mb-4 flex items-center gap-2 text-ui-control text-muted-foreground">
             <ScrollText className="size-3.5 text-human" />
-            Latest 100 tenant events · metadata is scalar-filtered before it reaches the browser
+            The latest 100 events in your workspace
           </div>
-          <div className="overflow-hidden rounded-lg border border-border bg-card/25">
+          <div className="management-list">
             {loading ? <p className="p-5 text-ui-body text-muted-foreground">Loading audit log…</p> : null}
-            {error ? <p className="p-5 text-ui-body text-red-300" role="alert">{error}</p> : null}
+            {error ? <p className="p-5 text-ui-body text-destructive" role="alert">{error}</p> : null}
             {!loading && !error && events.length === 0 ? (
               <p className="p-5 text-ui-body text-muted-foreground">No audit events have been recorded.</p>
             ) : null}
             {events.map((event) => (
               <article className="border-b border-border/60 px-4 py-3 last:border-b-0" key={event.id}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="font-mono text-ui-code font-medium text-foreground">{event.action}</span>
-                  <span className="rounded-sm bg-white/[0.04] px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-wider text-muted-foreground">{event.targetType}</span>
-                  <time className="ml-auto font-mono text-ui-meta text-muted-foreground" dateTime={event.createdAt}>
+                  <span className="min-w-0 break-all font-mono text-ui-code font-medium text-foreground">{event.action}</span>
+                  <span className="rounded-sm bg-muted px-1.5 py-0.5 text-ui-meta text-muted-foreground">{event.targetType}</span>
+                  <time className="ml-auto text-ui-meta text-muted-foreground" dateTime={event.createdAt}>
                     {auditTimestamp.format(new Date(event.createdAt))}
                   </time>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-ui-meta text-muted-foreground">
+                <div className="mt-2 flex min-w-0 flex-wrap gap-x-4 gap-y-1 break-all font-mono text-ui-meta text-muted-foreground [&>span]:min-w-0 [&>span]:max-w-full">
                   <span>actor {event.actorUserId ?? "system"}</span>
                   {event.targetId ? <span>target {event.targetId}</span> : null}
                   {Object.entries(event.metadata).map(([key, value]) => (
@@ -1186,20 +1184,20 @@ const plans: Array<{ id: PlanId; name: string; summary: string; facts: string[] 
   {
     id: "free",
     name: "Free",
-    summary: "Built-in evaluation tier",
-    facts: ["No Stripe subscription", "Limits enforced by the server", "One default seat"],
+    summary: "A starting point for exploring the workspace",
+    facts: ["No subscription required", "Workspace usage limits", "One seat by default"],
   },
   {
     id: "pro",
     name: "Pro",
-    summary: "Paid Stripe subscription tier",
-    facts: ["Operator-configured Stripe price", "Server-issued limits", "Webhook-verified activation"],
+    summary: "For individual work with more capacity",
+    facts: ["Price shown at checkout", "Limits depend on your subscription", "Access after payment confirmation"],
   },
   {
     id: "team",
     name: "Team",
-    summary: "Paid workspace subscription tier",
-    facts: ["Operator-configured Stripe price", "Seats read from the subscription", "Webhook-verified activation"],
+    summary: "For teams working in a shared workspace",
+    facts: ["Price shown at checkout", "Seats depend on your subscription", "Access after payment confirmation"],
   },
 ];
 
@@ -1230,29 +1228,29 @@ function BillingView({ dashboard }: Pick<ControlPlaneViewProps, "dashboard">) {
     <>
       <PageHeader action={dashboard.subscription.status === "active" && dashboard.subscription.stripeConfigured ? <Button onClick={openPortal} size="sm" variant="outline"><CreditCard className="mr-2 size-3.5" /> Manage billing</Button> : undefined} view="billing" />
       <PageScrollRegion view="billing">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-6 flex items-start justify-between rounded-lg border border-primary/20 bg-primary/[0.045] p-5">
-            <div><p className="font-mono text-ui-micro uppercase tracking-[0.16em] text-primary">Current plan</p><h2 className="mt-2 text-xl font-medium capitalize">{dashboard.subscription.plan}</h2><p className="mt-1 text-ui-control text-muted-foreground">{dashboard.subscription.status === "none" ? "Local plan · no active subscription" : dashboard.subscription.status}</p></div>
+        <div className="management-content">
+          <div className="mb-8 flex items-start justify-between management-panel">
+            <div><p className="text-ui-meta text-primary">Current plan</p><h2 className="mt-2 text-xl font-medium capitalize">{dashboard.subscription.plan}</h2><p className="mt-1 text-ui-control text-muted-foreground">{dashboard.subscription.status === "none" ? "Local plan · no active subscription" : dashboard.subscription.status}</p></div>
             <CircleGauge className="size-5 text-primary" />
           </div>
 
           {message ? <div role="status" className="mb-5 rounded-md border border-border bg-card px-4 py-3 text-ui-body text-muted-foreground">{message}</div> : null}
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-4 xl:grid-cols-3">
             {plans.map((plan) => {
               const current = plan.id === dashboard.subscription.plan;
               const paidPlan = plan.id === "pro" || plan.id === "team";
               const checkoutUnavailable = paidPlan && !dashboard.subscription.stripeConfigured;
               const facts = current
                 ? [
-                    `${compactNumber.format(dashboard.usage.requestLimit)} requests per metering period`,
-                    `${dashboard.usage.activeRunLimit.toLocaleString()} concurrent runs`,
-                    `${dashboard.usage.seatLimit.toLocaleString()} active seats`,
+                    `${compactNumber.format(dashboard.usage.requestLimit)} ${dashboard.usage.requestLimit === 1 ? "request" : "requests"} per billing period`,
+                    `${dashboard.usage.activeRunLimit.toLocaleString()} concurrent ${dashboard.usage.activeRunLimit === 1 ? "run" : "runs"}`,
+                    `${dashboard.usage.seatLimit.toLocaleString()} active ${dashboard.usage.seatLimit === 1 ? "seat" : "seats"}`,
                   ]
                 : plan.facts;
               return (
-                <article className={cn("flex min-h-[310px] flex-col rounded-lg border bg-card/25 p-5", current ? "border-primary/45" : "border-border")} key={plan.id}>
-                  <div className="flex items-center justify-between"><h3 className="text-sm font-medium">{plan.name}</h3>{current ? <span className="rounded-sm bg-primary/10 px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-wider text-primary">current</span> : null}</div>
+                <article className={cn("flex min-h-[350px] flex-col rounded-2xl border bg-card p-6", current ? "border-primary/45" : "border-border")} key={plan.id}>
+                  <div className="flex items-center justify-between"><h3 className="text-ui-control font-medium">{plan.name}</h3>{current ? <span className="rounded-sm bg-primary/10 px-1.5 py-0.5 text-ui-meta text-primary">current</span> : null}</div>
                   <p className="mt-5 text-xl font-medium tracking-[-0.025em]">
                     {plan.id === "free"
                       ? "Included"
@@ -1261,16 +1259,16 @@ function BillingView({ dashboard }: Pick<ControlPlaneViewProps, "dashboard">) {
                         : "Stripe checkout unavailable"}
                   </p>
                   <p className="mt-2 text-ui-body text-muted-foreground">{plan.summary}</p>
-                  <ul className="mt-7 space-y-3">
-                    {facts.map((fact) => <li className="flex items-center gap-2 text-ui-control text-[#c2c7cd]" key={fact}><Check aria-hidden="true" className="size-3.5 text-emerald-400" />{fact}</li>)}
+                  <ul className="mt-6 mb-8 space-y-3">
+                    {facts.map((fact) => <li className="flex items-center gap-2 text-ui-control text-foreground" key={fact}><Check aria-hidden="true" className="size-3.5 text-[var(--healthy)]" />{fact}</li>)}
                   </ul>
-                  <Button className="mt-auto" disabled={current || plan.id === "free" || checkoutUnavailable} onClick={() => (plan.id === "pro" || plan.id === "team") && selectPlan(plan.id)} variant={plan.id === "team" ? "default" : "outline"}>{current ? "Current plan" : plan.id === "free" ? "No self-service switch" : checkoutUnavailable ? "Checkout unavailable" : <>Choose {plan.name}<ArrowUpRight aria-hidden="true" className="ml-2 size-3.5" /></>}</Button>
+                  <Button className="mt-auto w-full" disabled={current || plan.id === "free" || checkoutUnavailable} onClick={() => (plan.id === "pro" || plan.id === "team") && selectPlan(plan.id)} variant={plan.id === "team" ? "default" : "outline"}>{current ? "Current plan" : plan.id === "free" ? "No self-service switch" : checkoutUnavailable ? "Checkout unavailable" : <>Choose {plan.name}<ArrowUpRight aria-hidden="true" className="ml-2 size-3.5" /></>}</Button>
                 </article>
               );
             })}
           </div>
 
-          <div className="mt-6 flex items-center gap-3 rounded-lg border border-border bg-card/20 p-4"><ShieldCheck className="size-4 text-emerald-400" /><p className="text-ui-body text-muted-foreground">Entitlements are computed on the server from verified Stripe webhooks. Checkout redirects never grant access by themselves.</p></div>
+          <div className="mt-6 flex items-center gap-3 management-panel"><ShieldCheck className="size-4 text-[var(--healthy)]" /><p className="text-ui-body text-muted-foreground">Your plan and limits update after Stripe confirms a subscription change.</p></div>
         </div>
       </PageScrollRegion>
     </>

@@ -60,15 +60,15 @@ export function CommandPalette({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="top-[18%] max-w-[620px] translate-y-0 overflow-hidden border-border bg-[#15191f] p-0 shadow-2xl sm:rounded-xl">
+      <DialogContent className="top-[15%] max-w-[600px] translate-y-0 overflow-hidden rounded-2xl border-border bg-popover p-0 shadow-xl sm:rounded-2xl">
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <DialogDescription className="sr-only">
-          Search tasks or navigate to an existing Agent Harness view.
+          Find a task or open an onto-work page.
         </DialogDescription>
-        <Command className="rounded-xl bg-transparent">
+        <Command className="rounded-2xl bg-transparent [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-sans [&_[cmdk-group-heading]]:text-ui-meta [&_[cmdk-group-heading]]:font-medium [&_[cmdk-item]]:min-h-10 [&_[cmdk-item]]:rounded-lg [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:font-sans [&_[cmdk-item]]:text-ui-control">
           <CommandInput
             aria-label="Search commands and tasks"
-            className="h-12"
+            className="h-14 text-ui-body"
             placeholder="Search tasks and commands…"
           />
           <CommandList className="max-h-[min(430px,62vh)] p-2">
@@ -77,14 +77,14 @@ export function CommandPalette({
               <CommandItem onSelect={() => run(onNewTask)} value="new task create">
                 <Plus />
                 Start a new task
-                <CommandShortcut>⌘N</CommandShortcut>
+                <CommandShortcut className="font-sans tracking-normal">⌘⇧N</CommandShortcut>
               </CommandItem>
             </CommandGroup>
             <CommandSeparator className="my-1" />
             <CommandGroup heading="Work">
-              <CommandItem onSelect={() => run(() => onNavigate("workspace"))} value="workspace task cockpit">
+              <CommandItem onSelect={() => run(() => onNavigate("workspace"))} value="workspace tasks">
                 <LayoutDashboard />
-                Task cockpit
+                Tasks
               </CommandItem>
               <CommandItem onSelect={() => run(() => onNavigate("projects"))} value="projects repositories worktrees">
                 <FolderGit2 />
@@ -99,7 +99,7 @@ export function CommandPalette({
                 Artifacts
               </CommandItem>
             </CommandGroup>
-            <CommandGroup heading="Operate">
+            <CommandGroup heading="Workspace">
               <CommandItem onSelect={() => run(() => onNavigate("agents"))} value="agents supervision child tasks branches">
                 <Workflow />
                 Agents
@@ -117,7 +117,7 @@ export function CommandPalette({
                 Capabilities
               </CommandItem>
             </CommandGroup>
-            <CommandGroup heading="Manage">
+            <CommandGroup heading="Organization">
               <CommandItem onSelect={() => run(() => onNavigate("usage"))} value="usage quota tokens concurrency seats">
                 <Gauge />
                 Usage
@@ -155,7 +155,7 @@ export function CommandPalette({
                     >
                       <MessageSquareText />
                       <span className="min-w-0 flex-1 truncate">{thread.title}</span>
-                      <span className="text-ui-micro shrink-0 font-mono capitalize text-muted-foreground">
+                      <span className="text-ui-meta shrink-0 capitalize text-muted-foreground">
                         {thread.status}
                       </span>
                     </CommandItem>
@@ -164,9 +164,8 @@ export function CommandPalette({
               </>
             ) : null}
           </CommandList>
-          <div className="text-ui-meta flex items-center justify-between border-t border-border/80 px-3 py-2 font-mono text-muted-foreground">
+          <div className="text-ui-meta flex items-center justify-between border-t border-border px-5 py-3 text-muted-foreground">
             <span>↑↓ navigate · ↵ open</span>
-            <span>disabled items explain why · nothing is hidden</span>
             <span>Esc close</span>
           </div>
         </Command>

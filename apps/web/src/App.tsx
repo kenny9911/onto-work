@@ -437,7 +437,7 @@ function LoadingScreen() {
   return (
     <main className="grid min-h-screen place-items-center bg-background">
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <span className="grid size-8 place-items-center rounded-lg border border-border bg-card font-mono text-ui-meta font-semibold text-primary">AH</span>
+        <span className="grid size-8 place-items-center rounded-lg border border-border bg-card text-ui-meta font-semibold text-human">ow</span>
         <LoaderCircle className="size-4 animate-spin" />
         Opening workspace
       </div>
@@ -478,20 +478,20 @@ function PasswordRotationDialog({
 
   return (
     <Dialog open={user.mustChangePassword}>
-      <DialogContent className="border-border bg-[#191c21] sm:max-w-md">
+      <DialogContent className="border-border bg-popover sm:max-w-md">
         <form onSubmit={submit}>
           <DialogHeader>
             <div className="mb-2 grid size-9 place-items-center rounded-lg border border-primary/20 bg-primary/10"><KeyRound className="size-4 text-primary" /></div>
             <DialogTitle>Replace the bootstrap password</DialogTitle>
             <DialogDescription>
-              This temporary credential has completed its only job. Choose a unique password before using the harness.
+              Choose a new password to finish setting up your workspace. Use at least 12 characters.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-5">
             <label className="grid gap-2 text-ui-control text-muted-foreground">Current password<Input autoComplete="current-password" onChange={(event) => setCurrentPassword(event.target.value)} required type="password" value={currentPassword} /></label>
             <label className="grid gap-2 text-ui-control text-muted-foreground">New password<Input autoComplete="new-password" minLength={12} onChange={(event) => setNewPassword(event.target.value)} required type="password" value={newPassword} /></label>
             <label className="grid gap-2 text-ui-control text-muted-foreground">Confirm new password<Input autoComplete="new-password" minLength={12} onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} /></label>
-            {error ? <p role="alert" className="text-ui-body text-red-300">{error}</p> : null}
+            {error ? <p role="alert" className="text-ui-body text-destructive">{error}</p> : null}
           </div>
           <DialogFooter><Button className="w-full" disabled={saving} type="submit">{saving ? "Updating…" : "Change password and sign in again"}</Button></DialogFooter>
         </form>
@@ -527,7 +527,10 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
   const [savedProjectsError, setSavedProjectsError] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [composerDrafts, setComposerDrafts] = useState<Record<string, string>>({});
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    try { return localStorage.getItem("onto-work-theme") === "dark" ? "dark" : "light"; }
+    catch { return "light"; }
+  });
   const [threadHydrationRevision, setThreadHydrationRevision] = useState(0);
   const [fatalError, setFatalError] = useState<string | null>(null);
   const [runtimeStream, setRuntimeStream] = useState<RuntimeStreamState>(
@@ -952,6 +955,8 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
 
   useEffect(() => {
     document.documentElement.dataset.ahTheme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#242320" : "#faf9f6");
+    try { localStorage.setItem("onto-work-theme", theme); } catch { /* Theme still works without storage. */ }
   }, [theme]);
 
   useEffect(() => {
@@ -1218,7 +1223,7 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
           billing: "Billing",
           audit: "Audit log",
         }[view];
-    document.title = `${title} · Agent Harness`;
+    document.title = `${title} · onto-work`;
   }, [activeThread?.title, view]);
 
   async function sendMessage(message: string, uploadIds?: string[]) {
@@ -1522,7 +1527,7 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
   }
 
   return (
-    <div className="relative grid h-dvh min-h-0 min-w-0 grid-rows-[44px_minmax(0,1fr)] overflow-hidden bg-background">
+    <div className="relative grid h-dvh min-h-0 min-w-0 grid-rows-[56px_minmax(0,1fr)] overflow-hidden bg-background">
       <a
         className="sr-only z-50 rounded-md bg-popover px-3 py-2 text-ui-control text-foreground focus:not-sr-only focus:absolute focus:left-3 focus:top-3"
         href="#main-content"
@@ -1555,9 +1560,9 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
         />
 
       <Dialog onOpenChange={setSidebarOpen} open={sidebarOpen}>
-        <DialogContent className="left-0 top-0 h-dvh w-[min(88vw,320px)] max-w-none translate-x-0 translate-y-0 gap-0 border-y-0 border-l-0 p-0 sm:rounded-none [&>button]:hidden min-[900px]:hidden">
+        <DialogContent className="left-0 top-0 flex h-dvh max-h-none overflow-hidden w-[min(88vw,320px)] max-w-none translate-x-0 translate-y-0 gap-0 border-y-0 border-l-0 rounded-none p-0 sm:rounded-none [&>button]:hidden min-[900px]:hidden">
           <DialogTitle className="sr-only">Workspace navigation</DialogTitle>
-          <DialogDescription className="sr-only">Choose a task or control-plane section.</DialogDescription>
+          <DialogDescription className="sr-only">Choose a task or workspace section.</DialogDescription>
           <Sidebar
             activeThreadId={activeThreadId}
             mobile
@@ -1677,9 +1682,8 @@ export function App() {
   if (session.user.mustChangePassword) {
     return (
       <main className="relative grid min-h-screen place-items-center overflow-hidden bg-background">
-        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(183,255,74,.075),transparent_38%)]" />
         <div className="relative flex items-center gap-3 text-sm text-muted-foreground">
-          <span className="grid size-8 place-items-center rounded-lg border border-border bg-card font-mono text-ui-meta font-semibold text-primary">AH</span>
+          <span className="grid size-8 place-items-center rounded-lg border border-border bg-card text-ui-meta font-semibold text-human">ow</span>
           Securing the workspace
         </div>
         <PasswordRotationDialog

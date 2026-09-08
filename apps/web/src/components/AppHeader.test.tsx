@@ -87,15 +87,15 @@ describe("AppHeader", () => {
       />,
     );
 
-    expect(screen.getByRole("banner", { name: "Workspace header" })).toHaveClass("h-11");
+    expect(screen.getByRole("banner", { name: "Workspace header" })).toHaveClass("h-14");
     expect(screen.getByText("market-pulse")).toBeInTheDocument();
     expect(screen.getByText("codex/provider-health")).toBeInTheDocument();
-    expect(screen.getByText("ORG ADMIN")).toBeInTheDocument();
+    expect(screen.getByText("Administrator")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Open Agent Harness workspace" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open onto-work workspace" }));
     fireEvent.click(screen.getByRole("button", { name: "Organization: Northstar Research" }));
     fireEvent.click(screen.getByRole("button", { name: "Search or run command" }));
-    fireEvent.click(screen.getByRole("button", { name: "Switch to light theme" }));
+    fireEvent.click(screen.getByRole("button", { name: "Switch to dark theme" }));
     fireEvent.click(screen.getByRole("button", { name: "Rae Kennedy account" }));
     fireEvent.click(screen.getByRole("button", { name: "Open sidebar" }));
 
@@ -123,11 +123,10 @@ describe("AppHeader", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Organization: Current organization" }))
-      .toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("group", { name: "Organization: Current organization" })).toBeInTheDocument();
     expect(screen.getByText("Runtime fallback")).toBeInTheDocument();
     expect(screen.queryByText("codex/provider-health")).not.toBeInTheDocument();
-    expect(screen.getByText("MEMBER")).toBeInTheDocument();
+    expect(screen.getByText("Member")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Member One account" })).toHaveTextContent("MO");
   });
 });

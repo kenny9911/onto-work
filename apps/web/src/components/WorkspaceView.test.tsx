@@ -193,19 +193,50 @@ describe("WorkspaceView scrolling", () => {
     expect(screen.getByRole("list", { name: "Run Spine" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Attach context" })).toBeEnabled();
 
-    const inspector = screen.getByText("Task inspector").closest("aside");
-    expect(inspector).not.toBeNull();
-    const inspectorScroller = inspector?.querySelector(".overflow-y-auto");
-    expect(inspectorScroller).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
-
-    const filesTab = screen.getByRole("tab", { name: /Files/ });
-    fireEvent.mouseDown(filesTab, { button: 0, ctrlKey: false });
-    expect(screen.getByText("No file changes reported")).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "Task inspector" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Task inspector" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Open task inspector" }));
-    expect(screen.getByRole("dialog", { name: "Task inspector" })).toBeInTheDocument();
+    const drawer = screen.getByRole("dialog", { name: "Task inspector" });
+    expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getByText("No file changes reported")).toBeInTheDocument();
+    expect(drawer.querySelector(".overflow-y-auto")).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
+
     act(() => media.controller("(min-width: 1180px)").setMatches(true));
     expect(screen.queryByRole("dialog", { name: "Task inspector" })).not.toBeInTheDocument();
+    const inspector = screen.getByRole("complementary", { name: "Task inspector" });
+    expect(inspector.querySelector(".overflow-y-auto")).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
+    fireEvent.click(within(inspector).getByRole("button", { name: "Close task inspector" }));
+    expect(screen.queryByRole("complementary", { name: "Task inspector" })).not.toBeInTheDocument();
+  });
+
+  it("offers a clean new-task screen with suggestions that draft without sending", () => {
+    const onDraftChange = vi.fn();
+    const onSend = vi.fn();
+    render(
+      <TooltipProvider delayDuration={0}>
+        <WorkspaceView
+          {...lifecycleProps}
+          activeThread={null}
+          activeThreadId={null}
+          dashboard={dashboard}
+          draft=""
+          isSending={false}
+          onApproval={vi.fn()}
+          onDraftChange={onDraftChange}
+          onOpenSidebar={vi.fn()}
+          onSend={onSend}
+          timeline={[]}
+        />
+      </TooltipProvider>,
+    );
+    expect(screen.getByRole("heading", { name: "What would you like to work on?" })).toBeInTheDocument();
+    expect(screen.queryByRole("log")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Task project" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Review my changes" }));
+    expect(onDraftChange).toHaveBeenCalledWith(expect.stringContaining("Review the current changes"));
+    expect(screen.getByLabelText("Task prompt")).toHaveFocus();
+    expect(onSend).not.toHaveBeenCalled();
   });
 
   it("shows a factual empty snapshot instead of onboarding events for an existing task", () => {
@@ -261,7 +292,7 @@ describe("WorkspaceView scrolling", () => {
 
     expect(screen.getByRole("heading", { name: "New task" })).toBeInTheDocument();
     expect(screen.getByText("Build the optimistic task cockpit")).toBeInTheDocument();
-    expect(screen.queryByText("What should the harness build next?")).not.toBeInTheDocument();
+    expect(screen.queryByText("What would you like to work on?")).not.toBeInTheDocument();
   });
 
   it("shows truthful sending state and returns the composer when the turn is away", () => {

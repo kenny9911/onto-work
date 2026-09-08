@@ -49,9 +49,9 @@ describe("destinations without a backing service", () => {
     expect(screen.getByRole("heading", { name: "Platform admin" })).toBeInTheDocument();
     // The whole point: no invented tenant rows.
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    expect(screen.getByText(/no platform role separate from tenant administration/i))
+    expect(screen.getByText(/Your administrator access covers this workspace/i))
       .toBeInTheDocument();
-    expect(screen.getAllByText("FUTURE").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Not available").length).toBeGreaterThan(0);
 
     // Facts the control plane genuinely reports are still shown.
     expect(screen.getByText("Supervised app-servers")).toBeInTheDocument();
@@ -62,9 +62,9 @@ describe("destinations without a backing service", () => {
     const onOpenWorkspace = vi.fn();
     render(<ArtifactsView onOpenWorkspace={onOpenWorkspace} />);
 
-    expect(screen.getByText("No artifacts in this project yet")).toBeInTheDocument();
-    expect(screen.getByText(/does not yet mark a file change as a deliverable/i))
+    expect(screen.getByText("Your deliverables will have a home here")).toBeInTheDocument();
+    expect(screen.getByText(/The artifact library is not available yet/i))
       .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Open the running task" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open task" })).toBeInTheDocument();
   });
 });

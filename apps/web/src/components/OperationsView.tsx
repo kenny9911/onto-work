@@ -1,3 +1,4 @@
+import "./management.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardPayload, ThreadSummary, TimelineItem } from "@agent-harness/contracts";
 import {
@@ -142,22 +143,22 @@ const pageCopy: Record<
 > = {
   reviews: {
     title: "Reviews",
-    subtitle: "Run Codex reviews and inspect their real task evidence without synthesized findings.",
+    subtitle: "Review task results, inspect file changes, and decide what comes next.",
     availability: "LIVE",
   },
   agents: {
     title: "Agents",
-    subtitle: "Supervise live task states and show hierarchy only when Codex reports parent and child relationships.",
+    subtitle: "Follow your active tasks and the agents working on them.",
     availability: "READ-ONLY",
   },
   environments: {
     title: "Environments",
-    subtitle: "Inspect effective runtime state and task workspaces reported by Codex.",
+    subtitle: "See where your tasks run and the workspace access they use.",
     availability: "READ-ONLY",
   },
   capabilities: {
     title: "Capabilities",
-    subtitle: "Inspect reported MCP, tool, skill, model, policy, and provider capability summaries.",
+    subtitle: "Explore the tools, skills, and connections available to your tasks.",
     availability: "READ-ONLY",
   },
 };
@@ -174,11 +175,11 @@ function PageHeader({ view }: { view: OperationsViewId }) {
   }, [view]);
 
   return (
-    <header className="flex min-h-20 shrink-0 items-center gap-3 border-b border-border px-4 py-4 sm:px-7">
+    <header className="management-header">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h1
-            className="text-lg font-medium tracking-[-0.025em]"
+            className="management-heading"
             ref={headingRef}
             tabIndex={-1}
           >
@@ -186,7 +187,7 @@ function PageHeader({ view }: { view: OperationsViewId }) {
           </h1>
           <AvailabilityBadge state={copy.availability} />
         </div>
-        <p className="mt-0.5 line-clamp-2 text-ui-body text-muted-foreground sm:truncate">
+        <p className="management-subtitle">
           {copy.subtitle}
         </p>
       </div>
@@ -204,7 +205,7 @@ function PageScrollRegion({
   return (
     <div
       aria-label={`${pageCopy[view].title} content`}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-7"
+      className="management-scroll"
       role="region"
       tabIndex={0}
     >
@@ -225,7 +226,7 @@ function MetricCard({
   tone?: "agent" | "human" | "waiting" | "neutral";
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card/30 p-4">
+    <div className="management-panel">
       <Icon
         aria-hidden="true"
         className={cn(
@@ -233,7 +234,7 @@ function MetricCard({
           tone === "agent" && "text-primary",
           tone === "human" && "text-human",
           tone === "waiting" && "text-[var(--waiting)]",
-          tone === "neutral" && "text-[#929aa4]",
+          tone === "neutral" && "text-muted-foreground",
         )}
       />
       <p className="mt-4 text-2xl font-medium tracking-tight">{value}</p>
@@ -258,18 +259,18 @@ function formattedTimestamp(value: string): string {
 }
 
 function threadStatusStyle(status: ThreadSummary["status"]): string {
-  if (status === "completed") return "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300";
-  if (status === "failed") return "border-red-400/20 bg-red-400/[0.07] text-red-300";
+  if (status === "completed") return "border-[var(--c-verified)]/20 bg-[var(--healthy)]/[0.07] text-[var(--healthy)]";
+  if (status === "failed") return "border-destructive/20 bg-destructive/[0.07] text-destructive";
   if (status === "waiting") return "border-[var(--waiting)]/20 bg-[var(--waiting)]/[0.07] text-[var(--waiting)]";
-  if (status === "running") return "border-primary/20 bg-primary/[0.07] text-primary";
-  return "border-border bg-white/[0.035] text-muted-foreground";
+  if (status === "running") return "border-[var(--c-run-line)] bg-[var(--c-run-dim)] text-[var(--c-run)]";
+  return "border-border bg-muted text-muted-foreground";
 }
 
 function ThreadStatusBadge({ status }: { status: ThreadSummary["status"] }) {
   return (
     <span
       className={cn(
-        "rounded-sm border px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-[0.12em]",
+        "inline-flex w-fit rounded-full border px-2 py-0.5 text-ui-meta capitalize",
         threadStatusStyle(status),
       )}
     >
@@ -287,7 +288,6 @@ function OpenTaskButton({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <AvailabilityBadge state="LIVE" />
       <Button
         aria-label={`Open ${thread.title} task`}
         className="gap-1.5"
@@ -319,7 +319,7 @@ function AgentTreeNode({
   if (cycle) {
     return (
       <li>
-        <p className="ml-1 text-ui-body text-red-300">
+        <p className="ml-1 text-ui-body text-destructive">
           Cycle reported; repeated task {thread.agentNickname ?? thread.title} was not rendered again.
         </p>
       </li>
@@ -331,7 +331,7 @@ function AgentTreeNode({
   nextAncestors.add(thread.id);
   return (
     <li>
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card/25 p-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 management-panel sm:flex-row sm:items-center">
         <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-human/20 bg-human/[0.06]">
           <Bot aria-hidden="true" className="size-4 text-human" />
         </span>
@@ -342,7 +342,7 @@ function AgentTreeNode({
             </h3>
             <ThreadStatusBadge status={thread.status} />
           </div>
-          <p className="mt-1 truncate font-mono text-ui-meta text-muted-foreground">
+          <p className="mt-1 truncate text-ui-meta text-muted-foreground">
             {thread.agentRole ?? (thread.parentThreadId ? "subagent" : "root task")}
             {thread.source ? ` · ${thread.source}` : ""}
             {children.length ? ` · ${children.length} child${children.length === 1 ? "" : "ren"}` : ""}
@@ -450,112 +450,91 @@ function ReviewsView({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-      <header className="flex min-h-[58px] shrink-0 items-center gap-2 border-b border-border px-4 py-2">
-        <span className="inline-flex h-5 shrink-0 items-center justify-center rounded-[4px] border border-[color-mix(in_oklab,var(--c-verified)_40%,transparent)] bg-[color-mix(in_oklab,var(--c-verified)_14%,transparent)] px-[7px] font-mono text-ui-micro uppercase tracking-[0.1em] text-[var(--c-verified)]">
-          <CircleCheck aria-hidden="true" className="mr-2 size-3" />
-          {selectedThread ? reviewStatusLabel : "Review queue"}
-        </span>
+    <div className="management-review">
+      <header className="management-header">
         <div className="min-w-0 flex-1">
-          <h1
-            aria-label="Reviews"
-            className="line-clamp-2 text-ui-title font-semibold tracking-[-0.015em]"
-            ref={headingRef}
-            tabIndex={-1}
-          >
-            {selectedThread
-              ? selectedThread.title.split(" ").map((word, index) => (
-                  <span key={`${word}-${index}`}>
-                    {index > 0 ? " " : ""}{word}
-                  </span>
-                ))
-              : "Reviews"}
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="management-heading" ref={headingRef} tabIndex={-1}>Reviews</h1>
+            {selectedThread ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-ui-meta text-muted-foreground">
+                <CircleCheck aria-hidden="true" className="size-3.5" />
+                {reviewStatusLabel}
+              </span>
+            ) : null}
+          </div>
+          <p className="management-subtitle">Inspect task results and file changes, then choose your next step.</p>
         </div>
         {selectedThread ? (
-          <>
-            <p className="hidden w-[197px] shrink-0 font-mono text-ui-meta text-muted-foreground min-[1600px]:block">
-              {selectedThread.projectName ?? "No project reported"} · {dashboard.projects.find((project) => project.id === selectedThread.projectId)?.branch ?? "branch not reported"}
-              <br />
-              updated · {formattedTimestamp(selectedThread.updatedAt)}
-            </p>
-            <div className="ml-auto hidden min-w-0 items-center gap-1 min-[1160px]:flex">
-              <Button
-                className="h-auto min-h-8 min-w-0 whitespace-normal bg-[var(--c-surface)] px-2.5 py-1 text-ui-control text-[var(--ink-2)] shadow-none"
-                onClick={() => onSelectThread(selectedThread.id)}
-                variant="outline"
-              >
-                Follow-up turn
-              </Button>
-              <Button className="hidden h-auto min-h-8 min-w-0 whitespace-normal bg-[var(--c-surface)] px-2.5 py-1 text-ui-control text-[var(--ink-2)] shadow-none disabled:opacity-100 min-[1600px]:inline-flex" disabled title="Fork this task from its task cockpit" variant="outline">Fork from turn {reviewTurnCount}</Button>
-              <Button className="h-auto min-h-8 min-w-0 whitespace-normal bg-[var(--c-surface)] px-2.5 py-1 text-ui-control text-[var(--ink-2)] shadow-none" disabled={reviewingThreadId !== null} onClick={() => void startReview(selectedThread.id)} variant="outline">{reviewingThreadId === selectedThread.id ? "Starting…" : "Retry failed step"}</Button>
-              <Button className="hidden h-auto min-h-8 min-w-0 whitespace-normal bg-[var(--c-surface)] px-2.5 py-1 text-ui-control text-[var(--ink-2)] shadow-none disabled:opacity-100 min-[1600px]:inline-flex" disabled title="History compaction is not reported by this runtime" variant="outline">Compact history</Button>
-              <Button className="hidden h-auto min-h-8 min-w-0 whitespace-normal bg-[var(--c-surface)] px-2.5 py-1 text-ui-control text-[var(--ink-2)] shadow-none disabled:opacity-100 min-[1600px]:inline-flex" disabled title="Archive from the task cockpit" variant="outline">Archive</Button>
-              <Button className="h-auto min-h-8 min-w-0 whitespace-normal bg-[var(--c-surface)] px-2.5 py-1 text-ui-control text-[var(--ink-2)] shadow-none" onClick={exportSelectedReview} variant="outline">Export</Button>
-            </div>
-          </>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => onSelectThread(selectedThread.id)} variant="outline">Open task</Button>
+            <Button onClick={exportSelectedReview} variant="ghost">Export review</Button>
+            <Button disabled={reviewingThreadId !== null} onClick={() => void startReview(selectedThread.id)}>
+              <FileCheck2 aria-hidden="true" className="size-4" />
+              {reviewingThreadId === selectedThread.id ? "Starting…" : "Run review"}
+            </Button>
+          </div>
         ) : null}
       </header>
 
       {reviewError ? (
-        <div className="shrink-0 border-b border-red-400/20 bg-red-400/[0.05] px-5 py-3 text-ui-body text-red-200" role="alert">
+        <div className="shrink-0 border-b border-destructive/20 bg-destructive/[0.05] px-5 py-3 text-ui-body text-destructive" role="alert">
           {reviewError}
         </div>
       ) : null}
 
       {selectedThread ? (
-        <div className="min-h-0 flex-1 overflow-y-auto min-[1180px]:grid min-[1180px]:grid-cols-[372px_minmax(0,1fr)] min-[1180px]:overflow-hidden">
+        <div className="management-review-layout">
           <aside
             aria-label="Selected review summary"
-            className="border-b border-border px-5 py-5 min-[1180px]:overflow-y-auto min-[1180px]:border-b-0 min-[1180px]:border-r"
+            className="management-review-sidebar"
           >
             <section>
-              <p className="font-mono text-ui-micro uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-ui-meta text-muted-foreground">
                 What changed
               </p>
-              <p className="mt-3 text-sm leading-6 text-foreground/90">
-                {selectedThread.preview || "No task preview was reported."}
+              <p className="mt-3 text-ui-body text-foreground">
+                {selectedThread.preview || "No task summary is available."}
               </p>
             </section>
 
-            <section className="mt-4 rounded-md border border-[var(--waiting)]/25 bg-[var(--waiting)]/[0.09] px-4 py-3.5">
-              <div className="flex items-center gap-2 text-ui-control font-medium text-[var(--waiting)]">
+            <section className="mt-4 rounded-xl bg-muted px-4 py-4">
+              <div className="flex items-center gap-2 text-ui-control font-medium text-foreground">
                 <AlertTriangle aria-hidden="true" className="size-4" />
-                Review evidence is task-bound
+                About this review
               </div>
               <p className="mt-2 text-ui-body text-foreground/70">
-                Derived from current task status and preview fields. No findings or file diffs are inferred.
+                This view shows the task’s recorded output. Run a review to check it and collect any findings.
               </p>
             </section>
 
             <section className="mt-5">
-              <p className="font-mono text-ui-micro uppercase tracking-[0.18em] text-muted-foreground">
-                Reported evidence
+              <p className="text-ui-meta text-muted-foreground">
+                Task details
               </p>
               <dl className="mt-2 divide-y divide-border border-y border-border">
                 <div className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3 py-3">
-                  <span aria-hidden="true" className="mt-1 size-2.5 rounded-[2px] bg-cyan-300" />
+                  <span aria-hidden="true" className="mt-1 size-2.5 rounded-[2px] bg-[var(--c-info)]" />
                   <div>
                     <dt className="text-ui-control font-medium">Task state</dt>
-                    <dd className="mt-1 font-mono text-ui-meta capitalize text-muted-foreground">
+                    <dd className="mt-1 text-ui-meta capitalize text-muted-foreground">
                       {selectedThread.status}
                     </dd>
                   </div>
                 </div>
                 <div className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3 py-3">
-                  <span aria-hidden="true" className="mt-1 size-2.5 rounded-[2px] bg-cyan-300" />
+                  <span aria-hidden="true" className="mt-1 size-2.5 rounded-[2px] bg-[var(--c-info)]" />
                   <div>
                     <dt className="text-ui-control font-medium">Runtime model</dt>
-                    <dd className="mt-1 truncate font-mono text-ui-meta text-muted-foreground">
-                      {selectedThread.model || "No model reported"}
+                    <dd className="mt-1 truncate font-mono text-ui-code text-muted-foreground">
+                      {selectedThread.model || "Model unavailable"}
                     </dd>
                   </div>
                 </div>
                 <div className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3 py-3">
-                  <span aria-hidden="true" className="mt-1 size-2.5 rounded-[2px] bg-cyan-300" />
+                  <span aria-hidden="true" className="mt-1 size-2.5 rounded-[2px] bg-[var(--c-info)]" />
                   <div>
                     <dt className="text-ui-control font-medium">Last task update</dt>
-                    <dd className="mt-1 font-mono text-ui-meta text-muted-foreground">
+                    <dd className="mt-1 text-ui-meta text-muted-foreground">
                       {formattedTimestamp(selectedThread.updatedAt)}
                     </dd>
                   </div>
@@ -564,7 +543,7 @@ function ReviewsView({
             </section>
 
             <section aria-label="Review summary" className="mt-5">
-              <p className="font-mono text-ui-micro uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-ui-meta text-muted-foreground">
                 Totals
               </p>
               <dl className="mt-2 grid grid-cols-2 overflow-hidden rounded-md border border-border">
@@ -584,10 +563,10 @@ function ReviewsView({
                     )}
                     key={label}
                   >
-                    <dt className="font-mono text-ui-micro uppercase tracking-[0.16em] text-muted-foreground">
+                    <dt className="text-ui-meta text-muted-foreground">
                       {label}
                     </dt>
-                    <dd className="mt-1.5 font-mono text-sm text-foreground">{value}</dd>
+                    <dd className="mt-1.5 text-ui-control tabular-nums text-foreground">{value}</dd>
                   </div>
                 ))}
               </dl>
@@ -596,17 +575,17 @@ function ReviewsView({
             {fileChanges.length ? (
               <section aria-labelledby="review-artifacts-heading" className="mt-5">
                 <div className="mb-2 flex items-center gap-2">
-                  <h2 className="font-mono text-ui-micro uppercase tracking-[0.18em] text-muted-foreground" id="review-artifacts-heading">
+                  <h2 className="text-ui-meta text-muted-foreground" id="review-artifacts-heading">
                     Artifacts
                   </h2>
-                  <span className="font-mono text-ui-meta text-muted-foreground">{fileChanges.length}</span>
+                  <span className="text-ui-meta text-muted-foreground">{fileChanges.length}</span>
                 </div>
                 <div className="space-y-1">
                   {fileChanges.map((file) => (
                     <button
                       aria-pressed={selectedFile?.id === file.id}
                       className={cn(
-                        "flex min-h-8 w-full min-w-0 items-center gap-2 rounded-[4px] border px-2.5 py-1 text-left font-mono text-ui-control",
+                        "flex min-h-10 w-full min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-left font-mono text-ui-code",
                         selectedFile?.id === file.id
                           ? "border-[var(--c-run-line)] bg-[var(--c-run-dim)] text-foreground"
                           : "border-border text-muted-foreground hover:bg-accent/35 hover:text-foreground",
@@ -625,10 +604,10 @@ function ReviewsView({
 
             <section aria-labelledby="review-candidates-heading" className="mt-5 border-t border-border pt-4">
               <div className="mb-2 flex items-center gap-2">
-                <h2 className="font-mono text-ui-micro uppercase tracking-[0.18em] text-muted-foreground" id="review-candidates-heading">
+                <h2 className="text-ui-meta text-muted-foreground" id="review-candidates-heading">
                   Review candidates
                 </h2>
-                <span className="font-mono text-ui-meta text-muted-foreground">{candidates.length}</span>
+                <span className="text-ui-meta text-muted-foreground">{candidates.length}</span>
               </div>
               <div className="space-y-1">
                 {candidates.map((thread) => {
@@ -638,7 +617,7 @@ function ReviewsView({
                       aria-label={`Inspect review candidate ${thread.title}`}
                       aria-pressed={selected}
                       className={cn(
-                        "grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-[4px] border px-2.5 py-2 text-left transition-colors hover:bg-white/[0.025]",
+                        "grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-lg border px-3 py-3 text-left transition-colors hover:bg-accent",
                         selected
                           ? "border-[var(--c-run-line)] bg-[var(--c-run-dim)]"
                           : "border-transparent",
@@ -649,7 +628,7 @@ function ReviewsView({
                     >
                       <span aria-hidden="true" className={cn("size-2 rounded-[2px]", thread.status === "failed" ? "bg-[var(--c-fail)]" : "bg-[var(--c-verified)]")} />
                       <span className="min-w-0 truncate text-ui-control font-medium">{thread.title}</span>
-                      <ThreadStatusBadge status={thread.status} />
+                      <span className="col-start-2"><ThreadStatusBadge status={thread.status} /></span>
                     </button>
                   );
                 })}
@@ -657,10 +636,10 @@ function ReviewsView({
             </section>
           </aside>
 
-          <section className="flex min-h-[560px] min-w-0 flex-col min-[1180px]:min-h-0 min-[1180px]:overflow-hidden">
-            <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-4">
-              <p className="min-w-0 flex-1 truncate font-mono text-ui-meta text-foreground/85">
-                {selectedFile?.title ?? selectedThread.projectName ?? "No project reported"}
+          <section className="management-review-evidence">
+            <header className="management-review-toolbar">
+              <p className="min-w-0 flex-1 truncate font-mono text-ui-code text-foreground/85">
+                {selectedFile?.title ?? selectedThread.projectName ?? "No project"}
                 {parsedDiff ? (
                   <span className="ml-2">
                     <span className="text-[var(--syn-add)]">+{parsedDiff.additions}</span>
@@ -670,7 +649,7 @@ function ReviewsView({
                   <span className="ml-2 text-muted-foreground">task/{selectedThread.id}</span>
                 )}
               </p>
-              <span className="font-mono text-ui-micro uppercase tracking-[0.12em] text-muted-foreground">
+              <span className="text-ui-meta text-muted-foreground">
                 {parsedDiff ? "Evidence reported" : "Evidence pending"}
               </span>
               <Button disabled size="sm" variant="outline">Split</Button>
@@ -699,8 +678,8 @@ function ReviewsView({
                       )}
                       key={`${row.kind}-${index}`}
                     >
-                      <span className="select-none border-r border-white/[0.025] pr-2 text-right text-[var(--ink-4)]">{row.oldLine ?? ""}</span>
-                      <span className="select-none border-r border-white/[0.025] pr-2 text-right text-[var(--ink-4)]">{row.newLine ?? ""}</span>
+                      <span className="select-none border-r border-border pr-2 text-right text-[var(--ink-4)]">{row.oldLine ?? ""}</span>
+                      <span className="select-none border-r border-border pr-2 text-right text-[var(--ink-4)]">{row.newLine ?? ""}</span>
                       <span className={cn("whitespace-pre px-3", row.kind === "addition" && "text-[var(--syn-add)]", row.kind === "deletion" && "text-[var(--syn-del)]")}>
                         <span aria-hidden="true" className="inline-block w-3 select-none">{row.kind === "addition" ? "+" : row.kind === "deletion" ? "-" : row.kind === "hunk" ? "" : " "}</span>
                         {showWhitespace ? visibleWhitespace(row.text) : row.text}
@@ -710,26 +689,25 @@ function ReviewsView({
                 </div>
               </div>
             ) : (
-              <div className="relative grid min-h-72 flex-1 place-items-center overflow-hidden bg-black/20 px-6 py-12">
-                <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_31px,color-mix(in_srgb,var(--border)_34%,transparent)_32px)] bg-[length:100%_32px] opacity-35" />
+              <div className="management-review-empty">
                 <div className="relative max-w-lg text-center">
                   <span className="mx-auto grid size-10 place-items-center rounded-md border border-border bg-card/50">
                     <FileCheck2 aria-hidden="true" className="size-4 text-muted-foreground" />
                   </span>
-                  <h2 className="mt-4 text-sm font-medium">No structured diff has been reported yet</h2>
+                  <h2 className="mt-4 text-ui-control font-medium">No file changes to show</h2>
                   <p className="mt-2 text-ui-body text-muted-foreground">
-                    Start a Codex review turn to collect file changes and findings. This surface stays empty until the runtime returns verifiable evidence.
+                    Run a review to collect file changes and findings for this task.
                   </p>
                 </div>
               </div>
             )}
 
-            <section className="h-[34%] min-h-36 shrink-0 overflow-y-auto border-t border-border">
-              <div className="flex h-10 items-center gap-2 border-b border-border px-4">
+            <section className="management-review-findings">
+              <div className="management-review-toolbar">
                 <h2 className="text-ui-control font-semibold">Review pass</h2>
-                <span className="font-mono text-ui-meta text-muted-foreground">{findings.length} finding{findings.length === 1 ? "" : "s"} · runtime evidence</span>
-                <span className="ml-auto rounded-[3px] border border-[var(--c-fail-dim)] bg-[var(--c-fail-dim)] px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-[0.12em] text-[var(--c-fail)]">{highFindings} high</span>
-                <span className="rounded-[3px] border border-[var(--c-wait-dim)] bg-[var(--c-wait-dim)] px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-[0.12em] text-[var(--c-wait)]">{mediumFindings} medium</span>
+                <span className="text-ui-meta text-muted-foreground">{findings.length} finding{findings.length === 1 ? "" : "s"} · runtime evidence</span>
+                <span className="ml-auto rounded-[3px] border border-[var(--c-fail-dim)] bg-[var(--c-fail-dim)] px-1.5 py-0.5 text-ui-meta text-[var(--c-fail)]">{highFindings} high</span>
+                <span className="rounded-[3px] border border-[var(--c-wait-dim)] bg-[var(--c-wait-dim)] px-1.5 py-0.5 text-ui-meta text-[var(--c-wait)]">{mediumFindings} medium</span>
               </div>
               {findings.length ? (
                 <div className="divide-y divide-border">
@@ -738,11 +716,11 @@ function ReviewsView({
                     const reportedPath = finding.metadata?.path ?? finding.metadata?.file;
                     return (
                       <article className="grid min-h-[76px] grid-cols-[76px_minmax(0,1fr)]" key={finding.id}>
-                        <div className={cn("grid place-items-center border-r border-border font-mono text-ui-micro uppercase tracking-[0.14em]", high ? "bg-[var(--c-fail-dim)] text-[var(--c-fail)]" : "bg-[var(--c-wait-dim)] text-[var(--c-wait)]")}>{high ? "High" : "Medium"}</div>
+                        <div className={cn("grid place-items-center border-r border-border text-ui-meta", high ? "bg-[var(--c-fail-dim)] text-[var(--c-fail)]" : "bg-[var(--c-wait-dim)] text-[var(--c-wait)]")}>{high ? "High" : "Medium"}</div>
                         <div className="min-w-0 px-3.5 py-2.5">
                           <div className="flex min-w-0 items-baseline gap-2">
                             <h3 className="truncate text-ui-control font-semibold">{finding.title}</h3>
-                            {reportedPath !== undefined && reportedPath !== null ? <span className="truncate font-mono text-ui-meta text-muted-foreground">{String(reportedPath)}</span> : null}
+                            {reportedPath !== undefined && reportedPath !== null ? <span className="truncate font-mono text-ui-code text-muted-foreground">{String(reportedPath)}</span> : null}
                           </div>
                           <p className="mt-1 line-clamp-2 text-ui-body text-muted-foreground">{finding.body || "The runtime reported this review condition without additional detail."}</p>
                         </div>
@@ -753,8 +731,8 @@ function ReviewsView({
               ) : (
                 <div className="grid min-h-28 place-items-center px-6 py-5 text-center">
                   <div className="max-w-md">
-                    <p className="text-ui-control font-medium">No review findings have been reported</p>
-                    <p className="mt-1.5 text-ui-body text-muted-foreground">Run the Codex review to populate this pane with severity-ranked, file-bound findings.</p>
+                    <p className="text-ui-control font-medium">No findings to show</p>
+                    <p className="mt-1.5 text-ui-body text-muted-foreground">Run a review to check this task’s output. Findings will appear here when reported.</p>
                   </div>
                 </div>
               )}
@@ -762,12 +740,12 @@ function ReviewsView({
           </section>
         </div>
       ) : (
-        <div className="grid min-h-0 flex-1 place-items-center overflow-y-auto p-8 text-center">
+        <div className="management-scroll grid place-items-center text-center">
           <div className="max-w-md">
             <FileCheck2 aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
-            <h2 className="mt-3 text-sm font-medium">No review candidates are reported</h2>
+            <h2 className="mt-3 text-ui-control font-medium">No tasks ready for review</h2>
             <p className="mt-2 text-ui-body text-muted-foreground">
-              Completed, failed, and idle tasks will appear here. Running and waiting tasks remain in the task cockpit.
+              Completed, failed, and idle tasks will appear here. You can follow ongoing work in Tasks.
             </p>
           </div>
         </div>
@@ -864,27 +842,27 @@ function AgentsView({
   );
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <section aria-label="Agent supervision summary" className="grid gap-3 sm:grid-cols-3">
-        <MetricCard icon={Activity} label="Reported child tasks" tone="agent" value={childTasks.length} />
-        <MetricCard icon={AlertTriangle} label="Tasks waiting for attention" tone="waiting" value={waitingCount} />
-        <MetricCard icon={ServerCog} label="Active user runtimes" value={dashboard.runtime.activeRuntimes} />
+    <div className="management-content">
+      <section aria-label="Agent supervision summary" className="management-metrics">
+        <MetricCard icon={Activity} label="Delegated tasks" tone="agent" value={childTasks.length} />
+        <MetricCard icon={AlertTriangle} label="Waiting for attention" tone="waiting" value={waitingCount} />
+        <MetricCard icon={ServerCog} label="Runtimes in use" value={dashboard.runtime.activeRuntimes} />
       </section>
 
-      <section className="mt-6 rounded-lg border border-border bg-card/20 p-5">
+      <section className="mt-6 management-panel">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-human/20 bg-human/[0.06]">
               <Workflow aria-hidden="true" className="size-4 text-human" />
             </span>
             <div>
-              <h2 className="text-sm font-medium">
-                {childTasks.length ? "Reported task hierarchy" : "No agent hierarchy is reported"}
+              <h2 className="text-ui-control font-medium">
+                {childTasks.length ? "Delegated work" : "No delegated tasks to show"}
               </h2>
               <p className="mt-1 max-w-2xl text-ui-body text-muted-foreground">
                 {childTasks.length
-                  ? "This tree comes only from Codex parentThreadId, nickname, role, source, and task state fields."
-                  : "Codex did not report parent/child task metadata in this snapshot. Agent Harness will not infer child agents from titles or activity."}
+                  ? "Follow the subtasks your agents are working on."
+                  : "When an agent delegates work, its subtasks will appear here."}
               </p>
             </div>
           </div>
@@ -902,42 +880,38 @@ function AgentsView({
             ))}
           </ul>
         ) : null}
-        <div className="mt-5 flex flex-wrap gap-2 border-t border-border/70 pt-4 text-ui-control text-muted-foreground">
-          <span>Open child task</span><AvailabilityBadge state="LIVE" />
-          <span className="ml-2">Browser-driven spawn/message</span><AvailabilityBadge state="FUTURE" />
-          <span className="ml-2">Merge into parent</span><AvailabilityBadge state="FUTURE" />
-        </div>
+
       </section>
 
       <div className="mt-7">
-        <h2 className="text-sm font-medium">Live task states</h2>
+        <h2 className="text-ui-control font-medium">Active tasks</h2>
         <p className="mt-1 text-ui-body text-muted-foreground">
-          These are current tasks, not an inferred parent/child tree.
+          Tasks currently running or waiting for your attention.
         </p>
       </div>
       {activeTasks.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-dashed border-border bg-card/20 p-8 text-center">
+        <div className="mt-4 management-empty">
           <Bot aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
-          <h3 className="mt-3 text-sm font-medium">No active task states</h3>
+          <h3 className="mt-3 text-ui-control font-medium">No active tasks</h3>
           <p className="mx-auto mt-2 max-w-md text-ui-body text-muted-foreground">
-            Agent Harness currently reports no running or waiting tasks for this workspace.
+            There are no running or waiting tasks in this workspace.
           </p>
         </div>
       ) : (
-        <div className="mt-4 overflow-hidden rounded-lg border border-border bg-card/25">
-          <div className="hidden grid-cols-[minmax(0,1fr)_110px_150px_140px] gap-3 border-b border-border px-4 py-3 font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground sm:grid">
+        <div className="mt-4 management-list">
+          <div className="management-table-heading hidden grid-cols-[minmax(0,1fr)_110px_150px_160px] gap-3 border-b border-border px-4 py-3 text-ui-meta text-muted-foreground xl:grid">
             <span>Task</span><span>State</span><span>Updated</span><span />
           </div>
           {activeTasks.map((thread) => (
-            <div className="flex flex-col gap-3 border-b border-border/60 p-4 last:border-b-0 sm:grid sm:grid-cols-[minmax(0,1fr)_110px_150px_140px] sm:items-center" key={thread.id}>
+            <div className="flex flex-col gap-3 border-b border-border/60 p-4 last:border-b-0 xl:grid xl:grid-cols-[minmax(0,1fr)_110px_150px_160px] xl:items-center" key={thread.id}>
               <div className="min-w-0">
                 <p className="truncate text-ui-control font-medium">{thread.title}</p>
-                <p className="mt-1 truncate font-mono text-ui-meta text-muted-foreground">
-                  {thread.projectName ?? "No project reported"}
+                <p className="mt-1 truncate text-ui-meta text-muted-foreground">
+                  {thread.projectName ?? "No project"}
                 </p>
               </div>
               <ThreadStatusBadge status={thread.status} />
-              <span className="font-mono text-ui-meta text-muted-foreground">{formattedTimestamp(thread.updatedAt)}</span>
+              <span className="text-ui-meta text-muted-foreground">{formattedTimestamp(thread.updatedAt)}</span>
               <OpenTaskButton onSelectThread={onSelectThread} thread={thread} />
             </div>
           ))}
@@ -948,103 +922,102 @@ function AgentsView({
 }
 
 function runtimeTone(status: DashboardPayload["runtime"]["status"]): string {
-  if (status === "ready") return "bg-emerald-400";
+  if (status === "ready") return "bg-[var(--healthy)]";
   if (status === "degraded") return "bg-[var(--waiting)]";
-  return "bg-[#606873]";
+  return "bg-muted-foreground";
 }
 
 function EnvironmentsView({ dashboard }: Pick<OperationsViewProps, "dashboard">) {
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="management-content">
       <section className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
-        <article className="rounded-lg border border-border bg-card/25 p-5">
+        <article className="management-panel">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-primary/20 bg-primary/[0.06]">
                 <ServerCog aria-hidden="true" className="size-4 text-primary" />
               </span>
               <div>
-                <p className="font-mono text-ui-micro uppercase tracking-[0.15em] text-muted-foreground">User runtime</p>
-                <h2 className="mt-1 text-sm font-medium capitalize">{dashboard.runtime.status.replace("_", " ")}</h2>
+                <p className="text-ui-meta text-muted-foreground">User runtime</p>
+                <h2 className="mt-1 text-ui-control font-medium capitalize">{dashboard.runtime.status.replace("_", " ")}</h2>
               </div>
             </div>
             <AvailabilityBadge state="READ-ONLY" />
           </div>
-          <p className="mt-4 text-ui-body text-muted-foreground">
-            {dashboard.runtime.message ?? "The runtime did not report an additional status message."}
-          </p>
+          {dashboard.runtime.message ? (
+            <p className="mt-4 text-ui-body text-muted-foreground">{dashboard.runtime.message}</p>
+          ) : null}
           <div className="mt-5 flex items-center justify-between border-t border-border/70 pt-4 text-ui-control">
             <span className="flex items-center gap-2 text-muted-foreground">
               <span aria-hidden="true" className={cn("size-1.5 rounded-full", runtimeTone(dashboard.runtime.status))} />
               Runtime state
             </span>
-            <span className="font-mono text-ui-meta capitalize">{dashboard.runtime.status.replace("_", " ")}</span>
+            <span className="text-ui-meta capitalize">{dashboard.runtime.status.replace("_", " ")}</span>
           </div>
           <div className="mt-3 flex items-center justify-between text-ui-control">
             <span className="text-muted-foreground">Active user runtimes</span>
-            <span className="font-mono text-ui-meta">{dashboard.runtime.activeRuntimes}</span>
+            <span className="text-ui-meta">{dashboard.runtime.activeRuntimes}</span>
           </div>
         </article>
 
-        <article className="rounded-lg border border-border bg-card/25 p-5">
+        <article className="management-panel">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="font-mono text-ui-micro uppercase tracking-[0.15em] text-muted-foreground">Effective policy coverage</p>
-              <h2 className="mt-1 text-sm font-medium">Reported fields only</h2>
+              <p className="text-ui-meta text-muted-foreground">Runtime permissions</p>
+              <h2 className="mt-1 text-ui-control font-medium">Current access</h2>
             </div>
             <ShieldCheck aria-hidden="true" className="size-4 text-human" />
           </div>
           <dl className="mt-5 space-y-3 text-ui-control">
-            <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Reported task workspaces</dt><dd className="font-mono text-ui-meta">{dashboard.projects.length} reported</dd></div>
-            <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Sandbox policy</dt><dd className="font-mono text-ui-meta text-muted-foreground">Not reported</dd></div>
-            <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Network policy</dt><dd className="font-mono text-ui-meta text-muted-foreground">Not reported</dd></div>
-            <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Approval policy</dt><dd className="font-mono text-ui-meta text-muted-foreground">Not reported</dd></div>
+            <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Task workspaces</dt><dd className="text-ui-meta">{dashboard.projects.length} reported</dd></div>
+            <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Sandbox policy</dt><dd className="text-ui-meta text-muted-foreground">Not reported</dd></div>
+            <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Network policy</dt><dd className="text-ui-meta text-muted-foreground">Not reported</dd></div>
+            <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Approval policy</dt><dd className="text-ui-meta text-muted-foreground">Not reported</dd></div>
           </dl>
-          <div className="mt-5 flex items-center justify-between border-t border-border/70 pt-4">
-            <span className="text-ui-control text-muted-foreground">Policy mutation controls</span>
-            <AvailabilityBadge state="FUTURE" />
-          </div>
+
         </article>
       </section>
 
       <div className="mt-7 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium">Reported task workspaces</h2>
+          <h2 className="text-ui-control font-medium">Task workspaces</h2>
           <p className="mt-1 text-ui-body text-muted-foreground">
-            Paths, repository state, and branches come directly from the current dashboard snapshot.
+            Workspace locations and branches from your latest runtime update.
           </p>
         </div>
         <AvailabilityBadge state="READ-ONLY" />
       </div>
 
       {dashboard.projects.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-dashed border-border bg-card/20 p-8 text-center">
+        <div className="mt-4 management-empty">
           <FolderGit2 aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
-          <h3 className="mt-3 text-sm font-medium">No task workspaces are reported</h3>
+          <h3 className="mt-3 text-ui-control font-medium">No workspaces to show</h3>
           <p className="mx-auto mt-2 max-w-md text-ui-body text-muted-foreground">
-            The environment view will not infer filesystem access from runtime task metadata.
+            Workspace locations will appear here as tasks run.
           </p>
         </div>
       ) : (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {dashboard.projects.map((project) => (
-            <article className="rounded-lg border border-border bg-card/25 p-5" key={project.id}>
+            <article className="management-panel" key={project.id}>
               <div className="flex items-start gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-secondary/60">
+                <span className="management-icon">
                   <FolderGit2 aria-hidden="true" className="size-4 text-primary" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-medium">{project.name}</h3>
-                  <p className="mt-1 truncate font-mono text-ui-meta text-muted-foreground" title={project.path}>{project.path}</p>
+                  <h3 className="truncate text-ui-control font-medium">{project.name}</h3>
+                  <p className="mt-1 truncate font-mono text-ui-code text-muted-foreground" title={project.path}>{project.path}</p>
                 </div>
-                <span className="rounded-sm bg-white/[0.045] px-1.5 py-0.5 font-mono text-ui-micro uppercase tracking-wider text-muted-foreground">
+                <span className="rounded-sm bg-muted px-1.5 py-0.5 text-ui-meta text-muted-foreground">
                   {project.isGitRepository ? "git" : "folder"}
                 </span>
               </div>
-              <div className="mt-5 flex items-center justify-between border-t border-border/70 pt-4 text-ui-control">
-                <span className="flex items-center gap-1.5 text-muted-foreground"><GitBranch aria-hidden="true" className="size-3.5" />Branch</span>
-                <span className="max-w-[60%] truncate font-mono text-ui-meta">{project.branch ?? "Not reported"}</span>
-              </div>
+              {project.isGitRepository ? (
+                <div className="mt-5 flex items-center justify-between border-t border-border/70 pt-4 text-ui-control">
+                  <span className="flex items-center gap-1.5 text-muted-foreground"><GitBranch aria-hidden="true" className="size-3.5" />Branch</span>
+                  <span className="max-w-[60%] truncate font-mono text-ui-code">{project.branch ?? "Not reported"}</span>
+                </div>
+              ) : null}
             </article>
           ))}
         </div>
@@ -1060,8 +1033,8 @@ const capabilityKindCopy: Record<CapabilityKind, { label: string; icon: typeof B
 };
 
 function capabilityStatusStyle(status: CapabilityStatus): string {
-  if (status === "ready") return "text-emerald-300";
-  if (status === "error") return "text-red-300";
+  if (status === "ready") return "text-[var(--healthy)]";
+  if (status === "error") return "text-destructive";
   if (status === "blocked") return "text-[var(--waiting)]";
   return "text-muted-foreground";
 }
@@ -1073,21 +1046,21 @@ function CapabilitiesView({
 }: Pick<OperationsViewProps, "capabilities" | "capabilitiesLoading" | "capabilitiesError">) {
   if (capabilitiesLoading) {
     return (
-      <div aria-busy="true" className="mx-auto max-w-5xl rounded-lg border border-border bg-card/25 p-8 text-center">
+      <div aria-busy="true" className="management-content management-empty">
         <PackageSearch aria-hidden="true" className="mx-auto size-5 text-primary" />
-        <h2 className="mt-3 text-sm font-medium">Loading capability inventory</h2>
-        <p className="mt-2 text-ui-body text-muted-foreground">Waiting for the runtime-backed inventory response.</p>
+        <h2 className="mt-3 text-ui-control font-medium">Loading tools and skills</h2>
+        <p className="mt-2 text-ui-body text-muted-foreground">Reading the tools and skills available in your runtime.</p>
       </div>
     );
   }
 
   if (capabilitiesError) {
     return (
-      <div className="mx-auto max-w-5xl rounded-lg border border-red-400/20 bg-red-400/[0.045] p-6" role="alert">
+      <div className="management-content rounded-lg border border-destructive/20 bg-destructive/[0.045] p-6" role="alert">
         <div className="flex items-start gap-3">
-          <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-red-300" />
+          <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-destructive" />
           <div>
-            <h2 className="text-sm font-medium">Capability inventory unavailable</h2>
+            <h2 className="text-ui-control font-medium">Tools and skills are unavailable</h2>
             <p className="mt-1 text-ui-body text-muted-foreground">{capabilitiesError}</p>
           </div>
         </div>
@@ -1097,17 +1070,14 @@ function CapabilitiesView({
 
   if (!capabilities) {
     return (
-      <div className="mx-auto max-w-5xl">
-        <div className="rounded-lg border border-dashed border-border bg-card/20 p-8 text-center">
+      <div className="management-content">
+        <div className="management-empty">
           <PackageSearch aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
-          <h2 className="mt-3 text-sm font-medium">Capability inventory is not connected</h2>
+          <h2 className="mt-3 text-ui-control font-medium">Tools and skills are unavailable</h2>
           <p className="mx-auto mt-2 max-w-lg text-ui-body text-muted-foreground">
-            No runtime inventory payload is available. Agent Harness will not invent MCP servers, tools, skills, versions, or health states.
+            Your workspace has not shared its available tools and skills yet.
           </p>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <span className="text-ui-control text-muted-foreground">Inventory API</span>
-            <AvailabilityBadge state="READ-ONLY" />
-          </div>
+
         </div>
       </div>
     );
@@ -1143,44 +1113,44 @@ function CapabilitiesView({
         .map(([feature]) => feature.replace(/([A-Z])/g, " $1").toLowerCase())
     : [];
   return (
-    <div className="mx-auto max-w-5xl">
-      <section aria-label="Capability inventory summary" className="grid gap-3 sm:grid-cols-3">
+    <div className="management-content">
+      <section aria-label="Capability inventory summary" className="management-metrics">
         <MetricCard
           icon={ServerCog}
-          label="Reported MCP servers"
+          label="MCP servers"
           tone="agent"
           value={reportedCount(inventorySummary?.mcpServers, kindCount("mcp_server"))}
         />
         <MetricCard
           icon={Wrench}
-          label="Reported tools"
+          label="Tools"
           value={reportedCount(inventorySummary?.tools, kindCount("tool"))}
         />
         <MetricCard
           icon={Blocks}
-          label="Reported skills"
+          label="Skills"
           tone="human"
           value={reportedCount(reportedSkills, kindCount("skill"))}
         />
       </section>
 
-      <section aria-label="Runtime model and policy surfaces" className="mt-3 grid gap-3 md:grid-cols-3">
-        <article className="rounded-lg border border-border bg-card/25 p-4">
-          <p className="font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">Models</p>
-          <p className="mt-2 text-sm font-medium">
+      <section aria-label="Runtime models and permissions" className="mt-6 grid gap-4 xl:grid-cols-3">
+        <article className="management-panel">
+          <p className="text-ui-meta text-muted-foreground">Models</p>
+          <p className="mt-2 text-ui-control font-medium">
             {runtimeSurfaces?.models
               ? `${runtimeSurfaces.models.truncated ? "≥" : ""}${runtimeSurfaces.models.count} models reported`
               : "Unavailable"}
           </p>
-          <p className="mt-1 truncate text-ui-body text-muted-foreground">
+          <p className="mt-1 text-ui-body text-muted-foreground">
             {runtimeSurfaces?.models?.defaultModel
               ? `Default: ${runtimeSurfaces.models.defaultModel}`
-              : "No default model reported"}
+              : "Default model not provided"}
           </p>
         </article>
-        <article className="rounded-lg border border-border bg-card/25 p-4">
-          <p className="font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">Permission profiles</p>
-          <p className="mt-2 text-sm font-medium">
+        <article className="management-panel">
+          <p className="text-ui-meta text-muted-foreground">Permission profiles</p>
+          <p className="mt-2 text-ui-control font-medium">
             {runtimeSurfaces?.permissionProfiles
               ? `${runtimeSurfaces.permissionProfiles.truncated ? "≥" : ""}${runtimeSurfaces.permissionProfiles.count} profiles reported`
               : "Unavailable"}
@@ -1188,50 +1158,50 @@ function CapabilitiesView({
           <p className="mt-1 text-ui-body text-muted-foreground">
             {runtimeSurfaces?.permissionProfiles
               ? runtimeSurfaces.permissionProfiles.workspaceCount > 0
-                ? `${runtimeSurfaces.permissionProfiles.allowedInAnyWorkspaceCount}${runtimeSurfaces.permissionProfiles.truncated ? " shown as" : ""} allowed in one or more of ${runtimeSurfaces.permissionProfiles.workspaceCount} workspace context${runtimeSurfaces.permissionProfiles.workspaceCount === 1 ? "" : "s"}`
-                : "No workspace contexts reported"
-              : "No policy inventory reported"}
+                ? `${runtimeSurfaces.permissionProfiles.allowedInAnyWorkspaceCount}${runtimeSurfaces.permissionProfiles.truncated ? " shown as" : ""} allowed in one or more of ${runtimeSurfaces.permissionProfiles.workspaceCount} workspace${runtimeSurfaces.permissionProfiles.workspaceCount === 1 ? "" : "s"}`
+                : "Workspace access is unknown"
+              : "Permission details are unavailable"}
           </p>
         </article>
-        <article className="rounded-lg border border-border bg-card/25 p-4">
-          <p className="font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground">Provider features</p>
-          <p className="mt-2 text-sm font-medium">
+        <article className="management-panel">
+          <p className="text-ui-meta text-muted-foreground">Provider features</p>
+          <p className="mt-2 text-ui-control font-medium">
             {runtimeSurfaces?.providerCapabilities
               ? `${enabledProviderFeatures.length}/3 enabled`
               : "Unavailable"}
           </p>
-          <p className="mt-1 truncate text-ui-body text-muted-foreground">
+          <p className="mt-1 text-ui-body text-muted-foreground">
             {enabledProviderFeatures.length
               ? enabledProviderFeatures.join(" · ")
               : runtimeSurfaces?.providerCapabilities
                 ? "No optional features enabled"
-                : "No provider feature inventory reported"}
+                : "Feature availability is unknown"}
           </p>
         </article>
       </section>
 
       {boundedSections.length ? (
-        <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.045] px-4 py-3" role="status">
-          <p className="text-ui-control font-medium text-cyan-200">Bounded capability inventory</p>
+        <div className="mt-3 rounded-lg border border-border bg-muted/50 px-4 py-3" role="status">
+          <p className="text-ui-control font-medium text-[var(--c-info)]">Some details are incomplete</p>
           <p className="mt-1 text-ui-body text-muted-foreground">
-            Counts prefixed with ≥ are lower bounds because Codex truncated a reported section or reported skill load errors. Affected sections: {boundedSections.join(", ")}.
+            Counts prefixed with ≥ are lower bounds; the full list could not be loaded. Affected sections: {boundedSections.join(", ")}.
           </p>
         </div>
       ) : null}
 
       <div className="mt-7 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium">Installed inventory</h2>
-          <p className="mt-1 font-mono text-ui-meta text-muted-foreground">
-            {capabilities.updatedAt ? `Reported ${formattedTimestamp(capabilities.updatedAt)}.` : "No inventory timestamp was reported."}
-          </p>
+          <h2 className="text-ui-control font-medium">Tools and connections</h2>
+          {capabilities.updatedAt ? (
+            <p className="mt-1 text-ui-meta text-muted-foreground">Updated {formattedTimestamp(capabilities.updatedAt)}</p>
+          ) : null}
         </div>
         <AvailabilityBadge state="READ-ONLY" />
       </div>
 
       {capabilities.warnings?.length ? (
         <div className="mt-4 rounded-lg border border-[var(--waiting)]/20 bg-[var(--waiting)]/[0.045] px-4 py-3" role="status">
-          <p className="text-ui-control font-medium text-[var(--waiting)]">Partial runtime inventory</p>
+          <p className="text-ui-control font-medium text-foreground">Some tools could not be loaded</p>
           <ul className="mt-1 list-disc space-y-1 pl-4 text-ui-body text-muted-foreground">
             {capabilities.warnings.map((warning) => <li key={warning}>{warning}</li>)}
           </ul>
@@ -1239,39 +1209,39 @@ function CapabilitiesView({
       ) : null}
 
       {capabilities.items.length === 0 ? (
-        <div className="mt-4 rounded-lg border border-dashed border-border bg-card/20 p-8 text-center">
+        <div className="mt-4 management-empty">
           <Blocks aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
-          <h3 className="mt-3 text-sm font-medium">No installed capabilities are reported</h3>
+          <h3 className="mt-3 text-ui-control font-medium">No tools or skills to show</h3>
           <p className="mx-auto mt-2 max-w-md text-ui-body text-muted-foreground">
-            The connected inventory returned an empty list. Marketplace entries are intentionally not shown.
+            Tools and skills available to your tasks will appear here.
           </p>
         </div>
       ) : (
-        <div className="mt-4 overflow-hidden rounded-lg border border-border bg-card/25">
-          <div className="hidden grid-cols-[minmax(0,1fr)_120px_110px_160px] gap-3 border-b border-border px-4 py-3 font-mono text-ui-micro uppercase tracking-[0.14em] text-muted-foreground sm:grid">
+        <div className="mt-4 management-list">
+          <div className="management-table-heading hidden grid-cols-[minmax(0,1fr)_120px_110px_160px] gap-3 border-b border-border px-4 py-3 text-ui-meta text-muted-foreground xl:grid">
             <span>Capability</span><span>Kind</span><span>Status</span><span>Source</span>
           </div>
           {capabilities.items.map((item) => {
             const kind = capabilityKindCopy[item.kind];
             const Icon = kind.icon;
             return (
-              <article className="flex flex-col gap-3 border-b border-border/60 p-4 last:border-b-0 sm:grid sm:grid-cols-[minmax(0,1fr)_120px_110px_160px] sm:items-center" key={item.id}>
+              <article className="flex flex-col gap-3 border-b border-border/60 p-4 last:border-b-0 xl:grid xl:grid-cols-[minmax(0,1fr)_120px_110px_160px] xl:items-center" key={item.id}>
                 <div className="flex min-w-0 items-start gap-3">
                   <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-secondary/60">
-                    <Icon aria-hidden="true" className="size-3.5 text-[#c7ccd2]" />
+                    <Icon aria-hidden="true" className="size-3.5 text-foreground" />
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-ui-control font-medium">{item.name}</span>
-                    <span className="mt-0.5 block truncate text-ui-body text-muted-foreground">
-                      {item.description ?? "No description reported"}
-                    </span>
+                    {item.description ? (
+                      <span className="mt-1 block text-ui-body text-muted-foreground">{item.description}</span>
+                    ) : null}
                   </span>
                 </div>
-                <span className="font-mono text-ui-meta text-muted-foreground">{kind.label}</span>
-                <span className={cn("flex items-center gap-1.5 font-mono text-ui-meta capitalize", capabilityStatusStyle(item.status))}>
+                <span className="text-ui-meta text-muted-foreground">{kind.label}</span>
+                <span className={cn("flex items-center gap-1.5 text-ui-meta capitalize", capabilityStatusStyle(item.status))}>
                   <CircleDot aria-hidden="true" className="size-3" />{item.status}
                 </span>
-                <span className="truncate font-mono text-ui-meta text-muted-foreground">
+                <span className="truncate text-ui-meta text-muted-foreground">
                   {item.source ?? "Not reported"}{item.version ? ` · ${item.version}` : ""}
                 </span>
               </article>

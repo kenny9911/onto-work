@@ -118,7 +118,7 @@ describe("ProjectsView", () => {
     expect(await screen.findByText("Agent Harness")).toBeInTheDocument();
     expect(screen.getByText("/workspace/agent-harness")).toBeInTheDocument();
     expect(screen.queryByText("Transient runtime project")).not.toBeInTheDocument();
-    expect(screen.getByText("Runtime-derived active task states")).toBeInTheDocument();
+    expect(screen.getByText("Active tasks")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open sidebar" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Register project" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Manage Agent Harness" })).not.toBeInTheDocument();
@@ -163,6 +163,35 @@ describe("ProjectsView", () => {
       type: "upsert",
       project: savedProject,
     }));
+  });
+
+  it("shows folder workspaces without empty Git details", async () => {
+    vi.spyOn(api, "listProjects").mockResolvedValue({
+      projects: [{
+        ...savedProject,
+        isGitRepository: false,
+        repositoryStatus: "not_repository",
+        branch: null,
+        headCommit: null,
+        upstream: null,
+        dirty: null,
+        remoteUrl: null,
+      }],
+      nextCursor: null,
+    });
+
+    render(
+      <ControlPlaneView
+        dashboard={dashboard("member")}
+        onOpenSidebar={vi.fn()}
+        onRefresh={vi.fn().mockResolvedValue(undefined)}
+        view="projects"
+      />,
+    );
+
+    expect(await screen.findByText("Folder workspace")).toBeInTheDocument();
+    expect(screen.queryByText("Repository details")).not.toBeInTheDocument();
+    expect(screen.queryByText("Not reported")).not.toBeInTheDocument();
   });
 
   it("keeps a registered project when an older registry read settles later", async () => {

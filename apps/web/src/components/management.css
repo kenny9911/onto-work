@@ -1,0 +1,198 @@
+.management-header {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  padding: 36px max(32px, calc((100% - 1120px) / 2)) 24px;
+}
+
+.management-heading {
+  color: var(--foreground);
+  font-size: var(--text-ui-display);
+  font-weight: 600;
+  line-height: var(--text-ui-display--line-height);
+  letter-spacing: -0.035em;
+}
+
+.management-subtitle {
+  max-width: 760px;
+  margin-top: 8px;
+  color: var(--muted-foreground);
+  font-size: var(--text-ui-body);
+  line-height: var(--text-ui-body--line-height);
+}
+
+.management-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 32px 40px;
+}
+
+.management-content {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+.management-content :is(h2, h3),
+.management-panel :is(h2, h3) {
+  font-size: var(--text-ui-body);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.management-panel,
+.management-list {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.management-panel {
+  padding: 24px;
+}
+
+.management-list {
+  overflow: hidden;
+}
+
+.management-list > :is(article, div) {
+  padding: 20px 24px;
+}
+
+.management-list > .management-table-heading {
+  padding-block: 14px;
+  background: var(--muted);
+  font-size: var(--text-ui-meta);
+  font-weight: 500;
+}
+
+.management-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.management-metrics > :is(div, article) {
+  position: relative;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  padding: 24px;
+  background: transparent;
+}
+
+.management-metrics > :last-child { border-right: 0; }
+.management-metrics > :is(div, article) > svg { display: none; }
+.management-metrics > :is(div, article) > p:first-of-type { margin-top: 0; }
+.management-metrics .text-2xl { font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.management-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.management-empty {
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.management-empty > svg {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 8px;
+  stroke-width: 1.4;
+}
+
+.management-empty :is(h2, h3) {
+  font-size: var(--text-ui-title);
+  line-height: var(--text-ui-title--line-height);
+}
+
+.management-project-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 16px;
+  font-size: var(--text-ui-control);
+}
+
+.management-dialog label { color: var(--foreground); }
+.management-dialog :is(input, [role="combobox"]) { background: var(--background); }
+.management-dialog [data-slot="dialog-description"] { line-height: 1.65; }
+
+.management-availability {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  font-size: var(--text-ui-meta);
+  font-weight: 500;
+  line-height: var(--text-ui-meta--line-height);
+}
+
+.management-availability[data-availability="LIVE"] { color: var(--healthy); background: var(--c-run-dim); border-color: transparent; }
+.management-availability[data-availability="LIVE"]::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.management-unavailable { padding: 24px 0; border-top: 1px solid var(--border); }
+.management-unavailable h3 { font-size: var(--text-ui-control); font-weight: 600; }
+.management-unavailable p { max-width: 76ch; }
+.management-unavailable > p { margin-top: 10px; }
+
+.management-review { display: flex; flex: 1; min-height: 0; flex-direction: column; overflow: hidden; }
+.management-review-layout { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); min-height: 0; flex: 1; width: calc(100% - 64px); max-width: 1120px; margin: 0 auto 32px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--card); }
+.management-review-sidebar { min-height: 0; overflow-y: auto; border-right: 1px solid var(--border); padding: 24px; }
+.management-review-sidebar > section + section { margin-top: 28px; }
+.management-review-evidence { display: flex; min-width: 0; min-height: 0; flex-direction: column; overflow-x: hidden; overflow-y: auto; }
+.management-review-toolbar { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 56px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+.management-review-findings { flex-shrink: 0; height: 34%; min-height: 160px; overflow-y: auto; border-top: 1px solid var(--border); }
+.management-review-empty { display: grid; min-height: 300px; flex: 1; place-items: center; padding: 48px 24px; background: var(--background); }
+.management-load-surface { border: 1px solid var(--border); border-radius: 20px; background: var(--card); padding: 40px 32px; }
+
+@media (max-width: 900px) {
+  .management-review-layout { display: flex; flex-direction: column; overflow-y: auto; }
+  .management-review-sidebar { overflow: visible; border-right: 0; border-bottom: 1px solid var(--border); }
+  .management-review-evidence { min-height: 600px; overflow: visible; flex-shrink: 0; }
+  .management-review-findings { height: auto; }
+}
+
+@media (max-width: 640px) {
+  .management-header { align-items: flex-start; gap: 16px; padding: 28px 20px 20px; }
+  .management-header > :first-child { flex-basis: 100%; }
+  .management-scroll { padding: 4px 20px 28px; }
+  .management-metrics { grid-template-columns: 1fr; }
+  .management-metrics > :is(div, article) { border-right: 0; border-bottom: 1px solid var(--border); padding: 20px; }
+  .management-metrics > :last-child { border-bottom: 0; }
+  .management-panel { padding: 20px; }
+  .management-list > :is(article, div) { padding: 18px 20px; }
+  .management-project-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
+  .management-review-layout { width: calc(100% - 40px); margin: 0 auto 20px; }
+  .management-review-sidebar { padding: 20px; }
+}
