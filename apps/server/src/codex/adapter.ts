@@ -400,6 +400,7 @@ export class CodexHarnessAdapter implements HarnessRuntime {
         allowedWorkspaceRoots: options.config.allowedWorkspaceRoots,
         codexBinary: options.config.codexBinary,
         experimentalApi: options.config.codexExperimentalApi,
+        sharedSkillsDir: options.config.sharedSkillsDir,
       });
   }
 

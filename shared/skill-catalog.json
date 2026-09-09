@@ -1,0 +1,756 @@
+{
+  "schemaVersion": 1,
+  "skills": [
+    {
+      "name": "anthropic-frontend-design",
+      "sourceId": "anthropic",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/frontend-design",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "2fb9c4cc026366ea6e21c60cb23c908a4d27c62071819cc06beffaac102d0694",
+          "bytes": 5552
+        },
+        {
+          "path": ".source-notices/THIRD_PARTY_NOTICES.md",
+          "sha256": "a8ff7a84dee9dfb42ab448de281784387ceafdf63881b7c070ee2de7f6ed865c",
+          "bytes": 46162
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+          "bytes": 10174
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "374ec1fbf0c4b52244e8eb5a971c40dd052fc70d6d2efbc54f6d3ab8d773f501",
+          "bytes": 9484
+        }
+      ]
+    },
+    {
+      "name": "anthropic-internal-comms",
+      "sourceId": "anthropic",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/internal-comms",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "2fb9c4cc026366ea6e21c60cb23c908a4d27c62071819cc06beffaac102d0694",
+          "bytes": 5552
+        },
+        {
+          "path": ".source-notices/THIRD_PARTY_NOTICES.md",
+          "sha256": "a8ff7a84dee9dfb42ab448de281784387ceafdf63881b7c070ee2de7f6ed865c",
+          "bytes": 46162
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "bc6b3af2f331cbc7fb0da1344efb2cbe5877a31498b4d70dbc7000f3405a1362",
+          "bytes": 11345
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "d2a4963563274ae79fdad77646aa7a0181d296ece8c3562a6460c819cfd7948f",
+          "bytes": 1605
+        },
+        {
+          "path": "examples/3p-updates.md",
+          "sha256": "087e4363c0f3513728a7e695eeb9ead5c3ecd12a4681b59340691180e65b68fc",
+          "bytes": 3274
+        },
+        {
+          "path": "examples/company-newsletter.md",
+          "sha256": "30f81cfbdb03858a006169c72169024089c7c5d3d32611d337782da4f38c86b5",
+          "bytes": 3295
+        },
+        {
+          "path": "examples/faq-answers.md",
+          "sha256": "5ecd3356cd6666937f2ebefa753253edfdbdca15e368d07baf398bfcced72484",
+          "bytes": 2366
+        },
+        {
+          "path": "examples/general-comms.md",
+          "sha256": "4d3a4bb198a77626bcf018e96b2b45a2dbabed172d4ade0fcd70d23ae8a47a47",
+          "bytes": 602
+        }
+      ]
+    },
+    {
+      "name": "anthropic-mcp-builder",
+      "sourceId": "anthropic",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/mcp-builder",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "2fb9c4cc026366ea6e21c60cb23c908a4d27c62071819cc06beffaac102d0694",
+          "bytes": 5552
+        },
+        {
+          "path": ".source-notices/THIRD_PARTY_NOTICES.md",
+          "sha256": "a8ff7a84dee9dfb42ab448de281784387ceafdf63881b7c070ee2de7f6ed865c",
+          "bytes": 46162
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "bc6b3af2f331cbc7fb0da1344efb2cbe5877a31498b4d70dbc7000f3405a1362",
+          "bytes": 11345
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "3682728d22f9896b95d366e8428f1c8597de5862382b34b95d241d3aa94f345a",
+          "bytes": 9186
+        },
+        {
+          "path": "reference/evaluation.md",
+          "sha256": "8c99479f8a2d22a636c38e274537aac3610879e26f34e0709825077c4576f427",
+          "bytes": 21663
+        },
+        {
+          "path": "reference/mcp_best_practices.md",
+          "sha256": "80fb4369a349447cf18ecdd7494fe7938b6065377e9f08c077cec411093a3007",
+          "bytes": 7330
+        },
+        {
+          "path": "reference/node_mcp_server.md",
+          "sha256": "c3ba35a4f599dd53be9c6555ae72c19a7bf412cd5426576c2c08d42755482c66",
+          "bytes": 28550
+        },
+        {
+          "path": "reference/python_mcp_server.md",
+          "sha256": "2da52f77e675191014ca2e146a4b95aa04d0ca7dd7e2b100322df15ade685e80",
+          "bytes": 25099
+        },
+        {
+          "path": "scripts/connections.py",
+          "sha256": "9403668a2041568772082a8b334122c1f88daf0541fb393af4522d0094a47a6e",
+          "bytes": 4875
+        },
+        {
+          "path": "scripts/evaluation.py",
+          "sha256": "49ed1d17cdce5da101b210197740713f49b935c29d4f339542a14b132658e6f7",
+          "bytes": 12579
+        },
+        {
+          "path": "scripts/example_evaluation.xml",
+          "sha256": "9272b348ddcc4b06ba562367ccd0770e018158c0068ac5116d5e34aaeff8777a",
+          "bytes": 1194
+        },
+        {
+          "path": "scripts/requirements.txt",
+          "sha256": "d5d7558b2368ecea9dfeed7d1fbc71ee9e0750bebd1282faa527d528a344c3c7",
+          "bytes": 29
+        }
+      ]
+    },
+    {
+      "name": "anthropic-skill-creator",
+      "sourceId": "anthropic",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/skill-creator",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "2fb9c4cc026366ea6e21c60cb23c908a4d27c62071819cc06beffaac102d0694",
+          "bytes": 5552
+        },
+        {
+          "path": ".source-notices/THIRD_PARTY_NOTICES.md",
+          "sha256": "a8ff7a84dee9dfb42ab448de281784387ceafdf63881b7c070ee2de7f6ed865c",
+          "bytes": 46162
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "bc6b3af2f331cbc7fb0da1344efb2cbe5877a31498b4d70dbc7000f3405a1362",
+          "bytes": 11345
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "7b32f4eec69caaad123c73673fa45bcb10ea513d37809f2ae90c7a07ff54a6f8",
+          "bytes": 33262
+        },
+        {
+          "path": "agents/analyzer.md",
+          "sha256": "bf68f4cac5a56c673a928c2e6d619586c5b93ea364026ab37547772cb45a663a",
+          "bytes": 10376
+        },
+        {
+          "path": "agents/comparator.md",
+          "sha256": "fe1fc9787c495d864c5d6eada47396478572325fde1b33a96d78bf4b849b7a3e",
+          "bytes": 7287
+        },
+        {
+          "path": "agents/grader.md",
+          "sha256": "57134da0c1a4eea33fbd74a1c9c44aa814f07d6bc64de303edb586f941e5d21a",
+          "bytes": 9049
+        },
+        {
+          "path": "assets/eval_review.html",
+          "sha256": "ce477dcc74dc1c0d1d3352646a79167b5a63634e936b1019160025065974e452",
+          "bytes": 7058
+        },
+        {
+          "path": "eval-viewer/generate_review.py",
+          "sha256": "fc9d1b9243fe5ab6012ebd579bd76d0035de1b79fd3b969de114defab26478fb",
+          "bytes": 16365
+        },
+        {
+          "path": "eval-viewer/viewer.html",
+          "sha256": "a53213426ee1100441d701a3a0d49cda7a842f992d2c36463f4d3cc0258575fa",
+          "bytes": 44998
+        },
+        {
+          "path": "references/schemas.md",
+          "sha256": "8e8876180a8989b406a4d3edddf875b04cdfd5805cc8616686d552b11ce4455f",
+          "bytes": 12061
+        },
+        {
+          "path": "scripts/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "scripts/aggregate_benchmark.py",
+          "sha256": "123ef128ea5ccc01a4b1ac212ef5567f21e9c13d3d240609780beeb3200c49aa",
+          "bytes": 14386
+        },
+        {
+          "path": "scripts/generate_report.py",
+          "sha256": "13df7118a3c50c83c4c3250a606d5f2b20b25a3d44cbc392b3d669ec75281453",
+          "bytes": 12847
+        },
+        {
+          "path": "scripts/improve_description.py",
+          "sha256": "87d864570220b699fac52da309d2d6efdb060647bfebc74f768128e646accf80",
+          "bytes": 11116
+        },
+        {
+          "path": "scripts/package_skill.py",
+          "sha256": "1a33059b0db1ef73375d46d513e5ea81369d2e8838c970597b0d52ddef8d1c0f",
+          "bytes": 4234
+        },
+        {
+          "path": "scripts/quick_validate.py",
+          "sha256": "67cf5703402013936c8fb75ad6a1afecd8841d45cc5e606b634eb05825fde365",
+          "bytes": 3972
+        },
+        {
+          "path": "scripts/run_eval.py",
+          "sha256": "43e3b8f80dbf69c343967ba77e268fae991d9fa3ed68b32a0ff02532cd48657f",
+          "bytes": 11464
+        },
+        {
+          "path": "scripts/run_loop.py",
+          "sha256": "7bd6f674203168520517eec94c55f493c0d154339b061b4d7c0f0dad187d0f21",
+          "bytes": 13605
+        },
+        {
+          "path": "scripts/utils.py",
+          "sha256": "3af8ae62c40c73ab712207436a0d9a981e845f25c5a7040229eb189cc8e45bb1",
+          "bytes": 1661
+        }
+      ]
+    },
+    {
+      "name": "anthropic-webapp-testing",
+      "sourceId": "anthropic",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/webapp-testing",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "2fb9c4cc026366ea6e21c60cb23c908a4d27c62071819cc06beffaac102d0694",
+          "bytes": 5552
+        },
+        {
+          "path": ".source-notices/THIRD_PARTY_NOTICES.md",
+          "sha256": "a8ff7a84dee9dfb42ab448de281784387ceafdf63881b7c070ee2de7f6ed865c",
+          "bytes": 46162
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "bc6b3af2f331cbc7fb0da1344efb2cbe5877a31498b4d70dbc7000f3405a1362",
+          "bytes": 11345
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "bc7c746afd9759c83b3db796a449febaeeb4e4382f5e98225fa8f17dab7dcaa1",
+          "bytes": 4007
+        },
+        {
+          "path": "examples/console_logging.py",
+          "sha256": "ea46877289acb82da7e7ce59d0bc37c8977cd57e2a006d0c88d7a1c625bf95da",
+          "bytes": 1027
+        },
+        {
+          "path": "examples/element_discovery.py",
+          "sha256": "d63c89604a22f8845d724e95dda45db49b1bf57c25ce0a83afbb7b8da3d402f0",
+          "bytes": 1463
+        },
+        {
+          "path": "examples/static_html_automation.py",
+          "sha256": "9d533aafb875ee3ab8b8ebf8f5b9003ac8d999da3d09b285cce252e623140064",
+          "bytes": 953
+        },
+        {
+          "path": "scripts/with_server.py",
+          "sha256": "b0dcf4918935b795f4eda9821579b9902119235ff4447f687a30286e7d0925fd",
+          "bytes": 3693
+        }
+      ]
+    },
+    {
+      "name": "openai-build-chatgpt-app",
+      "sourceId": "openai-plugins",
+      "sourceUrl": "https://github.com/openai/plugins/tree/d416fd5a43426019986b1e489506db3db66dee3d/plugins/openai-developers/skills/build-chatgpt-app",
+      "revision": "d416fd5a43426019986b1e489506db3db66dee3d",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "b3681ebd15797bdee1d638c6520c7ba10a36e676760ea5c251530f53f843c852",
+          "bytes": 1283
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "a7f55b2cb68997f729e6199720d4d3cae47633aba0254a84b2d36ab284be9d45",
+          "bytes": 10774
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "75a58ec7c01fcbc48ce6fcfc1abf47262787ab5a899a87a3820dd587e8b7cff7",
+          "bytes": 19747
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "b05fde0d0fa81bf1e3c76d662e6a8994d6c8363250e9488e2f3522fea1086bc3",
+          "bytes": 852
+        },
+        {
+          "path": "references/app-archetypes.md",
+          "sha256": "ae3bb232c201541303264653518eca8bc59832bc73e511835d66ebd0a3c04f87",
+          "bytes": 3514
+        },
+        {
+          "path": "references/apps-sdk-docs-workflow.md",
+          "sha256": "41f0ec23b35c6a66de59de80c13b9be59002a371c8a36d23f96f20e19c656b49",
+          "bytes": 8143
+        },
+        {
+          "path": "references/interactive-state-sync-patterns.md",
+          "sha256": "5ca632712be3d75f63a405292184a7867cfc0fa3803b53b2063a94318a8c1278",
+          "bytes": 4281
+        },
+        {
+          "path": "references/repo-contract-and-validation.md",
+          "sha256": "28fb7093b67e29d05322e3fd38cb7ad182e92913aa45051d97dbddca8a627cd6",
+          "bytes": 2962
+        },
+        {
+          "path": "references/search-fetch-standard.md",
+          "sha256": "32c706205035007d1b616bf3eeb6c6c9ce69f6c56493bf0ea942a20abe8b39e6",
+          "bytes": 2021
+        },
+        {
+          "path": "references/upstream-example-workflow.md",
+          "sha256": "241f2fc58ff6c3b276325bef70254d8e1a18ec9e7633bd3bd03ef45ff478f727",
+          "bytes": 3443
+        },
+        {
+          "path": "references/window-openai-patterns.md",
+          "sha256": "1718848c5c903368fb536ee4be405e54a0fe3a91ef13986f5780735b04ca3cb3",
+          "bytes": 4707
+        },
+        {
+          "path": "scripts/scaffold_node_ext_apps.mjs",
+          "sha256": "fb12086ca7e37ab7d1fb02418b11623f207b8726aabfcbfb3d5634539479807a",
+          "bytes": 16371
+        }
+      ]
+    },
+    {
+      "name": "openai-chatgpt-app-submission",
+      "sourceId": "openai-plugins",
+      "sourceUrl": "https://github.com/openai/plugins/tree/d416fd5a43426019986b1e489506db3db66dee3d/plugins/openai-developers/skills/chatgpt-app-submission",
+      "revision": "d416fd5a43426019986b1e489506db3db66dee3d",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "b3681ebd15797bdee1d638c6520c7ba10a36e676760ea5c251530f53f843c852",
+          "bytes": 1283
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "a7f55b2cb68997f729e6199720d4d3cae47633aba0254a84b2d36ab284be9d45",
+          "bytes": 10774
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "015f472f8742bef943e775d49f722ecec35950f28448043f09d1363e9bda7dd1",
+          "bytes": 11347
+        }
+      ]
+    },
+    {
+      "name": "openai-gh-address-comments",
+      "sourceId": "openai",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/gh-address-comments",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "0f6a07580f3c627253e15a58dd0439e135049ec38eb16cf3587f7e50abc6f590",
+          "bytes": 1840
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+          "bytes": 11357
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "350ff0d93c0bf4a39e9c3597b51eadae7bd8cbbd9ac297acde1632d19fe8ba6d",
+          "bytes": 1369
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "12cf845a78254dde85e60eefb45a60e6ce2129d321f3e1d691d4ebca9a140861",
+          "bytes": 303
+        },
+        {
+          "path": "assets/github-small.svg",
+          "sha256": "ee05e92d373d4d84f4612af3c1090ef67698d421bbe30896a4ed5a00cb86a069",
+          "bytes": 853
+        },
+        {
+          "path": "assets/github.png",
+          "sha256": "d55a9baa41798d8b5108e3058df3a5bda09914ea9fd73b49929cc38a8832424f",
+          "bytes": 1838
+        },
+        {
+          "path": "scripts/fetch_comments.py",
+          "sha256": "d7bc64f6b26f7482f9ca9dd7c923a5b8b20e1ef13491ae2d9052cd208a7c1ad1",
+          "bytes": 6537
+        }
+      ]
+    },
+    {
+      "name": "openai-gh-fix-ci",
+      "sourceId": "openai",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/gh-fix-ci",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "0f6a07580f3c627253e15a58dd0439e135049ec38eb16cf3587f7e50abc6f590",
+          "bytes": 1840
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "4dd13869245e356246a5b770723247bbb80a8f07a181d1d3d873a1734297cdb9",
+          "bytes": 10776
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "ad4ae74054f409d2d69b51c1ae18bacdff265e2ed6d89c2d79b623b03e9b0789",
+          "bytes": 3740
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "36f73b9450504983d1647c960689596f59bf9147c14b1b43162912ed7ada9af6",
+          "bytes": 302
+        },
+        {
+          "path": "assets/github-small.svg",
+          "sha256": "ee05e92d373d4d84f4612af3c1090ef67698d421bbe30896a4ed5a00cb86a069",
+          "bytes": 853
+        },
+        {
+          "path": "assets/github.png",
+          "sha256": "d55a9baa41798d8b5108e3058df3a5bda09914ea9fd73b49929cc38a8832424f",
+          "bytes": 1838
+        },
+        {
+          "path": "scripts/inspect_pr_checks.py",
+          "sha256": "9459e5b03f86785d184a83e5cd8d621b832e918ec04158a2962d867785812c6c",
+          "bytes": 15222
+        }
+      ]
+    },
+    {
+      "name": "openai-pdf",
+      "sourceId": "openai",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/pdf",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "0f6a07580f3c627253e15a58dd0439e135049ec38eb16cf3587f7e50abc6f590",
+          "bytes": 1840
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "4dd13869245e356246a5b770723247bbb80a8f07a181d1d3d873a1734297cdb9",
+          "bytes": 10776
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "71fcc4bd29d85f1e120d72b5e02c97ef759fccd3b68d735f93d15106c82a8eea",
+          "bytes": 2606
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "f8b223e25343559f57e1839ccd849fd1494a9729da33da04bb5074b7f80f4887",
+          "bytes": 219
+        },
+        {
+          "path": "assets/pdf.png",
+          "sha256": "17da356d195d4e3fa24f9becbee6b8d9e60e13005762b5ab0809c520c76da6ee",
+          "bytes": 1312
+        }
+      ]
+    },
+    {
+      "name": "openai-security-best-practices",
+      "sourceId": "openai",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/security-best-practices",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "0f6a07580f3c627253e15a58dd0439e135049ec38eb16cf3587f7e50abc6f590",
+          "bytes": 1840
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "4dd13869245e356246a5b770723247bbb80a8f07a181d1d3d873a1734297cdb9",
+          "bytes": 10776
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "9f7cade7c934fdd875425739a6ab63da166c61dfc52d90245c72a382e341dc56",
+          "bytes": 8701
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "6e9c6f2edce448eb2b589f81ad6e3f722665021785513bcbfd0bf7b86b529171",
+          "bytes": 237
+        },
+        {
+          "path": "references/golang-general-backend-security.md",
+          "sha256": "a73c47c34497b120672d48411fe51dc90d426a571801a0b3f649e2ce4ec658b4",
+          "bytes": 38659
+        },
+        {
+          "path": "references/javascript-express-web-server-security.md",
+          "sha256": "427835cbb5be7ba96172ea6ca9af80ddd4419c833e9ebf870996740c80d8406c",
+          "bytes": 49357
+        },
+        {
+          "path": "references/javascript-general-web-frontend-security.md",
+          "sha256": "3a7bc7b3f6e7ff043db9dbaa8933894d7a19d987d0607e4ddae5d70184a63d63",
+          "bytes": 38638
+        },
+        {
+          "path": "references/javascript-jquery-web-frontend-security.md",
+          "sha256": "bcbad2fa6c2a02709e47e889e70102c76886bf36bc798624d27db570eccf40da",
+          "bytes": 33581
+        },
+        {
+          "path": "references/javascript-typescript-nextjs-web-server-security.md",
+          "sha256": "71c773f7a97ce60c853adfa100b3d88b3b7bc4c6b8acaef1432ffabd923ee182",
+          "bytes": 43423
+        },
+        {
+          "path": "references/javascript-typescript-react-web-frontend-security.md",
+          "sha256": "d3030c0f24bddb56b9bbb91bbec1ee49eb7778bce4d3e0297b2641b2fc6b0d9c",
+          "bytes": 41686
+        },
+        {
+          "path": "references/javascript-typescript-vue-web-frontend-security.md",
+          "sha256": "77c6a747f9f17e3df03aad0fcb20d99ac7898001b81aef8b80908e45ac14a688",
+          "bytes": 31445
+        },
+        {
+          "path": "references/python-django-web-server-security.md",
+          "sha256": "4fb69b5d45f10e588d1a8c35cdc5f59e18910f6b46a93e2d342d90f286f8dfd2",
+          "bytes": 38661
+        },
+        {
+          "path": "references/python-fastapi-web-server-security.md",
+          "sha256": "7383c7f4fc271190b05e562ada7e825982a2c76b6c79a9f95a1da7687b65a616",
+          "bytes": 44926
+        },
+        {
+          "path": "references/python-flask-web-server-security.md",
+          "sha256": "9606d69190c04c167fdeac57e61297547a57b0542fd89dede36f355970446929",
+          "bytes": 31748
+        }
+      ]
+    },
+    {
+      "name": "openai-security-threat-model",
+      "sourceId": "openai",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/security-threat-model",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "0f6a07580f3c627253e15a58dd0439e135049ec38eb16cf3587f7e50abc6f590",
+          "bytes": 1840
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "4dd13869245e356246a5b770723247bbb80a8f07a181d1d3d873a1734297cdb9",
+          "bytes": 10776
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "48429ac2de555ad8192808c9767ceaa8e8a1b73d31993dd7e3859a0fcd29e863",
+          "bytes": 5650
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "3319b59736312abceca614e341c0e59cae47263e3b58a22b2b5ddf1e5fc8c227",
+          "bytes": 254
+        },
+        {
+          "path": "references/prompt-template.md",
+          "sha256": "81a59aa3fb3ac3a739d6a26ab38e4015965f215581ee54becef21a2b121ec29b",
+          "bytes": 12642
+        },
+        {
+          "path": "references/security-controls-and-assets.md",
+          "sha256": "d536cfa9acad2523dc39134bcf33b9566c29dd9a57b407cbc9901637230c6b98",
+          "bytes": 1680
+        }
+      ]
+    },
+    {
+      "name": "openai-system-openai-docs",
+      "sourceId": "openai",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.system/openai-docs",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "0f6a07580f3c627253e15a58dd0439e135049ec38eb16cf3587f7e50abc6f590",
+          "bytes": 1840
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "4dd13869245e356246a5b770723247bbb80a8f07a181d1d3d873a1734297cdb9",
+          "bytes": 10776
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "ce7663bfc615fd65bc2ffe5c71723de5aa992b09fc7fb88a7e62be818d652996",
+          "bytes": 18843
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "004c73f6e01409cfd7db699e815f5fed4ced3b63dd2cc25874f6791eae7fd4bc",
+          "bytes": 598
+        },
+        {
+          "path": "assets/openai-small.svg",
+          "sha256": "45be1f0757eb18889eefb1e7db79668ef46a275dc4e0e78e8df5ebd7f6cdeadc",
+          "bytes": 1091
+        },
+        {
+          "path": "assets/openai.png",
+          "sha256": "156cc84d7332bfe95b310350bd470b690d22aa33d65340cc6c2e06022946194c",
+          "bytes": 1429
+        },
+        {
+          "path": "references/latest-model.md",
+          "sha256": "997e0c438432f983aae1a5e8bfec27d936314501da363bb40db4e146bbfa5fc1",
+          "bytes": 1959
+        },
+        {
+          "path": "references/prompting-guide.md",
+          "sha256": "ecdf49b4a824a87367c7a6ec3c0218e2c5783dff951b30a101c3b6a95152aafa",
+          "bytes": 14338
+        },
+        {
+          "path": "references/upgrade-guide.md",
+          "sha256": "563784eb13ad1b44c3a592f940aa7ac2086ebeb97df3f4a09ba038b2f1564d39",
+          "bytes": 11308
+        },
+        {
+          "path": "scripts/fetch-codex-manual.mjs",
+          "sha256": "f53eb6d2f286e9efcc397e8bee93a938e37296c90953e4e06e94899ef1b6c363",
+          "bytes": 16085
+        },
+        {
+          "path": "scripts/resolve-latest-model-info.js",
+          "sha256": "3fc420a12ab1a344ac49b852138f599d01e3ac561ec86426ba161f42a03d3e52",
+          "bytes": 3463
+        }
+      ]
+    },
+    {
+      "name": "openai-skill-creator",
+      "sourceId": "openai",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.system/skill-creator",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": ".source-notices/README.md",
+          "sha256": "0f6a07580f3c627253e15a58dd0439e135049ec38eb16cf3587f7e50abc6f590",
+          "bytes": 1840
+        },
+        {
+          "path": "LICENSE.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "04b0f3769286b753227377eca7a94334c8599f23a7f251cdd52dab2a58e658e1",
+          "bytes": 18755
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "fcc3ba02bdf8d6df1f891637cf5336d2d7ef87bb8910fa622bd150c8e0d4c55b",
+          "bytes": 192
+        },
+        {
+          "path": "references/openai_yaml.md",
+          "sha256": "9fb5928b7f4a746fdb39df503ebbd7a659d5e64b47f85a60626aa1a03fd76b17",
+          "bytes": 2130
+        },
+        {
+          "path": "scripts/generate_openai_yaml.py",
+          "sha256": "b8f6be33a9d72dd7a8da02e7a9fffea23dc79e94862e6dd6358b57a8899d8f73",
+          "bytes": 6614
+        },
+        {
+          "path": "scripts/init_skill.py",
+          "sha256": "bcb8982d3f033a094f2f1be43123ac8537e2562d25d8ba4d8ef2196ae514d96d",
+          "bytes": 14483
+        },
+        {
+          "path": "scripts/quick_validate.py",
+          "sha256": "6cc9dc3199c935916cf6f73fcbbbb0e3bb1b58c8f5109fefa499978908164f51",
+          "bytes": 3293
+        }
+      ]
+    }
+  ]
+}

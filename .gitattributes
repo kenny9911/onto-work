@@ -1,0 +1,2 @@
+# Preserve reviewed vendor bytes, including upstream line endings and whitespace.
+shared/skills/** -text -whitespace

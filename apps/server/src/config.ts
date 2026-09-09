@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_PORT = 4310;
 const DEFAULT_SESSION_TTL_HOURS = 24 * 7;
@@ -50,6 +51,8 @@ export interface HarnessConfig {
   credentialEncryptionKey: string;
   codexBinary: string;
   codexExperimentalApi: boolean;
+  /** Deployment-owned catalog directory; never accepted from the browser. */
+  sharedSkillsDir?: string;
   allowedWorkspaceRoots: string[];
   stripeSecretKey: string | null;
   stripeWebhookSecret: string | null;
@@ -82,6 +85,7 @@ export function loadConfig(): HarnessConfig {
     ),
     codexBinary: process.env.CODEX_BINARY ?? "codex",
     codexExperimentalApi: enabledFeatureFlag(process.env.CODEX_EXPERIMENTAL_API),
+    sharedSkillsDir: resolve(process.env.SHARED_SKILLS_DIR || fileURLToPath(new URL("../../../shared", import.meta.url))),
     allowedWorkspaceRoots: workspaceRoots(process.env.ALLOWED_WORKSPACE_ROOTS),
     stripeSecretKey: process.env.STRIPE_SECRET_KEY || null,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || null,

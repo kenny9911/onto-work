@@ -21,3 +21,4 @@ apps/server/data/
 
 # Pinned Codex binary fetched for protocol verification.
 .tools/
+__pycache__/

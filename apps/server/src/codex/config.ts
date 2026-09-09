@@ -45,6 +45,10 @@ export interface RenderedCodexConfig {
   fingerprint: string;
 }
 
+export interface CodexSkillsConfig {
+  sharedDirectory: string;
+}
+
 export interface UserRuntimePaths {
   runtimeDir: string;
   codexHome: string;
@@ -98,8 +102,19 @@ function fingerprint(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
-export function renderCodexConfig(provider: CodexProviderConfig): RenderedCodexConfig {
+export function renderCodexConfig(provider: CodexProviderConfig, skills?: CodexSkillsConfig): RenderedCodexConfig {
   const model = nonEmptyConfigValue(provider.model, "provider.model");
+  const skillsLines = skills ? [
+    `developer_instructions = ${tomlString(
+      `Shared reusable skills are maintained in ${nonEmptyConfigValue(skills.sharedDirectory, "skills.sharedDirectory")}/skills through operator-reviewed catalog updates. ` +
+      "Create project-specific skills in the current task working directory under .agents/skills/<skill-name>/SKILL.md, keeping their scripts, references, and assets in that skill directory. " +
+      "Do not put project data or credentials into shared skills. Shared skills are instructions and resources; dependencies must use the existing tool and approval policies.",
+    )}`,
+    // A saved project may be a nested directory inside a larger repository.
+    // Restrict native .agents/skills discovery to the authorized task cwd.
+    "project_root_markers = []",
+    "",
+  ] : [];
 
   if (provider.adapter === "ollama") {
     const baseUrl = normalizeBaseUrl(
@@ -107,6 +122,7 @@ export function renderCodexConfig(provider: CodexProviderConfig): RenderedCodexC
       "provider.baseUrl",
     );
     const toml = [
+      ...skillsLines,
       `model = ${tomlString(model)}`,
       'model_provider = "ollama"',
       'oss_provider = "ollama"',
@@ -117,7 +133,7 @@ export function renderCodexConfig(provider: CodexProviderConfig): RenderedCodexC
     return {
       toml,
       environment: { CODEX_OSS_BASE_URL: baseUrl },
-      fingerprint: fingerprint({ adapter: provider.adapter, model, baseUrl }),
+      fingerprint: fingerprint({ adapter: provider.adapter, model, baseUrl, skills }),
     };
   }
 
@@ -141,6 +157,7 @@ export function renderCodexConfig(provider: CodexProviderConfig): RenderedCodexC
   }
 
   const toml = [
+    ...skillsLines,
     `model = ${tomlString(model)}`,
     `model_provider = ${tomlString(PROVIDER_ID)}`,
     "",
@@ -158,6 +175,7 @@ export function renderCodexConfig(provider: CodexProviderConfig): RenderedCodexC
       baseUrl,
       model,
       apiKey,
+      skills,
     }),
   };
 }

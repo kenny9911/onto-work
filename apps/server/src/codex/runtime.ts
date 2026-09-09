@@ -12,6 +12,7 @@ import {
   type RenderedCodexConfig,
   type UserRuntimePaths,
 } from "./config.js";
+import { loadSharedSkillsCatalog, type SharedSkillsCatalog } from "./shared-skills.js";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -62,6 +63,7 @@ export interface CodexUserRuntimeOptions {
 export interface CodexRuntimeManagerOptions {
   runtimeDataDir: string;
   allowedWorkspaceRoots: readonly string[];
+  sharedSkillsDir?: string;
   codexBinary?: string;
   codexArgs?: readonly string[];
   experimentalApi?: boolean;
@@ -88,6 +90,7 @@ interface RuntimeProcessOptions {
   paths: UserRuntimePaths;
   processCwd: string;
   configurationFingerprint: string;
+  sharedSkillRoots: readonly string[];
   providerEnvironment: Readonly<Record<string, string>>;
   binary: string;
   binaryArgs: readonly string[];
@@ -107,6 +110,7 @@ interface RuntimeProcessOptions {
 interface ResolvedManagerOptions {
   runtimeDataDir: string;
   allowedWorkspaceRoots: readonly string[];
+  sharedSkillsDir?: string;
   codexBinary: string;
   codexArgs: readonly string[];
   experimentalApi: boolean;
@@ -257,11 +261,13 @@ function rpcErrorPayload(value: unknown): JsonRpcErrorPayload {
   };
 }
 
-function configurationFingerprint(rendered: RenderedCodexConfig, processCwd: string): string {
+function configurationFingerprint(rendered: RenderedCodexConfig, processCwd: string, catalog?: SharedSkillsCatalog): string {
   return createHash("sha256")
     .update(rendered.fingerprint)
     .update("\0")
     .update(processCwd)
+    .update("\0")
+    .update(catalog?.fingerprint ?? "")
     .digest("hex");
 }
 
@@ -355,6 +361,13 @@ export class CodexRuntime {
       );
       this.initializeResultValue = initialized;
       await this.writeMessage({ method: "initialized" });
+      if (this.options.sharedSkillRoots.length > 0) {
+        await this.requestInternal(
+          "skills/extraRoots/set",
+          { extraRoots: [...this.options.sharedSkillRoots] },
+          this.options.initializeTimeoutMs,
+        );
+      }
       if (this.stateValue !== "starting") {
         throw this.terminalError ?? new CodexRuntimeClosedError("Codex runtime closed during startup");
       }
@@ -790,11 +803,19 @@ export class CodexRuntimeManager {
     if (this.closed) throw new CodexRuntimeClosedError("Codex runtime manager is closed");
 
     const paths = await prepareUserRuntimePaths(this.options.runtimeDataDir, userId);
-    const rendered = renderCodexConfig(launch.provider);
+    let catalog: SharedSkillsCatalog | undefined;
+    try {
+      if (this.options.sharedSkillsDir) catalog = await loadSharedSkillsCatalog(this.options.sharedSkillsDir);
+    } catch (error) {
+      // A modified catalog must not leave a previously acquired runtime active.
+      await this.runtimes.get(userId)?.close();
+      throw error;
+    }
+    const rendered = renderCodexConfig(launch.provider, catalog ? { sharedDirectory: catalog.directory } : undefined);
     const processCwd = launch.workspacePath
       ? await resolveAllowedWorkspacePath(launch.workspacePath, this.options.allowedWorkspaceRoots)
       : paths.processCwd;
-    const fingerprint = configurationFingerprint(rendered, processCwd);
+    const fingerprint = configurationFingerprint(rendered, processCwd, catalog);
     const existing = this.runtimes.get(userId);
     if (existing) {
       if (existing.configurationFingerprint !== fingerprint) {
@@ -811,6 +832,7 @@ export class CodexRuntimeManager {
       paths,
       processCwd,
       configurationFingerprint: fingerprint,
+      sharedSkillRoots: catalog?.roots ?? [],
       providerEnvironment: rendered.environment,
       binary: this.options.codexBinary,
       binaryArgs: this.options.codexArgs,
