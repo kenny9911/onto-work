@@ -6,8 +6,13 @@
 
 ## Decision
 
-Keep the full Anthropic/OpenAI download archive in Agentic Operator. Onto-work
-retains a reviewed subset as complete bundles under `shared/skills/`. A Git-reviewed
+Keep the curated business/agentic-tool source collection in Agentic Operator.
+Onto-work retains four complete bundles under `shared/skills/`: Internal Comms,
+the two upstream Skill Creator references and PDF. Ten former development-time
+shared entries are removed; their source identities and rationale remain in
+`shared/skill-curation.json`. Authored business and ontology skills in project
+folders are preserved. No additional central skills are globally installed.
+A Git-reviewed
 manifest lists immutable source revisions, copying terms and every file's hash
 and size. No model-generated path or browser request may choose this shared root.
 
@@ -43,6 +48,8 @@ onto-work's control plane continues to select models for its own tasks.
 ## Integrity and lifecycle
 
 The offline importer validates the reviewed source lock and exact selected files,
+requires selection to match the retained curation identities, binds that curation
+hash into the generated catalog,
 retains licenses and notices, namespaces names with an in-file modification notice,
 and stages a complete replacement. Identical imports are no-ops. Updates require
 an explicit reviewed selection and refuse to overwrite locally modified files.
@@ -73,7 +80,7 @@ production requirements under ADR-0001.
 Per-user runtime homes and tenant/workspace grants remain independent. Project
 skill placement is not a way to share tenant secrets, and shared skill files must
 contain no private project context. External dependencies remain subject to the
-existing execution and approval policy. The full archived collection need not be
+existing execution and approval policy. The central curated collection need not be
 automatically activated: the curated subset bounds context and host assumptions.
 
 ## Verification

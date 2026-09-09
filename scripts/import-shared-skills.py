@@ -53,10 +53,29 @@ def file_paths(root):
     return found
 
 
-def check_catalog(shared):
+def validate_curation(curation, selected):
+    if curation.get("schemaVersion") != 1 or not curation.get("retained"):
+        raise ValueError("Unsupported or empty shared curation")
+    decisions = curation["retained"] + curation.get("removed", [])
+    if len({entry["id"] for entry in decisions}) != len(decisions) or any(not entry.get("rationale") for entry in decisions):
+        raise ValueError("Curation requires unique ids and explicit rationales")
+    expected = {entry["id"]: entry for entry in curation["retained"]}
+    if len(selected) != len(expected) or {entry.get("id") for entry in selected} != set(expected):
+        raise ValueError("Shared selection must match retained curation; removed or unreviewed skills cannot be imported")
+    for entry in selected:
+        if any(entry[key] != expected[entry["id"]][key] for key in ("name", "sourceId")):
+            raise ValueError(f"Shared identity differs from curation: {entry['id']}")
+
+
+def check_catalog(shared, enforce_curation=True):
     manifest = json.loads(read_regular(shared, "skill-catalog.json"))
     if manifest.get("schemaVersion") != 1 or not manifest.get("skills"):
         raise ValueError("Unsupported or empty shared catalog")
+    if enforce_curation:
+        curation_bytes = read_regular(shared, "skill-curation.json")
+        validate_curation(json.loads(curation_bytes), manifest["skills"])
+        if digest(curation_bytes) != manifest.get("curationManifestSha256"):
+            raise ValueError("Shared curation changed; import the reviewed selection")
     skills_root = safe_path(shared, "skills")
     expected = set()
     names = set()
@@ -83,12 +102,14 @@ def check_catalog(shared):
 
 def build_catalog(source, selection, target):
     """Build a complete staged tree after validating the reviewed source lock."""
+    curation_bytes = read_regular(target, "skill-curation.json")
+    validate_curation(json.loads(curation_bytes), selection["skills"])
     lock_bytes = read_regular(source, "sources.lock.json")
     if digest(lock_bytes) != selection["sourceLockSha256"]:
         raise ValueError("Source lock changed; review upstream changes and update skill-sources.json")
     lock = json.loads(lock_bytes)
     locked = {f["path"]: f for f in lock["files"]}
-    manifest = {"schemaVersion": 1, "skills": []}
+    manifest = {"schemaVersion": 1, "curationManifestSha256": digest(curation_bytes), "skills": []}
     names = set()
     for selected in selection["skills"]:
         name = selected["name"]
@@ -103,7 +124,7 @@ def build_catalog(source, selection, target):
             raise ValueError(f"Unexpected source files: {selected['id']}")
         for notice in selected.get("noticePaths", []):
             files[notice] = ".source-notices/" + PurePosixPath(notice).name
-        entry = {k: selected[k] for k in ("name", "sourceId", "sourceUrl", "revision", "license")}
+        entry = {k: selected[k] for k in ("id", "name", "sourceId", "sourceUrl", "revision", "license")}
         entry["files"] = []
         for source_path, output_path in sorted(files.items(), key=lambda item: item[1]):
             data = read_regular(source, source_path)
@@ -135,18 +156,24 @@ def install(source, shared, selection, update=False):
     if shared.is_symlink():
         raise ValueError("Shared directory must not be a link")
     shared.mkdir(parents=True, exist_ok=True)
+    curation_bytes = read_regular(shared, "skill-curation.json")
     with tempfile.TemporaryDirectory(prefix=".skill-import-", dir=shared.parent) as temporary:
         staged = Path(temporary)
+        (staged / "skill-curation.json").write_bytes(curation_bytes)
         manifest = build_catalog(source, selection, staged)
         old = None
         if (shared / "skill-catalog.json").exists():
-            old = check_catalog(shared)
+            # Verify the complete old managed tree before a reviewed scope change.
+            # Its curation can differ from the next selection being installed.
+            old = check_catalog(shared, enforce_curation=False)
             if old == manifest:
                 return manifest, False
             if not update:
                 raise ValueError("Catalog update requires reviewed --update; local edits are never overwritten")
         elif (shared / "skills").exists():
             raise ValueError("Refusing to replace an unowned skills directory")
+        if read_regular(shared, "skill-curation.json") != curation_bytes:
+            raise ValueError("Shared curation changed during import")
         backup = staged / "previous-skills"
         if old:
             os.rename(shared / "skills", backup)
