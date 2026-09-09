@@ -4,6 +4,10 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "skills:import": "python3 scripts/import-shared-skills.py",
+    "skills:check": "python3 scripts/import-shared-skills.py --check",
+    "skills:test": "python3 -m unittest discover -s scripts -p 'test_*.py'",
+    "skills:verify-runtime": "pnpm --filter @agent-harness/server exec tsx ../../scripts/verify-shared-skills.mts",
     "dev": "pnpm --parallel --filter @agent-harness/server --filter @agent-harness/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",

@@ -69,7 +69,7 @@ Subscriptions belong to organizations. Stripe is an external payment event sourc
 
 ### Repository trust
 
-Repositories, prompts, generated patches, `AGENTS.md`, `.codex` configuration, hooks, MCP servers, plugins, and skills are untrusted input. The current preview does not expose hooks, repository-selected plugins/skills, or arbitrary MCP servers as product capabilities. Future enablement requires an explicit, signed allow-list and permission policy. Project-local Codex configuration must not select provider endpoints, credentials, or a more permissive sandbox.
+Repositories, prompts, generated patches, `AGENTS.md`, `.codex` configuration, hooks, MCP servers, plugins, and skills are untrusted input. The preview's reviewed shared skill catalog and cwd-scoped project skills are described in [ADR-0002](ADR-0002-shared-project-skills.md). Hooks, repository-selected plugins, and arbitrary MCP servers are not exposed as product capabilities. Production enablement requires a signed allow-list and permission policy. Project-local Codex configuration must not select provider endpoints, credentials, or a more permissive sandbox.
 
 ### Uploaded content
 
@@ -110,7 +110,7 @@ The preview is a controlled deployment for local development and trusted pilot t
 | Authentication | Argon2 password hashing, signed HttpOnly sessions, mandatory bootstrap-password rotation, login rate limiting | SSO/OIDC, MFA for privileged roles, risk-based controls, formal account recovery |
 | Authorization | Central organization-scoped checks and negative tests | Database row-level defense in depth, policy review, continuous authorization telemetry |
 | Billing | Stripe test mode, signature-verified webhooks, durable processed-event deduplication/stale rejection, versioned entitlement snapshots, and transactional seat/active-run/request admission | Durable raw-event ingestion, deterministic total ordering, monetary budgets, provider/price reconciliation, dispute/refund handling, finance audit exports |
-| Agent features | Built-in tools only; hooks, arbitrary MCP, repo skills/plugins disabled | Signed/approved catalog, permission manifests, per-capability policy and revocation |
+| Agent features | Built-in tools, reviewed shared skills and cwd-scoped project skills per ADR-0002; no product surface for hooks, arbitrary MCP, or repo-selected plugins | Signed/approved catalog, permission manifests, per-capability policy and revocation |
 
 A preview exception never permits a shared writable workspace, shared `CODEX_HOME`, public app-server listener, browser-visible provider key, hard-coded admin credential, unsigned webhook, or client-enforced entitlement.
 

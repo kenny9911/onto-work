@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -18,6 +19,8 @@ const send = (message) => process.stdout.write(JSON.stringify(message) + "\n");
 let serverRequestProbe = null;
 let unsupportedResponse = null;
 let approvalResponse = null;
+let extraSkillRoots = [];
+const requestMethods = [];
 const finishServerRequestProbe = () => {
   if (!serverRequestProbe || !unsupportedResponse || !approvalResponse) return;
   send({
@@ -33,6 +36,7 @@ const finishServerRequestProbe = () => {
 };
 input.on("line", (line) => {
   const message = JSON.parse(line);
+  if (message.method) requestMethods.push(message.method);
   if (message.method === "initialize") {
     send({
       id: message.id,
@@ -52,6 +56,19 @@ input.on("line", (line) => {
       send({ method: "test/echoed", params: message.params });
       send({ id: message.id, result: message.params });
     }, delay);
+    return;
+  }
+  if (message.method === "skills/extraRoots/set") {
+    if (process.env.TEST_SKILLS_RPC_FAIL === "true") {
+      send({ id: message.id, error: { code: -32601, message: "unsupported skills catalog" } });
+    } else {
+      extraSkillRoots = message.params.extraRoots;
+      send({ id: message.id, result: {} });
+    }
+    return;
+  }
+  if (message.method === "probe/skills") {
+    send({ id: message.id, result: { extraSkillRoots, requestMethods, codexHome: process.env.CODEX_HOME, home: process.env.HOME } });
     return;
   }
   if (message.method === "fail") {
@@ -211,4 +228,98 @@ test("rejects unknown server requests while approvals remain observable", async 
   assert.equal(events[0]?.kind, "server-request");
   assert.equal(events[0]?.method, "item/commandExecution/requestApproval");
   assert.equal(events[0]?.requestId, "supported-approval-request");
+});
+
+async function sharedCatalogFixture(t: test.TestContext) {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "agent-harness-shared-skills-")));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const sharedSkillsDir = join(directory, "shared");
+  const skillRoot = join(sharedSkillsDir, "skills", "openai-example");
+  await mkdir(skillRoot, { recursive: true });
+  const content = "---\nname: example\ndescription: Example skill\n---\nUse this skill.\n";
+  await writeFile(join(skillRoot, "SKILL.md"), content);
+  await writeFile(join(sharedSkillsDir, "skill-catalog.json"), JSON.stringify({
+    schemaVersion: 1,
+    skills: [{
+      name: "openai-example", sourceId: "openai", sourceUrl: "https://github.com/openai/skills",
+      revision: "a".repeat(40), license: "Apache-2.0",
+      files: [{ path: "SKILL.md", sha256: createHash("sha256").update(content).digest("hex"), bytes: Buffer.byteLength(content) }],
+    }],
+  }));
+  return { directory, sharedSkillsDir, skillRoot };
+}
+
+test("registers only verified shared bundles before ready while preserving per-user homes", async (t) => {
+  const f = await sharedCatalogFixture(t);
+  const project = join(f.directory, "project");
+  await mkdir(join(project, ".agents", "skills", "project-only"), { recursive: true });
+  const manager = new CodexRuntimeManager({
+    runtimeDataDir: join(f.directory, "runtimes"),
+    sharedSkillsDir: f.sharedSkillsDir,
+    allowedWorkspaceRoots: [project],
+    codexBinary: process.execPath,
+    codexArgs: ["-e", FAKE_APP_SERVER],
+    initializeTimeoutMs: 2_000,
+    requestTimeoutMs: 2_000,
+    shutdownTimeoutMs: 1_000,
+  });
+  t.after(() => manager.shutdown());
+  const launch = { provider: { adapter: "ollama" as const, model: "qwen3-coder" }, workspacePath: project };
+  const first = await manager.startUser("tenant-one-user", launch);
+  const second = await manager.startUser("tenant-two-user", launch);
+  for (const runtime of [first, second]) {
+    const probe = await runtime.request<JsonObject>("probe/skills");
+    assert.deepEqual(probe.extraSkillRoots, [f.skillRoot]);
+    assert.deepEqual(probe.requestMethods, ["initialize", "initialized", "skills/extraRoots/set", "probe/skills"]);
+    assert.equal(probe.codexHome, runtime.paths.codexHome);
+    assert.equal(probe.home, runtime.paths.processHome);
+    assert.equal(runtime.state, "ready");
+    const config = await readFile(runtime.paths.configPath, "utf8");
+    assert.match(config, /project_root_markers = \[\]/);
+    assert.match(config, /\.agents\/skills\/\<skill-name\>/);
+    assert.match(config, /operator-reviewed catalog updates/);
+  }
+  assert.notEqual(first.paths.codexHome, second.paths.codexHome);
+  assert.notEqual(first.processId, second.processId);
+  assert.equal(await manager.startUser("tenant-one-user", launch), first);
+});
+
+test("closes a startup process if registering shared skills fails", async (t) => {
+  const f = await sharedCatalogFixture(t);
+  const manager = new CodexRuntimeManager({
+    runtimeDataDir: join(f.directory, "runtimes"),
+    sharedSkillsDir: f.sharedSkillsDir,
+    allowedWorkspaceRoots: [],
+    codexBinary: process.execPath,
+    codexArgs: ["-e", FAKE_APP_SERVER],
+    runtimeEnvironment: { TEST_SKILLS_RPC_FAIL: "true" },
+    initializeTimeoutMs: 2_000,
+    shutdownTimeoutMs: 1_000,
+  });
+  t.after(() => manager.shutdown());
+  await assert.rejects(manager.startUser("user", { provider: { adapter: "ollama", model: "qwen3-coder" } }), CodexRpcError);
+  assert.equal(manager.has("user"), false);
+  assert.deepEqual(manager.activeUserIds(), []);
+});
+
+test("refuses catalog tampering before spawn and closes existing runtimes on revalidation", async (t) => {
+  const f = await sharedCatalogFixture(t);
+  const manager = new CodexRuntimeManager({
+    runtimeDataDir: join(f.directory, "runtimes"),
+    sharedSkillsDir: f.sharedSkillsDir,
+    allowedWorkspaceRoots: [],
+    codexBinary: process.execPath,
+    codexArgs: ["-e", FAKE_APP_SERVER],
+    initializeTimeoutMs: 2_000,
+    shutdownTimeoutMs: 1_000,
+  });
+  t.after(() => manager.shutdown());
+  const launch = { provider: { adapter: "ollama" as const, model: "qwen3-coder" } };
+  const runtime = await manager.startUser("existing-user", launch);
+  await writeFile(join(f.skillRoot, "SKILL.md"), "Tampered skill");
+  await assert.rejects(manager.startUser("new-user", launch), /Shared skills catalog/);
+  assert.equal(manager.has("new-user"), false);
+  await assert.rejects(manager.startUser("existing-user", launch), /Shared skills catalog/);
+  assert.equal(manager.has("existing-user"), false);
+  assert.equal(runtime.state, "closed");
 });
