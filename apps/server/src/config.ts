@@ -69,7 +69,7 @@ export function loadConfig(): HarnessConfig {
   return {
     host: process.env.HOST ?? "127.0.0.1",
     port: integerFromEnv(process.env.PORT, DEFAULT_PORT),
-    webOrigin: process.env.WEB_ORIGIN ?? "http://127.0.0.1:4173",
+    webOrigin: process.env.WEB_ORIGIN ?? "http://127.0.0.1:3590",
     databasePath: resolve(process.env.DATABASE_PATH ?? "./data/agent-harness.db"),
     runtimeDataDir: resolve(process.env.RUNTIME_DATA_DIR ?? "./data/runtimes"),
     uploadDataDir: resolve(process.env.UPLOAD_DATA_DIR || defaultUploadDataDir()),
@@ -91,7 +91,7 @@ export function loadConfig(): HarnessConfig {
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || null,
     stripePricePro: process.env.STRIPE_PRICE_PRO || null,
     stripePriceTeam: process.env.STRIPE_PRICE_TEAM || null,
-    publicAppUrl: process.env.PUBLIC_APP_URL ?? "http://127.0.0.1:4173",
+    publicAppUrl: process.env.PUBLIC_APP_URL ?? "http://127.0.0.1:3590",
     litellmBaseUrl: process.env.LITELLM_BASE_URL ?? "http://127.0.0.1:4000/v1",
     litellmMasterKey: process.env.LITELLM_MASTER_KEY || null,
     allowPrivateProviderEndpoints: enabledFeatureFlag(

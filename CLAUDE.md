@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```sh
 pnpm install --frozen-lockfile   # pnpm 9.15.0 exactly (root `packageManager`)
-pnpm dev                         # web (127.0.0.1:4173) + server (127.0.0.1:4310) in parallel
+pnpm dev                         # web (127.0.0.1:3590) + server (127.0.0.1:4310) in parallel
 pnpm seed                        # idempotent bootstrap admin from BOOTSTRAP_ADMIN_* in .env
 pnpm build | typecheck | lint | test
 ```
@@ -27,7 +27,7 @@ cd apps/web && npx vitest run src/lib/routes.test.ts
 
 Server/contracts use `node:test` + `node:assert/strict`; web uses Vitest + Testing Library (jsdom). Server tests build a real Fastify app with `buildApp({ config, store, runtime, logger: false })` against a temp-dir SQLite file and drive it with `app.inject`; they do not need `.env`.
 
-Requires Node 24+ (the server uses built-in `node:sqlite`). All server entry points load the **root** `.env` via `--env-file=../../.env`.
+Development uses Node 26.8.1 (pinned by `.nvmrc` and `.node-version`; the root `engines` range accepts later Node 26 releases from 26.8.1 onward, and the server uses built-in `node:sqlite`). Node 26 does not bundle Corepack, so pnpm 9.15.0 must be installed separately. All server entry points load the **root** `.env` via `--env-file=../../.env`.
 
 ## Architecture
 

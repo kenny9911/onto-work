@@ -244,7 +244,7 @@ async function routeFixture(t: TestContext): Promise<RouteFixture> {
   const config: HarnessConfig = {
     host: "127.0.0.1",
     port: 0,
-    webOrigin: "http://127.0.0.1:4173",
+    webOrigin: "http://127.0.0.1:3590",
     databasePath: join(directory, "harness.db"),
     runtimeDataDir: join(directory, "runtimes"),
     uploadDataDir: `${directory}-uploads`,
@@ -258,7 +258,7 @@ async function routeFixture(t: TestContext): Promise<RouteFixture> {
     stripeWebhookSecret: null,
     stripePricePro: null,
     stripePriceTeam: null,
-    publicAppUrl: "http://127.0.0.1:4173",
+    publicAppUrl: "http://127.0.0.1:3590",
     litellmBaseUrl: "http://127.0.0.1:4000/v1",
     litellmMasterKey: null,
   };
@@ -1553,7 +1553,7 @@ test(
         headers: {
           accept: "text/event-stream",
           cookie: fixture.cookie,
-          origin: "http://localhost:4173",
+          origin: "http://localhost:3590",
         },
       },
     );

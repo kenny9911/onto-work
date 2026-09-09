@@ -9,7 +9,8 @@ import {
 import type { HarnessConfig } from "../config.js";
 import type { HarnessStore, ProviderRow } from "../database.js";
 import { ApiHttpError, requireAdmin, requireUser } from "../http.js";
-import { encryptSecret } from "../security.js";
+import { decryptSecret, encryptSecret } from "../security.js";
+import { probeProvider } from "../providers/probe.js";
 
 const providerIdSchema = z.object({ providerId: z.string().uuid() });
 
@@ -25,7 +26,7 @@ const createProviderSchema = z
   })
   .strict();
 
-const updateProviderSchema = z
+const providerPatchSchema = z
   .object({
     catalogId: z.string().min(1).max(64).optional(),
     name: z.string().trim().min(1).max(160).optional(),
@@ -35,8 +36,12 @@ const updateProviderSchema = z
     enabled: z.boolean().optional(),
     isDefault: z.boolean().optional(),
   })
-  .strict()
-  .refine((value) => Object.keys(value).length > 0, "Supply at least one field to update.");
+  .strict();
+
+const updateProviderSchema = providerPatchSchema.refine(
+  (value) => Object.keys(value).length > 0,
+  "Supply at least one field to update.",
+);
 
 function catalogItem(id: string): ProviderCatalogItem {
   const item = PROVIDER_CATALOG.find((candidate) => candidate.id === id);
@@ -250,6 +255,55 @@ export function registerProviderRoutes(
 ): void {
   const { store, config } = input;
 
+  async function testRoute(body: z.infer<typeof providerPatchSchema>, existing?: ProviderRow) {
+    const catalog = catalogItem(body.catalogId ?? existing?.catalog_id ?? "");
+    const savedRouteOnly = existing !== undefined && Object.keys(body).length === 0;
+    if (existing && catalog.id !== existing.catalog_id && catalog.keyLabel && body.credential === undefined) {
+      throw new ApiHttpError(400, "provider_credential_required", "Supply a credential when changing provider type.");
+    }
+    const values = validatedValues({
+      // A saved route runs against its persisted gateway, even if the operator
+      // has since configured a different gateway. Drafts use the gateway that
+      // the save operation would persist instead.
+      config: savedRouteOnly && catalog.adapter === "litellm"
+        ? { ...config, litellmBaseUrl: existing.base_url?.trim() || config.litellmBaseUrl }
+        : config,
+      catalog,
+      baseUrl: body.baseUrl === undefined ? existing?.base_url : body.baseUrl,
+      tenantSuppliedBaseUrl: body.baseUrl !== undefined,
+      defaultModel: body.defaultModel === undefined ? existing?.default_model : body.defaultModel,
+      enabled: body.enabled ?? (existing ? existing.enabled === 1 : true),
+      isDefault: body.isDefault ?? (existing?.is_default === 1),
+      hasCredential: body.credential === undefined ? Boolean(existing?.credential_ciphertext) : Boolean(body.credential),
+    });
+    if (!values.defaultModel?.trim()) {
+      throw new ApiHttpError(400, "provider_model_required", "Choose a model before testing the route.");
+    }
+    let credential = body.credential;
+    if (credential === undefined && existing?.credential_ciphertext) {
+      try {
+        credential = decryptSecret(existing.credential_ciphertext, config.credentialEncryptionKey);
+      } catch {
+        throw new ApiHttpError(400, "provider_credential_invalid", "The saved credential could not be read. Supply a replacement credential.");
+      }
+    }
+    credential = credential?.trim() || null;
+    if (catalog.adapter === "litellm") credential ??= config.litellmMasterKey;
+    if (catalog.keyLabel && !credential) {
+      throw new ApiHttpError(400, "provider_credential_required", `${catalog.keyLabel} is required to test this route.`);
+    }
+    const result = await probeProvider({
+      baseUrl: values.baseUrl!,
+      model: values.defaultModel,
+      credential: catalog.adapter === "ollama" ? null : credential,
+      allowAddress: (address) => {
+        const scope = addressScope(address);
+        return scope === "public" || (scope === "private" && Boolean(config.allowPrivateProviderEndpoints));
+      },
+    });
+    return { result };
+  }
+
   app.get("/api/providers/catalog", async (request) => {
     requireUser(request, store);
     return { providers: PROVIDER_CATALOG };
@@ -264,6 +318,19 @@ export function registerProviderRoutes(
     const user = requireUser(request, store);
     const { providerId } = providerIdSchema.parse(request.params);
     return { provider: providerById(store, user.tenantId, providerId) };
+  });
+
+  app.post("/api/providers/test", async (request) => {
+    requireAdmin(request, store);
+    return testRoute(createProviderSchema.parse(request.body));
+  });
+
+  app.post("/api/providers/:providerId/test", async (request) => {
+    const actor = requireAdmin(request, store);
+    const { providerId } = providerIdSchema.parse(request.params);
+    const existing = store.getProviderRow(actor.tenantId, providerId);
+    if (!existing) throw new ApiHttpError(404, "provider_not_found", "Provider connection not found.");
+    return testRoute(providerPatchSchema.parse(request.body ?? {}), existing);
   });
 
   app.post("/api/providers", async (request, reply) => {

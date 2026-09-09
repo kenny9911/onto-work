@@ -1,0 +1,496 @@
+{
+  "performedAt": "2026-09-09T08:57:38.511Z",
+  "method": "local deterministic runtime probes",
+  "modelCalls": 0,
+  "productionDataAccess": false,
+  "evaluatedRoutes": [],
+  "defaultLimits": {
+    "maxCatalogEntries": 1000,
+    "maxBundleCacheBytes": 33554432,
+    "maxActiveSkills": 8,
+    "maxActiveContextBytes": 65536,
+    "maxLoadedBytes": 2097152,
+    "maxResourceReads": 64,
+    "maxResourceReadBytes": 262144,
+    "maxResourceBytes": 1048576,
+    "maxCatalogPageSize": 50,
+    "maxCatalogPageBytes": 16384,
+    "maxResourcePageSize": 100,
+    "maxResourcePageBytes": 16384
+  },
+  "sourceHashes": [
+    {
+      "path": "/Users/kenny/CSI-AICOE/agentic-operator/packages/skills/src/session.ts",
+      "sha256": "4041bc716e078b6ec31c3d65bc690618bf7b429ac9f5c336aa2124b220117bbe"
+    },
+    {
+      "path": "/Users/kenny/CSI-AICOE/agentic-operator/packages/runtime/src/skill-execution.ts",
+      "sha256": "388b7b519e5adca34d4659b33ccdd50bb64cb2675d00fabbc98daf1100a1ec9d"
+    },
+    {
+      "path": "/Users/kenny/CSI-AICOE/agentic-operator/apps/api/src/services/skill-runtime.ts",
+      "sha256": "f9570bd69c1f2e7c467846ac97ebea58c723e0be3a9e11e1ec7cf044b2d8c22c"
+    },
+    {
+      "path": "/Users/kenny/CSI-AICOE/agentic-operator/apps/api/src/services/skill-catalog-import.ts",
+      "sha256": "951fcac4959edbfae5ed150fa52697f221cfd4b95e7f54958638ba55e8ced4b5"
+    },
+    {
+      "path": "/Users/kenny/CSI-AICOE/agentic-operator/packages/llm-gateway/src/adapters/anthropic.ts",
+      "sha256": "202e9005ca52808ebfbee483605294d6284673aa3751e2ef060e124b142c5c8d"
+    }
+  ],
+  "activation": [
+    {
+      "id": "anthropic/academy-guide",
+      "status": "passed",
+      "bodyBytes": 6646,
+      "renderedBytes": 7249
+    },
+    {
+      "id": "anthropic/algorithmic-art",
+      "status": "passed",
+      "bodyBytes": 19362,
+      "renderedBytes": 20284
+    },
+    {
+      "id": "anthropic/brand-guidelines",
+      "status": "passed",
+      "bodyBytes": 1915,
+      "renderedBytes": 2438
+    },
+    {
+      "id": "anthropic/canvas-design",
+      "status": "passed",
+      "bodyBytes": 11569,
+      "renderedBytes": 12170
+    },
+    {
+      "id": "anthropic/claude-api",
+      "status": "failed",
+      "code": "LIMIT_EXCEEDED",
+      "message": "Skill session maxActiveContextBytes budget exceeded"
+    },
+    {
+      "id": "anthropic/discernment-nudge",
+      "status": "passed",
+      "bodyBytes": 9486,
+      "renderedBytes": 10200
+    },
+    {
+      "id": "anthropic/frontend-design",
+      "status": "passed",
+      "bodyBytes": 9103,
+      "renderedBytes": 9630
+    },
+    {
+      "id": "anthropic/internal-comms",
+      "status": "passed",
+      "bodyBytes": 1100,
+      "renderedBytes": 1578
+    },
+    {
+      "id": "anthropic/mcp-builder",
+      "status": "passed",
+      "bodyBytes": 8736,
+      "renderedBytes": 9412
+    },
+    {
+      "id": "anthropic/skill-creator",
+      "status": "passed",
+      "bodyBytes": 32807,
+      "renderedBytes": 33918
+    },
+    {
+      "id": "anthropic/slack-gif-creator",
+      "status": "passed",
+      "bodyBytes": 7529,
+      "renderedBytes": 8243
+    },
+    {
+      "id": "anthropic/theme-factory",
+      "status": "passed",
+      "bodyBytes": 2781,
+      "renderedBytes": 3284
+    },
+    {
+      "id": "anthropic/web-artifacts-builder",
+      "status": "passed",
+      "bodyBytes": 2710,
+      "renderedBytes": 3245
+    },
+    {
+      "id": "anthropic/webapp-testing",
+      "status": "passed",
+      "bodyBytes": 3627,
+      "renderedBytes": 4177
+    },
+    {
+      "id": "openai-plugins/openai-developers/build-chatgpt-app",
+      "status": "passed",
+      "bodyBytes": 19161,
+      "renderedBytes": 19964
+    },
+    {
+      "id": "openai-plugins/openai-developers/chatgpt-app-submission",
+      "status": "passed",
+      "bodyBytes": 10949,
+      "renderedBytes": 11680
+    },
+    {
+      "id": "openai/curated/aspnet-core",
+      "status": "passed",
+      "bodyBytes": 5128,
+      "renderedBytes": 5634
+    },
+    {
+      "id": "openai/curated/chatgpt-apps",
+      "status": "passed",
+      "bodyBytes": 19136,
+      "renderedBytes": 19911
+    },
+    {
+      "id": "openai/curated/cli-creator",
+      "status": "passed",
+      "bodyBytes": 10128,
+      "renderedBytes": 10731
+    },
+    {
+      "id": "openai/curated/cloudflare-deploy",
+      "status": "passed",
+      "bodyBytes": 7142,
+      "renderedBytes": 7835
+    },
+    {
+      "id": "openai/curated/define-goal",
+      "status": "passed",
+      "bodyBytes": 5227,
+      "renderedBytes": 5783
+    },
+    {
+      "id": "openai/curated/gh-address-comments",
+      "status": "passed",
+      "bodyBytes": 992,
+      "renderedBytes": 1474
+    },
+    {
+      "id": "openai/curated/gh-fix-ci",
+      "status": "passed",
+      "bodyBytes": 3296,
+      "renderedBytes": 3836
+    },
+    {
+      "id": "openai/curated/hatch-pet",
+      "status": "passed",
+      "bodyBytes": 36686,
+      "renderedBytes": 37867
+    },
+    {
+      "id": "openai/curated/jupyter-notebook",
+      "status": "passed",
+      "bodyBytes": 3868,
+      "renderedBytes": 4448
+    },
+    {
+      "id": "openai/curated/linear",
+      "status": "passed",
+      "bodyBytes": 4735,
+      "renderedBytes": 5287
+    },
+    {
+      "id": "openai/curated/migrate-to-codex",
+      "status": "passed",
+      "bodyBytes": 7790,
+      "renderedBytes": 8359
+    },
+    {
+      "id": "openai/curated/netlify-deploy",
+      "status": "passed",
+      "bodyBytes": 6776,
+      "renderedBytes": 7482
+    },
+    {
+      "id": "openai/curated/notion-knowledge-capture",
+      "status": "passed",
+      "bodyBytes": 3019,
+      "renderedBytes": 3542
+    },
+    {
+      "id": "openai/curated/notion-meeting-intelligence",
+      "status": "passed",
+      "bodyBytes": 3117,
+      "renderedBytes": 3650
+    },
+    {
+      "id": "openai/curated/notion-research-documentation",
+      "status": "passed",
+      "bodyBytes": 3084,
+      "renderedBytes": 3620
+    },
+    {
+      "id": "openai/curated/notion-spec-to-implementation",
+      "status": "passed",
+      "bodyBytes": 3198,
+      "renderedBytes": 3733
+    },
+    {
+      "id": "openai/curated/openai-docs",
+      "status": "passed",
+      "bodyBytes": 17811,
+      "renderedBytes": 18431
+    },
+    {
+      "id": "openai/curated/pdf",
+      "status": "passed",
+      "bodyBytes": 2233,
+      "renderedBytes": 2727
+    },
+    {
+      "id": "openai/curated/playwright",
+      "status": "passed",
+      "bodyBytes": 3519,
+      "renderedBytes": 4165
+    },
+    {
+      "id": "openai/curated/playwright-interactive",
+      "status": "passed",
+      "bodyBytes": 31562,
+      "renderedBytes": 32818
+    },
+    {
+      "id": "openai/curated/render-deploy",
+      "status": "passed",
+      "bodyBytes": 17311,
+      "renderedBytes": 18281
+    },
+    {
+      "id": "openai/curated/screenshot",
+      "status": "passed",
+      "bodyBytes": 7491,
+      "renderedBytes": 8232
+    },
+    {
+      "id": "openai/curated/security-best-practices",
+      "status": "passed",
+      "bodyBytes": 8171,
+      "renderedBytes": 8726
+    },
+    {
+      "id": "openai/curated/security-ownership-map",
+      "status": "passed",
+      "bodyBytes": 8149,
+      "renderedBytes": 8874
+    },
+    {
+      "id": "openai/curated/security-threat-model",
+      "status": "passed",
+      "bodyBytes": 5095,
+      "renderedBytes": 5643
+    },
+    {
+      "id": "openai/curated/sentry",
+      "status": "passed",
+      "bodyBytes": 3570,
+      "renderedBytes": 4137
+    },
+    {
+      "id": "openai/curated/speech",
+      "status": "passed",
+      "bodyBytes": 6893,
+      "renderedBytes": 7514
+    },
+    {
+      "id": "openai/curated/transcribe",
+      "status": "passed",
+      "bodyBytes": 2575,
+      "renderedBytes": 3122
+    },
+    {
+      "id": "openai/curated/vercel-deploy",
+      "status": "passed",
+      "bodyBytes": 2417,
+      "renderedBytes": 2953
+    },
+    {
+      "id": "openai/curated/winui-app",
+      "status": "passed",
+      "bodyBytes": 10702,
+      "renderedBytes": 11237
+    },
+    {
+      "id": "openai/curated/yeet",
+      "status": "passed",
+      "bodyBytes": 6781,
+      "renderedBytes": 7361
+    },
+    {
+      "id": "openai/system/imagegen",
+      "status": "passed",
+      "bodyBytes": 15593,
+      "renderedBytes": 16310
+    },
+    {
+      "id": "openai/system/openai-docs",
+      "status": "passed",
+      "bodyBytes": 18256,
+      "renderedBytes": 18888
+    },
+    {
+      "id": "openai/system/plugin-creator",
+      "status": "passed",
+      "bodyBytes": 5942,
+      "renderedBytes": 6634
+    },
+    {
+      "id": "openai/system/skill-creator",
+      "status": "passed",
+      "bodyBytes": 18341,
+      "renderedBytes": 19183
+    },
+    {
+      "id": "openai/system/skill-installer",
+      "status": "passed",
+      "bodyBytes": 2883,
+      "renderedBytes": 3395
+    },
+    {
+      "id": "agentic/skill-creator",
+      "status": "passed",
+      "bodyBytes": 7080,
+      "renderedBytes": 7667
+    }
+  ],
+  "discovery": {
+    "total": 53,
+    "pages": [
+      {
+        "names": [
+          "agentic-skill-creator",
+          "anthropic-academy-guide",
+          "anthropic-algorithmic-art",
+          "anthropic-brand-guidelines",
+          "anthropic-canvas-design",
+          "anthropic-claude-api",
+          "anthropic-discernment-nudge",
+          "anthropic-frontend-design",
+          "anthropic-internal-comms",
+          "anthropic-mcp-builder",
+          "anthropic-skill-creator",
+          "anthropic-slack-gif-creator",
+          "anthropic-theme-factory",
+          "anthropic-web-artifacts-builder",
+          "anthropic-webapp-testing",
+          "openai-aspnet-core",
+          "openai-build-chatgpt-app",
+          "openai-chatgpt-app-submission",
+          "openai-chatgpt-apps",
+          "openai-cli-creator"
+        ],
+        "count": 20,
+        "serializedBytes": 13697,
+        "hasNext": true
+      },
+      {
+        "names": [
+          "openai-cloudflare-deploy",
+          "openai-define-goal",
+          "openai-gh-address-comments",
+          "openai-gh-fix-ci",
+          "openai-hatch-pet",
+          "openai-imagegen",
+          "openai-jupyter-notebook",
+          "openai-linear",
+          "openai-migrate-to-codex",
+          "openai-netlify-deploy",
+          "openai-notion-knowledge-capture",
+          "openai-notion-meeting-intelligence",
+          "openai-notion-research-documentation",
+          "openai-notion-spec-to-implementation",
+          "openai-openai-docs",
+          "openai-pdf",
+          "openai-playwright",
+          "openai-playwright-interactive",
+          "openai-plugin-creator",
+          "openai-render-deploy"
+        ],
+        "count": 20,
+        "serializedBytes": 11483,
+        "hasNext": true
+      },
+      {
+        "names": [
+          "openai-screenshot",
+          "openai-security-best-practices",
+          "openai-security-ownership-map",
+          "openai-security-threat-model",
+          "openai-sentry",
+          "openai-skill-creator",
+          "openai-skill-installer",
+          "openai-speech",
+          "openai-system-openai-docs",
+          "openai-transcribe",
+          "openai-vercel-deploy",
+          "openai-winui-app",
+          "openai-yeet"
+        ],
+        "count": 13,
+        "serializedBytes": 7996,
+        "hasNext": false
+      }
+    ]
+  },
+  "historyPrefixProbe": {
+    "skillId": "openai/curated/pdf",
+    "beforeMessageCount": 2,
+    "afterMessageCount": 4,
+    "wirePrefixEqual": false,
+    "beforeGuidanceSha256": "ef9c78bf4cbaad2fd328b2bbebada32d7461f580618b47467012680e0f0da68c",
+    "afterGuidanceSha256": "ebae8bf297dc7906c33d5d0007a629049ee7a7476920797fd77e7e623bbe73c2",
+    "observation": "The real message builder changes an earlier user guidance message after skill activation.",
+    "inference": "Where Fable 5.1 enforces prefix-bound thinking replay, this changed prefix may produce a provider error or discard thinking. No provider rejection was measured."
+  },
+  "combination": [
+    {
+      "id": "openai/curated/hatch-pet",
+      "status": "passed",
+      "activeRenderedBytes": 37867
+    },
+    {
+      "id": "anthropic/skill-creator",
+      "status": "failed",
+      "code": "LIMIT_EXCEEDED",
+      "message": "Skill session maxActiveContextBytes budget exceeded"
+    }
+  ],
+  "representativeCombination": [
+    {
+      "id": "anthropic/skill-creator",
+      "status": "passed",
+      "activeRenderedBytes": 33918
+    },
+    {
+      "id": "openai/curated/playwright-interactive",
+      "status": "failed",
+      "code": "LIMIT_EXCEEDED",
+      "message": "Skill session maxActiveContextBytes budget exceeded"
+    }
+  ],
+  "nameResolution": [
+    {
+      "requested": "openai-docs",
+      "status": "failed",
+      "code": "UNKNOWN_SKILL",
+      "message": "Requested skill is outside this session's authorized catalog"
+    },
+    {
+      "requested": "openai-openai-docs",
+      "status": "passed",
+      "resolvedId": "openai/curated/openai-docs"
+    },
+    {
+      "requested": "openai-system-openai-docs",
+      "status": "passed",
+      "resolvedId": "openai/system/openai-docs"
+    }
+  ]
+}

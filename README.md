@@ -47,8 +47,8 @@ The Claude prototype is a design specification with fictional data, not evidence
 ## Prerequisites
 
 - Git with submodule support.
-- Node.js 22.13 or newer; Node.js 24 or newer is recommended because the server uses the built-in `node:sqlite` module.
-- pnpm 9.15.0, matching the root `packageManager` field.
+- Node.js 26.8.1 for development, pinned by `.nvmrc` and `.node-version`; the root `engines` field accepts later Node 26 releases from 26.8.1 onward.
+- pnpm 9.15.0, matching the root `packageManager` field. Node 26 does not bundle Corepack, so install pnpm separately.
 - A compatible `codex` executable on `PATH`, or Rust tooling to build the pinned submodule.
 - Docker Compose v2 only if using the optional LiteLLM scaffold.
 - Stripe CLI/account only if testing subscriptions.
@@ -61,6 +61,8 @@ Codex's upstream platform requirements apply: macOS or Linux, and Windows throug
 
 ```sh
 git submodule update --init --recursive
+nvm use
+npm install --global pnpm@9.15.0
 pnpm --version
 pnpm install --frozen-lockfile
 ```
@@ -119,11 +121,11 @@ pnpm seed
 pnpm dev
 ```
 
-Open `http://127.0.0.1:4173`, sign in with the bootstrap values from `.env`, and replace the temporary password when prompted.
+Open `http://127.0.0.1:3590`, sign in with the bootstrap values from `.env`, and replace the temporary password when prompted.
 
 | Service | Default address | Configuration |
 | --- | --- | --- |
-| Web/Vite | `http://127.0.0.1:4173` | Fixed by `apps/web/package.json` |
+| Web/Vite | `http://127.0.0.1:3590` | Fixed by `apps/web/package.json` |
 | Control-plane API | `http://127.0.0.1:4310` | `HOST` and `PORT` |
 | Health check | `http://127.0.0.1:4310/api/health` | Includes runtime status |
 | LiteLLM, optional | `http://127.0.0.1:4000` | `infra/litellm/.env` |
@@ -136,6 +138,8 @@ Vite proxies `/api` to the control-plane server during development. If a port or
 ## Provider and gateway setup
 
 Start with the [model routing and LLM gateway runbook](docs/operations/model-routing-and-gateway.md). It covers direct Responses routes, the LiteLLM translation boundary, Ollama host/container addressing, compatibility checks, production gateway identity, and common setup failures.
+
+Administrators can add, edit, test, enable, and select the default route from **Model routes** (`/settings/providers`). Leave the credential blank when editing to retain its encrypted value. **Test** checks the saved route; **Test connection** in the editor checks unsaved changes without saving or changing the active route. Tests send a small Responses request, may consume provider credits, and report success or a safe error with latency. A successful connection check does not certify streaming or tool-call compatibility. Multiple saved routes for the same provider are shown separately.
 
 Codex accepts the Responses wire protocol. An endpoint that implements only `/v1/chat/completions` is not compatible merely because it uses OpenAI-shaped JSON.
 

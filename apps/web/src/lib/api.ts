@@ -6,6 +6,7 @@ import type {
   ProjectDetailPayload,
   ProjectListPayload,
   ProviderConnection,
+  ProviderTestResult,
   RegisterProjectPayload,
   ReviewTarget,
   ThreadDetailPayload,
@@ -293,7 +294,7 @@ export const api = {
     name?: string;
     baseUrl?: string | null;
     defaultModel?: string | null;
-    apiKey?: string;
+    apiKey?: string | null;
     enabled?: boolean;
     isDefault?: boolean;
   }) => {
@@ -312,6 +313,29 @@ export const api = {
 
   deleteProvider: (id: string) =>
     request<{ ok: true }>(`/api/providers/${id}`, { method: "DELETE" }),
+
+  testProvider: (input: {
+    id?: string;
+    catalogId?: string;
+    name?: string;
+    baseUrl?: string | null;
+    defaultModel?: string | null;
+    apiKey?: string | null;
+    enabled?: boolean;
+    isDefault?: boolean;
+  }) => {
+    const { id, apiKey, ...provider } = input;
+    return request<{ result: ProviderTestResult }>(
+      id ? `/api/providers/${encodeURIComponent(id)}/test` : "/api/providers/test",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...provider,
+          ...(apiKey === undefined ? {} : { credential: apiKey }),
+        }),
+      },
+    );
+  },
 
   createCheckout: (plan: Exclude<PlanId, "free" | "enterprise">) =>
     request<{ url?: string; setupRequired?: boolean; message?: string }>(

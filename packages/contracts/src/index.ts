@@ -69,6 +69,13 @@ export interface ProviderConnection {
   updatedAt: string;
 }
 
+export interface ProviderTestResult {
+  success: boolean;
+  message: string;
+  model: string;
+  latencyMs: number;
+}
+
 export interface ProjectSummary {
   id: string;
   name: string;

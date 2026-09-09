@@ -1,0 +1,1268 @@
+[
+  {
+    "id": "anthropic/academy-guide",
+    "benefit": "Finds relevant Claude Academy learning resources without inventing course URLs.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "The learning-intent trigger and mid-task exclusion are sensible. The unconditional two-item cap also limits requests whose actual deliverable is a larger training inventory; silent catalog errors can conceal why that inventory is incomplete. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra benefits from curated provenance, but the fixed cap can suppress requested coverage despite sufficient reasoning capacity.",
+      "fable": "Fable benefits from the same catalog; a long-horizon training survey can be cut short by an instruction-level cap. This is not a measured weakness."
+    },
+    "risks": [
+      {
+        "mechanism": "The recommendation cap overrides explicit inventory scope.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/academy-guide/SKILL.md",
+            "lineStart": 84,
+            "lineEnd": 89,
+            "quote": "This cap applies\n   to every reply, including when the question itself is a request for\n   learning content"
+          }
+        ],
+        "impact": "A request for six resources may receive only two and a generic link.",
+        "mitigation": "Use a one-or-two recommendation default for incidental suggestions; honor explicit requested coverage."
+      },
+      {
+        "mechanism": "Silent catalog errors conceal material research limits.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/academy-guide/SKILL.md",
+            "lineStart": 135,
+            "lineEnd": 139,
+            "quote": "This is silent: never mention fetching,\nstaleness, or errors to the user."
+          }
+        ],
+        "impact": "A requested current catalog survey may appear complete despite unavailable source data.",
+        "mitigation": "Suppress incidental implementation noise, but disclose a source limitation when it prevents the requested research."
+      }
+    ],
+    "strengths": [
+      "Answers the question first and matches learning intent.",
+      "Requires current evidence for specific recommendations and treats fetched text as data.",
+      "Excludes users who are mid-task and want completion."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/academy-guide/SKILL.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Recommend the two best Claude Academy resources for a sales team new to Claude.",
+        "passCriteria": [
+          "Use verified catalog entries or disclose their unavailability.",
+          "Explain the fit of the requested two resources."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Build a table of six distinct current Claude Academy tutorials for sales onboarding, including audience and skill covered.",
+        "passCriteria": [
+          "Cover six suitable verified resources if available; do not impose the two-item ceiling.",
+          "State material access or coverage limitations without inventing items."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/algorithmic-art",
+    "benefit": "Provides seeded generative-art patterns, interactive parameters and a reusable p5.js viewer.",
+    "riskLevel": "high",
+    "recommendation": "adapt",
+    "assessment": "Reproducible seeds and controls are strong assets. The mandatory philosophy essay and literal Anthropic-branded light-theme viewer unnecessarily narrow broad art requests. The template depends on remote p5.js and Google Fonts. Reviewed template sections were viewer lines 1–130 and generator lines 1–100, not all template code. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra could create a sound sketch while failing a dark-theme, client-brand or no-essay brief under these instructions.",
+      "fable": "Fable faces the same conflict between creative judgment and a prescribed preset; reproducibility remains useful regardless of model strength."
+    },
+    "risks": [
+      {
+        "mechanism": "Fixed branding and layout displace the actual visual brief.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/algorithmic-art/SKILL.md",
+            "lineStart": 109,
+            "lineEnd": 118,
+            "quote": "Keep all FIXED sections exactly as shown"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/algorithmic-art/SKILL.md",
+            "lineStart": 115,
+            "lineEnd": 123,
+            "quote": "Using system fonts or dark themes"
+          }
+        ],
+        "impact": "The assistant cannot choose a requested dark theme, brand, font or layout.",
+        "mitigation": "Make the viewer optional and let the brief select branding and architecture; preserve seed controls where useful."
+      },
+      {
+        "mechanism": "A mandatory manifesto and repeated craftsmanship claims add an unrelated ritual.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/algorithmic-art/SKILL.md",
+            "lineStart": 38,
+            "lineEnd": 38,
+            "quote": "4-6 paragraphs"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/algorithmic-art/SKILL.md",
+            "lineStart": 49,
+            "lineEnd": 49,
+            "quote": "Emphasize craftsmanship REPEATEDLY"
+          }
+        ],
+        "impact": "A small sketch can become a lengthy essay asserting effort instead of demonstrating quality.",
+        "mitigation": "Provide a short rationale only when useful; remove repeated claims of craftsmanship."
+      },
+      {
+        "mechanism": "Remote template dependencies undermine offline delivery.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/algorithmic-art/templates/viewer.html",
+            "lineStart": 23,
+            "lineEnd": 26,
+            "quote": "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"
+          }
+        ],
+        "impact": "A single HTML deliverable may fail offline.",
+        "mitigation": "Distinguish single-file packaging from offline operation and package permitted dependencies when offline use is required."
+      }
+    ],
+    "strengths": [
+      "Stable seeds make results reproducible.",
+      "Encourages meaningful algorithm-specific controls and performance attention."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/algorithmic-art/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/algorithmic-art/templates/viewer.html",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/algorithmic-art/templates/generator_template.js"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Create an interactive seeded flow-field artwork with seed navigation and turbulence controls.",
+        "passCriteria": [
+          "The same seed reproduces the same initial artwork.",
+          "Controls alter the intended algorithm and the viewer runs."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Create one offline HTML sketch with a dark background and my company’s system-font styling; no essay.",
+        "passCriteria": [
+          "Honor the style and deliverable without a philosophy file.",
+          "Render correctly without required network requests."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/brand-guidelines",
+    "benefit": "Supplies explicit Anthropic colors, typography and fallback fonts.",
+    "riskLevel": "moderate",
+    "recommendation": "domain-only",
+    "assessment": "The brand constraints are appropriate for an Anthropic-branded brief. The generic tail of the trigger extends to company design standards without requiring that brand. Restrict selection to the intended identity. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra gains precise brand facts; generic triggering could substitute Anthropic identity for the client’s standards.",
+      "fable": "Fable gains the same deterministic specification. The risk is scope contamination, not legitimate brand constraints."
+    },
+    "risks": [
+      {
+        "mechanism": "Generic branding triggers can select the wrong organization’s identity.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/brand-guidelines/SKILL.md",
+            "lineStart": 3,
+            "lineEnd": 3,
+            "quote": "Use it when brand colors or style guidelines, visual formatting, or company design standards apply."
+          }
+        ],
+        "impact": "A client artifact could acquire incorrect colors and fonts.",
+        "mitigation": "Require Anthropic branding intent or an explicit project brand selection; supplied client standards take priority."
+      }
+    ],
+    "strengths": [
+      "Compact, concrete palette.",
+      "Fallback typography handles missing brand fonts."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/brand-guidelines/SKILL.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Style this Anthropic event flyer with the documented palette and typography.",
+        "passCriteria": [
+          "Apply the documented colors and font roles consistently.",
+          "Use documented fallbacks if needed."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Apply our bank’s navy-and-gold guide and supplied font to this deck.",
+        "passCriteria": [
+          "Do not apply Anthropic branding.",
+          "Preserve the supplied client identity and content."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/canvas-design",
+    "benefit": "Offers composition, typography, margin and visual-polish guidance for static artwork.",
+    "riskLevel": "high",
+    "recommendation": "adapt",
+    "assessment": "The body prioritizes a particular abstract museum-poster style across broad art requests, limits output formats, treats user instructions as non-constraining, and invents a prior user demand for perfection. These are direct brief-following hazards. The full entrypoint was read; font binaries were not visually reviewed. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra’s ability to meet explicit copy, format and playful-illustration requirements can be narrowed by sparse text and clinical abstract styling.",
+      "fable": "Fable has the same instruction conflict; stronger reasoning does not legitimize a fabricated prior user request."
+    },
+    "risks": [
+      {
+        "mechanism": "The style philosophy is prioritized over the artifact contract.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/canvas-design/SKILL.md",
+            "lineStart": 23,
+            "lineEnd": 25,
+            "quote": "it should not constrain creative freedom."
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/canvas-design/SKILL.md",
+            "lineStart": 7,
+            "lineEnd": 7,
+            "quote": "Output only .md files, .pdf files, and .png files."
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/canvas-design/SKILL.md",
+            "lineStart": 104,
+            "lineEnd": 106,
+            "quote": "not something that's cartoony or amateur."
+          }
+        ],
+        "impact": "A playful, text-heavy or SVG brief can become sparse abstract art in the wrong format.",
+        "mitigation": "Treat required copy, accessibility and file format as constraints. Offer this style only when the brief leaves those choices open."
+      },
+      {
+        "mechanism": "Fabricated conversation history and mandatory polishing override scope.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/canvas-design/SKILL.md",
+            "lineStart": 122,
+            "lineEnd": 122,
+            "quote": "The user ALREADY said"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/canvas-design/SKILL.md",
+            "lineStart": 126,
+            "lineEnd": 126,
+            "quote": "Take a second pass."
+          }
+        ],
+        "impact": "The assistant may attribute an invented demand to the user or continue polishing beyond the requested scope.",
+        "mitigation": "Remove the fabricated quote and scale visual verification to actual quality requirements."
+      }
+    ],
+    "strengths": [
+      "Checks clipping, margins and unintended overlap.",
+      "Encourages visual hierarchy and coherent color."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/canvas-design/SKILL.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Design a minimalist abstract exhibition poster with only its title and date as a PNG.",
+        "passCriteria": [
+          "Produce a legible composition with no clipping.",
+          "Honor the title, date and format."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Create a playful cartoon event poster as SVG with this exact title, venue, date and accessibility notice.",
+        "passCriteria": [
+          "Deliver SVG with all required copy legible.",
+          "Use the playful style and do not invent a prior perfection request."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/claude-api",
+    "benefit": "Contains extensive Claude API, SDK, migration and prompt-audit knowledge with source-verification guidance.",
+    "riskLevel": "high",
+    "recommendation": "adapt",
+    "assessment": "The full 568-line entrypoint and full prompt-audit reference were reviewed; other language guides and the large model-migration reference were not exhaustively reviewed. A local deterministic host probe actually failed to activate this 85,004-byte entrypoint under the provider-neutral SkillSession default 65,536-byte budget. This is a host blocker, not a native Codex result or model experiment. Separate semantic problems include the project-wide provider stop gate, conflicting SDK-discovery rules and overbroad prompt-cleanup heuristics. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra cannot receive this skill through the tested default SkillSession route until the blocker is fixed. On a compatible route, Claude-specific domain knowledge is useful but provider conversion gates and host assumptions need adaptation.",
+      "fable": "Fable is equally blocked by the tested provider-neutral route; no Fable call was made. Model-specific guidance can help after splitting the entrypoint, but existing routing and operational contracts must remain authoritative."
+    },
+    "risks": [
+      {
+        "mechanism": "The entrypoint exceeds the tested activation budget.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/onto-work/docs/reports/skill-capability-review-2026-09-09/runtime-probe-results.json",
+            "lineStart": 69,
+            "lineEnd": 73,
+            "quote": "Skill session maxActiveContextBytes budget exceeded"
+          }
+        ],
+        "impact": "Activation fails before either model can benefit on the tested route.",
+        "mitigation": "Split a small routing entrypoint from on-demand references and re-run activation/composition probes; do not assume native hosts share this limit."
+      },
+      {
+        "mechanism": "A project-wide provider stop gate interrupts authorized mixed-provider development.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/adapted/anthropic/claude-api/SKILL.md",
+            "lineStart": 14,
+            "lineEnd": 14,
+            "quote": "If you find any, stop and tell the user"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/adapted/anthropic/claude-api/SKILL.md",
+            "lineStart": 14,
+            "lineEnd": 14,
+            "quote": "any explicit instruction to keep the code provider-neutral"
+          }
+        ],
+        "impact": "An additive Claude adapter can trigger an unnecessary conversion question.",
+        "mitigation": "Inspect the target operation and preserve the requested architecture; stop only for an actually unauthorized replacement."
+      },
+      {
+        "mechanism": "SDK-discovery requirements contradict each other.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/adapted/anthropic/claude-api/SKILL.md",
+            "lineStart": 25,
+            "lineEnd": 25,
+            "quote": "WebFetch the relevant SDK repo"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/adapted/anthropic/claude-api/SKILL.md",
+            "lineStart": 553,
+            "lineEnd": 553,
+            "quote": "Do not spend turns on WebFetch"
+          }
+        ],
+        "impact": "The model can oscillate between research and speculation or follow an unsuitable rule.",
+        "mitigation": "Use one staged rule: inspect relevant installed types/official references, implement, compile and correct within available tools."
+      },
+      {
+        "mechanism": "Prompt-audit cleanup can erase deliberate operational limits.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/adapted/anthropic/claude-api/shared/prompt-audit.md",
+            "lineStart": 125,
+            "lineEnd": 125,
+            "quote": "a stated operational reason (\"queue throughput\", \"supervisors skim\") does not convert a numeric clamp into a keeper"
+          }
+        ],
+        "impact": "A real output-length contract may be rewritten as obsolete prompting without evidence of benefit.",
+        "mitigation": "Preserve author-specified output contracts. Treat removal as a hypothesis requiring intent and before/after evidence, consistent with the guide’s keep-list and verification sections."
+      }
+    ],
+    "strengths": [
+      "Encourages verified SDK contracts and reuse of SDK helpers.",
+      "Prompt-audit guide preserves context, fragile-operation scripts and real tool contracts.",
+      "Requires behavioral probes and restoring constraints when a change regresses."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/adapted/anthropic/claude-api/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/adapted/anthropic/claude-api/shared/prompt-audit.md",
+      "/Users/kenny/CSI-AICOE/onto-work/docs/reports/skill-capability-review-2026-09-09/runtime-probe-results.json"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Add a Claude streaming adapter to our provider-neutral TypeScript gateway, preserving OpenAI and current model configuration.",
+        "passCriteria": [
+          "Activate within the host budget and load only relevant references.",
+          "Implement the additive adapter without an unnecessary conversion gate.",
+          "Use installed SDK contracts and verify type and behavior checks."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Audit this support prompt for obsolete rules while preserving its contractual 120-word maximum and exact JSON schema.",
+        "passCriteria": [
+          "Preserve the stated contracts.",
+          "Separate evidence-backed proposals from hypotheses and never claim unrun model tests."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/discernment-nudge",
+    "benefit": "Encourages specific reflection on assumptions and verification gaps in substantive advice.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "The skill has good exclusions: silence by default, once per conversation, no nudge when verification is covered, and answer completion first. Its broad pre-finalization trigger and exact closing template nevertheless add output-format and unsolicited-follow-up risks. Preserve useful reflection while adapting its presentation to the request. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can use the uncertainty checks, but should not turn requested verification into questions asking the user to do it.",
+      "fable": "Fable’s reasoning should finish requested verification itself. Optional reflection can complement that work without becoming a mandatory suffix."
+    },
+    "risks": [
+      {
+        "mechanism": "A broad coaching trigger prescribes a fixed final suffix.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/discernment-nudge/SKILL.md",
+            "lineStart": 4,
+            "lineEnd": 9,
+            "quote": "invoke this skill BEFORE finalizing your reply"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/discernment-nudge/SKILL.md",
+            "lineStart": 203,
+            "lineEnd": 206,
+            "quote": "Use that exact lead-in line"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/discernment-nudge/SKILL.md",
+            "lineStart": 208,
+            "lineEnd": 209,
+            "quote": "The nudge is the closer."
+          }
+        ],
+        "impact": "The suffix can break structured output or add unrequested questions. Existing opt-outs mitigate this.",
+        "mitigation": "Gate coaching on a concrete unresolved need, honor structured/no-follow-up requests, and integrate uncertainty into the answer when appropriate."
+      }
+    ],
+    "strengths": [
+      "Silence default and once-per-conversation limit.",
+      "Excludes work where verification is already requested or covered.",
+      "Completes the substantive answer before a nudge."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/discernment-nudge/SKILL.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Estimate this marketing budget and suggest two assumptions I should challenge before deciding.",
+        "passCriteria": [
+          "Complete the estimate and distinguish facts from assumptions.",
+          "Suggest specific useful checks tied to it."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Verify these claims from supplied records and return only JSON with claim, verdict and evidence.",
+        "passCriteria": [
+          "Perform the verification rather than shifting it to follow-ups.",
+          "Return valid JSON without a canned suffix."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/frontend-design",
+    "benefit": "Encourages subject-specific visual decisions, real copy, accessibility and visual verification.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "The explicit rule that the user’s visual brief wins, even when requesting otherwise discouraged styles, is a strong safeguard. Residual problems are an invented rejected-proposals backstory, an extra confirmation step and a mandatory uniqueness-planning sequence that does not distinguish new art direction from a tiny edit. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can use the subject-driven design and accessibility guidance, but comparative planning can delay a focused edit without improving it.",
+      "fable": "Fable benefits from the same design principles while needing freedom to scale process and preserve the existing design system."
+    },
+    "risks": [
+      {
+        "mechanism": "Invented client context and fixed planning can expand a small edit.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/frontend-design/SKILL.md",
+            "lineStart": 9,
+            "lineEnd": 9,
+            "quote": "This client has already rejected proposals"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/frontend-design/SKILL.md",
+            "lineStart": 13,
+            "lineEnd": 13,
+            "quote": "confirm with the client."
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/frontend-design/SKILL.md",
+            "lineStart": 47,
+            "lineEnd": 53,
+            "quote": "Only after you've confirmed the relative uniqueness of your design plan should you start to write the code"
+          }
+        ],
+        "impact": "A targeted correction can become a redesign proposal or unnecessary interview.",
+        "mitigation": "Remove assumed history; use full art-direction planning for new designs and proportionate planning for existing UI changes."
+      }
+    ],
+    "strengths": [
+      "Explicitly follows the brief even for discouraged aesthetics.",
+      "Includes accessibility, responsiveness, reduced motion and conditional screenshot checks.",
+      "Encourages real content and clear product copy."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/frontend-design/SKILL.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Create an accessible landing page for a ceramics studio using the supplied real content.",
+        "passCriteria": [
+          "Make coherent visual choices tied to the subject.",
+          "Check responsive layout, contrast and reduced motion."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Change only this dashboard search field’s spacing to match adjacent controls.",
+        "passCriteria": [
+          "Make the targeted change and preserve the design system.",
+          "Do not invent rejected proposals or require a new uniqueness study."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/internal-comms",
+    "benefit": "Provides reusable structures for team updates, newsletters, FAQs and internal communications.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "The small entrypoint uses progressive disclosure well. All four example guides were read; they contain organization-specific assumptions and absolute formatting/interview rules. Move actual company conventions to project-local skills and make shared examples optional defaults. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can draft clear updates from facts, but repeated questions and a false organization-size premise reduce fidelity and completion speed.",
+      "fable": "Fable can synthesize the same notes, but templates should not bias it toward an invented company structure or override the requested audience."
+    },
+    "risks": [
+      {
+        "mechanism": "The generic path interviews the user even when the brief supplies the answers.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/internal-comms/examples/general-comms.md",
+            "lineStart": 5,
+            "lineEnd": 9,
+            "quote": "Before proceeding:"
+          }
+        ],
+        "impact": "Drafting can stall for audience, tone or format already stated.",
+        "mitigation": "Use available context first and ask only for missing information that materially changes the draft."
+      },
+      {
+        "mechanism": "Organization facts and formats are universalized.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/internal-comms/examples/company-newsletter.md",
+            "lineStart": 21,
+            "lineEnd": 21,
+            "quote": "The company is pretty big: 1000+ people."
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/internal-comms/examples/3p-updates.md",
+            "lineStart": 40,
+            "lineEnd": 40,
+            "quote": "Never use any formatting other than this."
+          }
+        ],
+        "impact": "A small-team update can assume nonexistent departments or ignore a no-emoji/plain-text request.",
+        "mitigation": "Keep organization facts and mandatory templates project-local; shared defaults yield to the actual brief."
+      }
+    ],
+    "strengths": [
+      "Loads only the relevant communication guide.",
+      "Emphasizes concise language and evidence-backed FAQ answers."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/internal-comms/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/internal-comms/examples/general-comms.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/internal-comms/examples/company-newsletter.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/internal-comms/examples/3p-updates.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/internal-comms/examples/faq-answers.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Turn these engineering notes into our weekly Progress/Plans/Problems update.",
+        "passCriteria": [
+          "Use the supplied facts and requested structure.",
+          "Do not invent progress or hide blockers."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Draft a 60-word plain-text outage update for our 12-person team; all audience, tone and facts are supplied; no questions or emoji.",
+        "passCriteria": [
+          "Deliver the draft directly in the requested format.",
+          "Do not assume a 1,000-person organization or ask redundant questions."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/mcp-builder",
+    "benefit": "Explains MCP schemas, tool contracts, pagination, annotations, errors and realistic tool-use evaluation.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "The protocol/security guidance is useful, including treating annotations as hints rather than security controls. The mandatory ten complex read-only exact-answer questions are a specialized benchmark, not a universal gate for every change. The full best-practices reference and evaluation guide lines 1–225 were reviewed; other language guides and remaining evaluation examples were not exhaustively reviewed. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra benefits from precise MCP contracts. A fixed ten-question benchmark can spend effort outside a one-tool fix and miss relevant mutation behavior.",
+      "fable": "Fable can handle complex tool-use questions when those match the goal; requiring complexity for its own sake distracts from the actual contract."
+    },
+    "risks": [
+      {
+        "mechanism": "A specialized benchmark is mandatory regardless of scope.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/mcp-builder/SKILL.md",
+            "lineStart": 161,
+            "lineEnd": 177,
+            "quote": "Create 10 Evaluation Questions"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/mcp-builder/SKILL.md",
+            "lineStart": 174,
+            "lineEnd": 178,
+            "quote": "Single, clear answer that can be verified by string comparison"
+          }
+        ],
+        "impact": "A focused fix may incur unrelated data exploration; read-only exact-answer questions alone do not verify all write/error behavior.",
+        "mitigation": "Right-size evaluation, retain realistic tool-use probes where useful and test actual contracts in isolated or mocked environments."
+      }
+    ],
+    "strengths": [
+      "Promotes precise schemas, pagination and actionable errors.",
+      "Annotations are hints, not enforcement.",
+      "Read-only live exploration is a useful safety boundary."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/mcp-builder/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/mcp-builder/reference/mcp_best_practices.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/mcp-builder/reference/evaluation.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Build a read-only search and fetch MCP server for this documentation collection.",
+        "passCriteria": [
+          "Provide clear schemas, pagination and error behavior.",
+          "Verify a realistic search-to-fetch task and basic contract failures."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Fix one validation bug and its description in this existing single-tool MCP server.",
+        "passCriteria": [
+          "Make and verify the focused fix.",
+          "Do not require ten contrived multi-call questions or expand API coverage."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/skill-creator",
+    "benefit": "Offers skill authoring, baselines, blind comparisons, feedback and progressive disclosure.",
+    "riskLevel": "high",
+    "recommendation": "adapt",
+    "assessment": "There are strong lightweight and evaluation paths, including removal of unproductive instructions. This does not establish best-creator status on either target model. The Claude-specific harness, all-at-once orchestration and repeated test-set selection need adaptation. Full entrypoint, analyzer, comparator and grader were read; relevant run_eval/run_loop sections were inspected, not all supporting code. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can use the authoring methodology, but passing its model ID to a Claude subprocess is not an Astra benchmark. Verified provider/model dispatch is required.",
+      "fable": "Fable can use a compatible Claude harness after verifying actual CLI/model routing. Repeatedly selecting by the same test split does not establish held-out generalization or best-in-class quality."
+    },
+    "risks": [
+      {
+        "mechanism": "The current-model evaluation is implemented through a fixed Claude CLI.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/SKILL.md",
+            "lineStart": 390,
+            "lineEnd": 390,
+            "quote": "Use the model ID from your system prompt"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/scripts/run_eval.py",
+            "lineStart": 70,
+            "lineEnd": 78,
+            "quote": "\"claude\","
+          }
+        ],
+        "impact": "A non-Claude host may fail or evaluate a different provider than requested.",
+        "mitigation": "Use explicit verified provider/model adapters, report resolved identity and keep authoring available when the optional harness is absent."
+      },
+      {
+        "mechanism": "Repeated model selection reuses the supposed test split.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/SKILL.md",
+            "lineStart": 394,
+            "lineEnd": 394,
+            "quote": "selected by test score rather than train score to avoid overfitting."
+          }
+        ],
+        "impact": "The reported best score can overstate generalization because the split functions as validation.",
+        "mitigation": "Label it validation, keep a final untouched holdout and report uncertainty/cost/regressions; do not claim best without comparison."
+      },
+      {
+        "mechanism": "Trigger boosting and rigid concurrency can over-activate generated skills or stall hosts.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/SKILL.md",
+            "lineStart": 67,
+            "lineEnd": 67,
+            "quote": "make the skill descriptions a little bit \"pushy\""
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/SKILL.md",
+            "lineStart": 171,
+            "lineEnd": 171,
+            "quote": "Launch everything at once"
+          }
+        ],
+        "impact": "Near-miss tasks can activate an unsuitable skill, while mandated concurrency can exceed real host slots.",
+        "mitigation": "Calibrate trigger precision and recall on near misses, schedule within available concurrency and honor no-eval or small-edit requests."
+      }
+    ],
+    "strengths": [
+      "Uses meaningful with-skill baselines and blind task-quality comparison.",
+      "Grader critiques weak assertions instead of accepting easy scores.",
+      "Explicitly supports user-requested lightweight work without formal evaluation.",
+      "Promotes progressive disclosure and removal of unproductive instructions."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/agents/analyzer.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/agents/comparator.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/agents/grader.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/scripts/run_eval.py",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/skill-creator/scripts/run_loop.py"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Create an incident-summary skill and compare it with a no-skill baseline on an explicitly verified target model.",
+        "passCriteria": [
+          "Use representative positive and near-miss prompts with task-quality criteria.",
+          "Record resolved provider/model, failures, cost and unexecuted checks.",
+          "Reserve an untouched holdout and test explicit user constraints."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Only tighten this existing skill’s trigger; do not run model evaluations or change its workflow.",
+        "passCriteria": [
+          "Make the narrow edit and preserve scope.",
+          "Do not launch Claude processes or require an evaluation loop."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/slack-gif-creator",
+    "benefit": "Provides animation helpers, easing patterns, GIF assembly and dimensional checks for Slack-oriented assets.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "The utilities and distinction between direct uploaded-asset reuse and inspiration are useful. Some aesthetics are mandatory. The fully reviewed validator returns success based only on dimensions, so is_slack_ready is not proof of all upload constraints or playback quality. This review did not verify live Slack limits. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can use the helpers but may degrade a minimal brand asset through compulsory thicker outlines and decoration.",
+      "fable": "Fable benefits from deterministic helpers; it must distinguish dimensional acceptability from complete platform readiness."
+    },
+    "risks": [
+      {
+        "mechanism": "Decorative defaults become universal quality rules.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/slack-gif-creator/SKILL.md",
+            "lineStart": 88,
+            "lineEnd": 88,
+            "quote": "Always set `width=2` or higher"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/slack-gif-creator/SKILL.md",
+            "lineStart": 90,
+            "lineEnd": 97,
+            "quote": "Don't just draw a plain circle"
+          }
+        ],
+        "impact": "Minimal or brand-constrained animations can gain unwanted outlines or ornament.",
+        "mitigation": "Make these rendering suggestions conditional; honor the brief and inspect actual readability."
+      },
+      {
+        "mechanism": "The readiness predicate proves only dimensional acceptability.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/slack-gif-creator/core/validators.py",
+            "lineStart": 76,
+            "lineEnd": 78,
+            "quote": "\"passes\": dim_pass,"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/slack-gif-creator/core/validators.py",
+            "lineStart": 115,
+            "lineEnd": 118,
+            "quote": "return dim_pass, results"
+          }
+        ],
+        "impact": "An oversized or poorly playing file may be called ready based on the dimension result alone.",
+        "mitigation": "Report exactly what was checked and separately validate size/platform requirements and playback."
+      }
+    ],
+    "strengths": [
+      "Useful animation/easing helpers.",
+      "Validator exposes actual size and frame metadata in addition to dimensions."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/slack-gif-creator/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/slack-gif-creator/core/validators.py"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Animate this logo waving as a 128×128 Slack emoji while preserving its identity.",
+        "passCriteria": [
+          "Preserve the mark and produce a legible loop.",
+          "Inspect dimensions, size and playback and state validation limits."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Make a minimal one-pixel monochrome animation with no decoration; report exactly which readiness checks passed.",
+        "passCriteria": [
+          "Honor the style unless an actual output problem requires discussion.",
+          "Do not equate dimensional acceptance with full upload readiness."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/theme-factory",
+    "benefit": "Provides ten concrete color/font themes and a useful choice workflow when options are requested.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "All ten theme Markdown specifications were read; the showcase PDF was not visually inspected. The unconditional show/ask/wait sequence repeats a choice the user may already have made. Keep themes as reusable data and make choice collection conditional. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can directly apply a named palette; a mandatory confirmation turns a specified reversible change into an unnecessary stop.",
+      "fable": "Fable can compare suitable themes when useful without needing a selection ceremony after an explicit choice."
+    },
+    "risks": [
+      {
+        "mechanism": "A fixed choice ceremony repeats a settled decision.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/SKILL.md",
+            "lineStart": 23,
+            "lineEnd": 26,
+            "quote": "Get explicit confirmation about the chosen theme"
+          }
+        ],
+        "impact": "A request to apply Ocean Depths may receive another question instead of the updated artifact.",
+        "mitigation": "Apply a theme already selected in the prompt/project. Ask only for unresolved preferences that materially affect the task."
+      }
+    ],
+    "strengths": [
+      "Concrete color and typography roles.",
+      "A custom-theme path exists when presets do not fit."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/arctic-frost.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/botanical-garden.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/desert-rose.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/forest-canopy.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/golden-hour.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/midnight-galaxy.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/modern-minimalist.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/ocean-depths.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/sunset-boulevard.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/theme-factory/themes/tech-innovation.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Show suitable theme options for a marine-science deck and explain the strongest two before I choose.",
+        "passCriteria": [
+          "Accurately present colors and font roles.",
+          "Wait for choice because the user requested that workflow."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Apply Ocean Depths to this deck now, preserve all content and do not show more options.",
+        "passCriteria": [
+          "Apply it without a redundant selection question.",
+          "Preserve content and check legibility."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/web-artifacts-builder",
+    "benefit": "Scaffolds and bundles complex React HTML artifacts for a specific Claude artifact workflow.",
+    "riskLevel": "high",
+    "recommendation": "host-only",
+    "assessment": "The host scope is explicit and excludes simple single-file artifacts. Both shell scripts were read in full. The initializer imposes a large React/component setup, while the instructions recommend showing output before testing. Keep the compatible-host recipe optional and adapt its validation policy. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra should not apply a Claude-specific scaffold to an existing app or assume the artifact renderer exists. Avoiding available pre-delivery verification can lower actual quality.",
+      "fable": "Fable on a compatible artifact host can benefit from packaging; stronger reasoning does not compensate for prescribed deferral of cheap verification."
+    },
+    "risks": [
+      {
+        "mechanism": "Fixed scaffolding is unsuitable outside the named host and use case.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/web-artifacts-builder/SKILL.md",
+            "lineStart": 9,
+            "lineEnd": 16,
+            "quote": "Initialize the frontend repo using `scripts/init-artifact.sh`"
+          }
+        ],
+        "impact": "An existing other-stack project can be replaced by a large React scaffold if generic matching ignores the stated scope.",
+        "mitigation": "Require compatible artifact context and a new complex artifact; preserve existing project architecture."
+      },
+      {
+        "mechanism": "The workflow discourages verification before delivery.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/web-artifacts-builder/SKILL.md",
+            "lineStart": 70,
+            "lineEnd": 70,
+            "quote": "avoid testing the artifact upfront"
+          }
+        ],
+        "impact": "Avoidable syntax, interaction or layout failures can reach the user.",
+        "mitigation": "Perform proportionate build and smoke checks before declaring completion; defer only expensive checks without demonstrated need."
+      }
+    ],
+    "strengths": [
+      "Explicit intended scope for complex Claude HTML artifacts.",
+      "Deterministic scaffold and single-HTML packaging commands."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/web-artifacts-builder/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/web-artifacts-builder/scripts/init-artifact.sh",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/web-artifacts-builder/scripts/bundle-artifact.sh"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Build an interactive React artifact for a compatible Claude HTML viewer and bundle one HTML deliverable.",
+        "passCriteria": [
+          "Verify host compatibility before using the recipe.",
+          "Build and smoke-test before calling it finished."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Fix one interaction bug in this existing Vue app using its current tools.",
+        "passCriteria": [
+          "Do not initialize a React artifact project.",
+          "Use the existing app and appropriate pre-delivery verification."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "anthropic/webapp-testing",
+    "benefit": "Provides local browser reconnaissance, selector discovery and server lifecycle support.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "The discovery workflow is useful. Always requiring Python Playwright and networkidle ignores available browser surfaces and apps with continuous activity. The server helper was read in full without execution. The instruction to execute before reading also impedes legitimate inspection and troubleshooting. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can stall on a polling/streaming dashboard while waiting for global idleness or lose an authenticated browser context by changing surfaces.",
+      "fable": "Fable has the same host/readiness risks; the useful principle is inspection of real UI state, not one universal load-state condition."
+    },
+    "risks": [
+      {
+        "mechanism": "Dynamic readiness always requires global network idleness.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/webapp-testing/SKILL.md",
+            "lineStart": 80,
+            "lineEnd": 81,
+            "quote": "wait for `page.wait_for_load_state('networkidle')` before inspection"
+          }
+        ],
+        "impact": "Polling or streaming can prevent completion despite a usable target UI.",
+        "mitigation": "Use relevant selectors or completed requests with bounded waits; use networkidle only when suitable."
+      },
+      {
+        "mechanism": "Fixed tools and execute-before-inspect rules reduce adaptability.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/webapp-testing/SKILL.md",
+            "lineStart": 9,
+            "lineEnd": 9,
+            "quote": "write native Python Playwright scripts."
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/webapp-testing/SKILL.md",
+            "lineStart": 14,
+            "lineEnd": 14,
+            "quote": "DO NOT read the source until you try running the script first"
+          }
+        ],
+        "impact": "The assistant can ignore an available authenticated browser or run a helper during a source audit.",
+        "mitigation": "Prefer the supported browser and existing test stack; --help is documentation, not a prerequisite to code inspection."
+      }
+    ],
+    "strengths": [
+      "Reconnaissance precedes interaction using actual selectors.",
+      "Provides bounded startup and cleanup support."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/webapp-testing/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/anthropic/skills/webapp-testing/scripts/with_server.py"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Verify this local login form rejects an empty password and succeeds with the supplied test account.",
+        "passCriteria": [
+          "Discover reliable selectors from actual UI state.",
+          "Observe both requested behaviors and clean up any started server."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Verify a button on this continuously polling/streaming dashboard using the already authenticated browser.",
+        "passCriteria": [
+          "Use target-specific readiness and bounded waits.",
+          "Preserve the authenticated session and report observed behavior."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "openai-plugins/openai-developers/build-chatgpt-app",
+    "benefit": "Provides Apps SDK architecture, tool/UI contracts, current official-docs lookup and honest validation.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "This is a strong domain guide with good scoping and reporting of unrun checks. The main risk is fetching five baseline documentation pages for every change, including edits that do not touch an SDK contract. The docs-workflow and repository-contract references were read in full; other archetype/scaffold/bridge references were not exhaustively reviewed. Prefer this canonical entry over the nearly identical curated chatgpt-apps import. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra benefits from accurate APIs and validation discipline, but broad repeated documentation sweeps can dominate small UI edits.",
+      "fable": "Fable can use the same domain guidance with supported docs access. Codex-named tools must be mapped to available capabilities rather than assumed present."
+    },
+    "risks": [
+      {
+        "mechanism": "Broad mandatory docs preflight covers every small change.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app/SKILL.md",
+            "lineStart": 26,
+            "lineEnd": 34,
+            "quote": "whenever building or changing a ChatGPT Apps SDK app."
+          }
+        ],
+        "impact": "Repeated loading can delay a focused change and duplicate already verified context.",
+        "mitigation": "Read current sources for touched contracts, reuse verified session context and expand to all baseline pages for initial or broad implementation."
+      }
+    ],
+    "strengths": [
+      "Inspects repository structure and skips scaffolding established apps.",
+      "MCP/widget/CSP contracts prevent real integration mistakes.",
+      "Validation ladder reports what was and was not run.",
+      "Default coding work does not imply publication."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app/references/apps-sdk-docs-workflow.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app/references/repo-contract-and-validation.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Build a new ChatGPT catalog app with a TypeScript MCP server and widget.",
+        "passCriteria": [
+          "Use current official SDK docs and a minimal suitable starter.",
+          "Implement coherent tool, resource, UI and CSP contracts.",
+          "Run feasible validation and label unexecuted real-host checks."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Change only this existing widget’s submit-button text, preserving SDK behavior and metadata.",
+        "passCriteria": [
+          "Make and verify the focused change.",
+          "Do not re-scaffold or require unrelated five-page research."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "openai-plugins/openai-developers/chatgpt-app-submission",
+    "benefit": "Grounds submission metadata in real MCP tool behavior and generates review artifacts.",
+    "riskLevel": "moderate",
+    "recommendation": "adapt",
+    "assessment": "Implementation/helper inspection and truthful submission data are strong requirements. Stopping on unknown or misleading metadata is appropriate. The concern is requiring fresh approval even when the user has already explicitly authorized the metadata repairs. Preserve real uncertainty and consequential-action boundaries while recognizing session authorization. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can produce accurate metadata from code inspection; re-asking for an explicitly requested reversible correction can block completion unnecessarily.",
+      "fable": "Fable benefits from the same grounding and should not invent safety claims. It can proceed within existing repair authorization while stopping on actual ambiguity."
+    },
+    "risks": [
+      {
+        "mechanism": "A fresh permission gate ignores authorization already provided.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/chatgpt-app-submission/SKILL.md",
+            "lineStart": 16,
+            "lineEnd": 16,
+            "quote": "ask the developer for approval before updating source."
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/chatgpt-app-submission/SKILL.md",
+            "lineStart": 42,
+            "lineEnd": 42,
+            "quote": "stop before writing the JSON and ask the developer for approval"
+          }
+        ],
+        "impact": "A request to fix incorrect hints and generate JSON can stop at a redundant question.",
+        "mitigation": "Count explicit current-session repair authorization; still stop for unknown side effects, ambiguous scope or out-of-scope consequential actions."
+      }
+    ],
+    "strengths": [
+      "Reads actual implementations and called helpers.",
+      "Requires truthful hints and distinguishes warnings from blockers.",
+      "Cases reference actual tool names and workflows."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/chatgpt-app-submission/SKILL.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Review this app’s MCP tools and generate truthful submission JSON and the requested test cases.",
+        "passCriteria": [
+          "Ground each hint justification in actual behavior.",
+          "Do not claim generated cases were executed.",
+          "Report actual metadata blockers clearly."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Fix any incorrect tool hints in this repository and generate the submission JSON; these source edits are authorized.",
+        "passCriteria": [
+          "Make unambiguous fixes within the stated authorization without asking again.",
+          "Stop only for real ambiguity or an action outside that scope."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "openai/curated/aspnet-core",
+    "benefit": "Provides compact ASP.NET Core architecture and versioning guidance that preserves project conventions.",
+    "riskLevel": "low",
+    "recommendation": "retain",
+    "assessment": "This mainly augments capability: it selects the smallest relevant references, preserves app models and framework pins, and requires live verification for latest-version claims. Stack-selection and versioning references were read in full. The dated default needs normal maintenance, but no incorrect current version fact or observed behavior failure is established. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra can use framework-specific contracts without a forced redesign because existing conventions and pins explicitly win.",
+      "fable": "Fable receives the same targeted context. No model-specific degradation is established; the residual concern is maintenance of dated defaults."
+    },
+    "risks": [
+      {
+        "mechanism": "A dated new-project default needs periodic verification.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/aspnet-core/SKILL.md",
+            "lineStart": 35,
+            "lineEnd": 35,
+            "quote": "As of March 2026, prefer .NET 10 / ASP.NET Core 10"
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/aspnet-core/SKILL.md",
+            "lineStart": 60,
+            "lineEnd": 61,
+            "quote": "follow the solution's conventions first"
+          }
+        ],
+        "impact": "Future unpinned work could use an obsolete stable/preview classification; pinned projects are explicitly protected. No current error is claimed.",
+        "mitigation": "Retain repository-first behavior and verify current Microsoft release docs for unpinned new work or latest-version requests."
+      }
+    ],
+    "strengths": [
+      "Loads the smallest relevant reference set.",
+      "Preserves architecture and pinned frameworks.",
+      "Encourages incremental verified upgrades instead of gratuitous rewrites."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/aspnet-core/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/aspnet-core/references/stack-selection.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/aspnet-core/references/versioning-and-upgrades.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Add a validated endpoint to this .NET 10 Minimal API using existing conventions.",
+        "passCriteria": [
+          "Keep the current model and framework.",
+          "Verify success and invalid-input behavior."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Fix a bug in this pinned .NET 8 MVC app without upgrading or changing architecture.",
+        "passCriteria": [
+          "Preserve .NET 8 and MVC.",
+          "Do not treat new-project defaults as migration instructions."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "openai/curated/chatgpt-apps",
+    "benefit": "Duplicates the useful Apps SDK workflow and references of the plugin-namespaced build skill.",
+    "riskLevel": "moderate",
+    "recommendation": "retire-duplicate",
+    "assessment": "A direct comparison found entrypoint differences only in name, heading and four invocation examples. Both entrypoints were read in full; the two reviewed references are byte-identical. Duplication alone has not been shown to cause a model failure. Still, separate selectable names add ambiguity and can duplicate about 19 KB of guidance if a host activates both. Archive this source snapshot and expose one canonical active skill. Static semantic review only; both model evaluation cases below are planned and unexecuted.",
+    "modelAssessments": {
+      "astra": "Astra gains no additional reviewed substantive instruction from loading the duplicate. Consolidation preserves knowledge while reducing selection ambiguity.",
+      "fable": "Fable likewise gains no unique reviewed capability from both names. The composition risk is conditional, not a measured inability to reconcile consistent instructions."
+    },
+    "risks": [
+      {
+        "mechanism": "Two selectable identities provide effectively the same workflow.",
+        "evidence": [
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/chatgpt-apps/SKILL.md",
+            "lineStart": 24,
+            "lineEnd": 34,
+            "quote": "Use `$openai-docs` first whenever building or changing a ChatGPT Apps SDK app."
+          },
+          {
+            "path": "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app/SKILL.md",
+            "lineStart": 24,
+            "lineEnd": 34,
+            "quote": "Use `$openai-docs` first whenever building or changing a ChatGPT Apps SDK app."
+          }
+        ],
+        "impact": "If both are activated, context and preflight can be repeated without new reviewed knowledge; maintenance ownership is unclear.",
+        "mitigation": "Retain the official snapshot but mark this active entry as superseded or alias-only and route to the canonical plugin skill."
+      }
+    ],
+    "strengths": [
+      "Same useful repository, tool/UI and validation guidance as the canonical skill.",
+      "Reviewed duplicates are consistent, so consolidation preserves the knowledge."
+    ],
+    "resourcesReviewed": [
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/chatgpt-apps/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/chatgpt-apps/references/apps-sdk-docs-workflow.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai/skills/.curated/chatgpt-apps/references/repo-contract-and-validation.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app/SKILL.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app/references/apps-sdk-docs-workflow.md",
+      "/Users/kenny/CSI-AICOE/agentic-operator/skills-library/upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app/references/repo-contract-and-validation.md"
+    ],
+    "testCases": [
+      {
+        "kind": "positive",
+        "prompt": "Build a new ChatGPT app using the available official Apps SDK skill.",
+        "passCriteria": [
+          "Select one canonical build skill.",
+          "Retain its useful architecture and validation requirements."
+        ]
+      },
+      {
+        "kind": "regression",
+        "prompt": "Both chatgpt-apps and build-chatgpt-app appear in discovery; fix this widget label only.",
+        "passCriteria": [
+          "Select one canonical skill or alias without concatenating both bodies.",
+          "Complete the focused change without duplicate preflight or planning."
+        ]
+      }
+    ]
+  }
+]

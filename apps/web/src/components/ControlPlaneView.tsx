@@ -6,6 +6,8 @@ import {
   type DashboardPayload,
   type PlanId,
   type ProviderCatalogItem,
+  type ProviderConnection,
+  type ProviderTestResult,
   type SavedProjectSummary,
   type UserRole,
   type UserStatus,
@@ -28,6 +30,7 @@ import {
   LoaderCircle,
   Pencil,
   Plus,
+  Play,
   RefreshCw,
   ScrollText,
   ServerCog,
@@ -35,6 +38,7 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProviderRouteDialog, ProviderTestFeedback } from "./ProviderRouteDialog";
 import {
   Dialog,
   DialogContent,
@@ -162,186 +166,39 @@ function ProviderGlyph({ provider }: { provider: ProviderCatalogItem }) {
   );
 }
 
-function AddProviderDialog({ onSaved }: { onSaved: () => Promise<void> }) {
-  const [open, setOpen] = useState(false);
-  const [catalogId, setCatalogId] = useState(PROVIDER_CATALOG[0]?.id ?? "openai");
-  const selected = PROVIDER_CATALOG.find((item) => item.id === catalogId) ?? PROVIDER_CATALOG[0]!;
-  const [name, setName] = useState(selected.name);
-  const [baseUrl, setBaseUrl] = useState(selected.defaultBaseUrl ?? "");
-  const [model, setModel] = useState(selected.defaultModel ?? "");
-  const [apiKey, setApiKey] = useState("");
-  const [isDefault, setIsDefault] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const apiKeyInputId = `provider-api-key-${selected.id}`;
-
-  function selectProvider(nextId: string) {
-    const next = PROVIDER_CATALOG.find((item) => item.id === nextId);
-    if (!next) return;
-    setCatalogId(next.id);
-    setName(next.name);
-    setBaseUrl(next.defaultBaseUrl ?? "");
-    setModel(next.defaultModel ?? "");
-    setApiKey("");
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      await api.saveProvider({
-        catalogId,
-        name,
-        baseUrl: selected.adapter === "litellm" ? undefined : baseUrl || null,
-        defaultModel: model || null,
-        apiKey: apiKey || undefined,
-        enabled: true,
-        isDefault,
-      });
-      await onSaved();
-      setOpen(false);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save model route");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button className="gap-2" size="sm"><Plus className="size-3.5" /> Add route</Button>
-      </DialogTrigger>
-      <DialogContent className="management-dialog border-border bg-card sm:max-w-[520px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Add a model route</DialogTitle>
-            <DialogDescription>
-              Connect a provider for new tasks. Credentials are encrypted and stored securely on the server.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-5">
-            <label className="grid gap-2 text-ui-control text-muted-foreground">
-              Provider
-              <Select onValueChange={selectProvider} value={catalogId}>
-                <SelectTrigger className="h-10 bg-background/40"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PROVIDER_CATALOG.map((provider) => (
-                    <SelectItem key={provider.id} value={provider.id}>{provider.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </label>
-
-            <div className="rounded-md border border-border/80 bg-background/25 px-3 py-2.5 text-ui-body text-muted-foreground">
-              <span className="font-medium text-foreground">{selected.nativeCodex ? "Native route." : "Gateway route."}</span>{" "}
-              {selected.description}
-            </div>
-
-            <label className="grid gap-2 text-ui-control text-muted-foreground">
-              Display name
-              <Input className="h-10 bg-background/40" onChange={(event) => setName(event.target.value)} required value={name} />
-            </label>
-
-            {selected.adapter === "litellm" ? (
-              <div
-                aria-label="LiteLLM endpoint policy"
-                className="rounded-md border border-human/20 bg-human/[0.045] px-3 py-2.5"
-                role="note"
-              >
-                <p className="text-ui-control font-medium text-foreground">Operator-managed LiteLLM endpoint</p>
-                <p className="mt-1 text-ui-body text-muted-foreground">
-                  This tenant selects a model alias and optional scoped token. The gateway URL cannot be changed in the browser.
-                </p>
-              </div>
-            ) : (
-              <label className="grid gap-2 text-ui-control text-muted-foreground">
-                Endpoint
-                <Input
-                  aria-describedby="provider-endpoint-policy"
-                  className="h-10 bg-background/40 font-mono text-ui-code"
-                  onChange={(event) => setBaseUrl(event.target.value)}
-                  placeholder={selected.local ? "http://127.0.0.1:11434/v1" : "https://…/v1"}
-                  required
-                  type="url"
-                  value={baseUrl}
-                />
-                <span className="text-ui-body" id="provider-endpoint-policy">
-                  {selected.local
-                    ? "Local loopback endpoints are allowed for local providers."
-                    : "Use HTTPS. Private-network endpoints require an explicit server-operator opt-in."}
-                </span>
-              </label>
-            )}
-
-            <label className="grid gap-2 text-ui-control text-muted-foreground">
-              Default model
-              <Input className="h-10 bg-background/40 font-mono text-ui-code" onChange={(event) => setModel(event.target.value)} value={model} />
-            </label>
-
-            {selected.keyLabel ? (
-              <label
-                className="grid gap-2 text-ui-control text-muted-foreground"
-                htmlFor={apiKeyInputId}
-              >
-                {selected.keyLabel}
-                {selected.adapter === "litellm" ? " (optional when the operator configured a shared credential)" : ""}
-                <Input
-                  autoComplete="off"
-                  className="h-10 bg-background/40 font-mono text-ui-code"
-                  id={apiKeyInputId}
-                  key={selected.id}
-                  onChange={(event) => setApiKey(event.target.value)}
-                  placeholder={selected.adapter === "litellm" ? "Tenant-scoped gateway token" : "Stored encrypted"}
-                  type="password"
-                  value={apiKey}
-                />
-              </label>
-            ) : null}
-
-            <label className="flex items-center gap-2 text-ui-control text-muted-foreground">
-              <input checked={isDefault} className="size-3.5 accent-[var(--primary)]" onChange={(event) => setIsDefault(event.target.checked)} type="checkbox" />
-              Use as the default route for new tasks
-            </label>
-
-            {error ? <p role="alert" className="text-ui-body text-destructive">{error}</p> : null}
-          </div>
-
-          <DialogFooter>
-            <Button onClick={() => setOpen(false)} type="button" variant="ghost">Cancel</Button>
-            <Button disabled={saving} type="submit">{saving ? "Saving…" : "Save route"}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function ProvidersView({
   dashboard,
   onRefresh,
 }: Omit<ControlPlaneViewProps, "view" | "onOpenSidebar">) {
   const [pendingProviderId, setPendingProviderId] = useState<string | null>(null);
   const [providerError, setProviderError] = useState<{ id: string; message: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ id: string; updatedAt: string; result: ProviderTestResult } | null>(null);
+  const [pendingAction, setPendingAction] = useState<"toggle" | "default" | "test" | null>(null);
   const providerMutationRef = useRef<string | null>(null);
   const enabledProviders = dashboard.providers.filter((provider) => provider.enabled);
-  const activeProvider = enabledProviders.find((provider) => provider.isDefault) ?? enabledProviders[0];
+  const activeProvider = enabledProviders.find((provider) => provider.isDefault)
+    ?? enabledProviders.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt))[0];
 
-  async function toggleProvider(connection: DashboardPayload["providers"][number]) {
+  async function updateProvider(connection: ProviderConnection, action: "toggle" | "default" | "test") {
     if (dashboard.user.role !== "admin" || providerMutationRef.current) return;
     providerMutationRef.current = connection.id;
     setPendingProviderId(connection.id);
+    setPendingAction(action);
     setProviderError(null);
+    setTestResult(null);
     try {
-      await api.saveProvider({
-        id: connection.id,
-        catalogId: connection.catalogId,
-        enabled: !connection.enabled,
-        isDefault: connection.enabled && connection.isDefault ? false : connection.isDefault,
-      });
-      await onRefresh();
+      if (action === "test") {
+        const response = await api.testProvider({ id: connection.id });
+        setTestResult({ id: connection.id, updatedAt: connection.updatedAt, result: response.result });
+      } else {
+        await api.saveProvider({
+          id: connection.id,
+          catalogId: connection.catalogId,
+          enabled: action === "default" ? true : !connection.enabled,
+          isDefault: action === "default" ? true : connection.enabled && connection.isDefault ? false : connection.isDefault,
+        });
+        await onRefresh();
+      }
     } catch (cause) {
       setProviderError({
         id: connection.id,
@@ -350,12 +207,13 @@ function ProvidersView({
     } finally {
       providerMutationRef.current = null;
       setPendingProviderId(null);
+      setPendingAction(null);
     }
   }
 
   return (
     <>
-      <PageHeader action={dashboard.user.role === "admin" ? <AddProviderDialog onSaved={onRefresh} /> : undefined} view="providers" />
+      <PageHeader action={dashboard.user.role === "admin" ? <ProviderRouteDialog disabled={pendingProviderId !== null} onSaved={onRefresh} /> : undefined} view="providers" />
       <PageScrollRegion view="providers">
         <div className="management-content">
           <section className="mb-8 management-metrics">
@@ -366,6 +224,7 @@ function ProvidersView({
             <div className="management-panel">
               <p className="text-ui-meta text-muted-foreground">Active route</p>
               <p className="mt-2 truncate text-ui-control font-medium">{activeProvider?.name ?? "Not configured"}</p>
+              {activeProvider?.defaultModel ? <p className="mt-1 truncate font-mono text-ui-code text-muted-foreground" title={activeProvider.defaultModel}>{activeProvider.defaultModel}</p> : null}
             </div>
             <div className="management-panel">
               <p className="text-ui-meta text-muted-foreground">Credentials</p>
@@ -379,12 +238,7 @@ function ProvidersView({
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {PROVIDER_CATALOG.map((provider) => {
-              const connection = dashboard.providers.find((item) => item.catalogId === provider.id);
-              const connectionStatus = !connection
-                ? "Not configured"
-                : connection.enabled
-                  ? "Configured"
-                  : "Disabled";
+              const connections = dashboard.providers.filter((item) => item.catalogId === provider.id);
               return (
                 <article className="management-panel" key={provider.id}>
                   <div className="flex items-start gap-3">
@@ -395,60 +249,52 @@ function ProvidersView({
                         <span className={cn("rounded-full px-2 py-0.5 text-ui-meta", provider.nativeCodex ? "bg-[var(--c-run-dim)] text-[var(--healthy)]" : "bg-human/10 text-human")}>
                           {provider.nativeCodex ? "native" : "gateway"}
                         </span>
-                        {connection?.isDefault ? <span className="ml-auto text-ui-meta text-primary">default</span> : null}
                       </div>
                       <p className="mt-2 text-ui-body text-muted-foreground">{provider.description}</p>
                     </div>
                   </div>
-                  <div className="mt-4 border-t border-border/70 pt-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex min-w-0 items-center gap-1.5 text-ui-meta text-muted-foreground">
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "size-1.5 shrink-0 rounded-full",
-                            connection?.enabled
-                              ? "bg-[var(--healthy)]"
-                              : connection
-                                ? "bg-[var(--waiting)]"
-                                : "bg-muted-foreground",
-                          )}
-                        />
-                        <span className="shrink-0">{connectionStatus}</span>
-                        {connection?.defaultModel ? (
-                          <span className="truncate">· {connection.defaultModel}</span>
-                        ) : null}
-                      </span>
-                      {connection && dashboard.user.role === "admin" ? (
-                        <Button
-                          aria-label={`${connection.enabled ? "Disable" : "Enable"} ${provider.name} route`}
-                          disabled={pendingProviderId !== null}
-                          onClick={() => void toggleProvider(connection)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          {pendingProviderId === connection.id
-                            ? "Updating…"
-                            : connection.enabled
-                              ? "Disable"
-                              : "Enable"}
-                        </Button>
+                  {connections.length ? connections.map((connection) => (
+                    <div className="mt-4 grid gap-3 border-t border-border/70 pt-3" key={connection.id}>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", connection.enabled ? "bg-[var(--healthy)]" : "bg-[var(--waiting)]")} />
+                          <h4 className="min-w-0 break-words text-ui-control font-medium">{connection.name}</h4>
+                          <span className="text-ui-meta text-muted-foreground">{connection.enabled ? "Enabled" : "Disabled"}</span>
+                          {connection.isDefault ? <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-ui-meta text-primary">Default</span> : null}
+                        </div>
+                        <p className="mt-2 break-all font-mono text-ui-code text-muted-foreground">{connection.defaultModel ?? "No model selected"}</p>
+                        {connection.baseUrl ? <p className="mt-1 break-all text-ui-meta text-muted-foreground">{connection.baseUrl}</p> : null}
+                      </div>
+                      {dashboard.user.role === "admin" ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <ProviderRouteDialog connection={connection} disabled={pendingProviderId !== null} onSaved={async () => { setTestResult(null); setProviderError(null); await onRefresh(); }} />
+                          <Button aria-label={`Test ${connection.name} route`} disabled={pendingProviderId !== null} onClick={() => void updateProvider(connection, "test")} size="sm" variant="outline">
+                            {pendingProviderId === connection.id && pendingAction === "test" ? <LoaderCircle className="size-3.5 animate-spin" /> : <Play className="size-3.5" />}
+                            {pendingProviderId === connection.id && pendingAction === "test" ? "Testing…" : "Test"}
+                          </Button>
+                          {connection.enabled && !connection.isDefault ? <Button aria-label={`Make ${connection.name} the default route`} disabled={pendingProviderId !== null} onClick={() => void updateProvider(connection, "default")} size="sm" variant="ghost">{pendingProviderId === connection.id && pendingAction === "default" ? "Updating…" : "Make default"}</Button> : null}
+                          <Button aria-label={`${connection.enabled ? "Disable" : "Enable"} ${connection.name} route`} disabled={pendingProviderId !== null} onClick={() => void updateProvider(connection, "toggle")} size="sm" variant="ghost">
+                            {pendingProviderId === connection.id && pendingAction === "toggle" ? "Updating…" : connection.enabled ? "Disable" : "Enable"}
+                          </Button>
+                        </div>
                       ) : null}
+                      {pendingProviderId === connection.id && pendingAction === "test" ? <p className="text-ui-meta text-muted-foreground" role="status">Testing the saved model and credentials…</p> : null}
+                      {testResult?.id === connection.id && testResult.updatedAt === connection.updatedAt ? <ProviderTestFeedback result={testResult.result} /> : null}
+                      {providerError?.id === connection.id ? <p className="text-ui-body text-destructive" role="alert">{providerError.message}</p> : null}
                     </div>
-                    {providerError && providerError.id === connection?.id ? (
-                      <p className="mt-2 text-ui-body text-destructive" role="alert">
-                        {providerError.message}
-                      </p>
-                    ) : null}
-                  </div>
+                  )) : (
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3">
+                      <span className="text-ui-meta text-muted-foreground">Not configured</span>
+                      {dashboard.user.role === "admin" ? <ProviderRouteDialog disabled={pendingProviderId !== null} initialCatalogId={provider.id} onSaved={onRefresh} /> : null}
+                    </div>
+                  )}
                 </article>
               );
             })}
           </div>
 
           <p className="mt-8 border-t border-border pt-5 text-ui-control text-muted-foreground">
-            Each task uses one model route. Connection tests and automatic retries
-            through another provider are not available yet.
+            The default route is used for new tasks. Tests send a small request using the selected model and may use provider credits.
           </p>
         </div>
       </PageScrollRegion>

@@ -1,0 +1,1362 @@
+{
+  "schemaVersion": "1.0",
+  "status": "planned-not-executed",
+  "set": "development-challenge",
+  "models": [
+    "claude-fable-5-1",
+    "gpt-6-astra"
+  ],
+  "conditions": [
+    "no-skill",
+    "natural-discovery",
+    "explicitly-loaded"
+  ],
+  "warning": "No outcomes are recorded. Use fresh held-out cases after adapting against this set. Keep each model pair aligned on tools, permissions, settings and fixtures.",
+  "cases": [
+    {
+      "kind": "positive",
+      "prompt": "Recommend the two best Claude Academy resources for a sales team new to Claude.",
+      "passCriteria": [
+        "Use verified catalog entries or disclose their unavailability.",
+        "Explain the fit of the requested two resources."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/academy-guide:positive:1",
+      "skillId": "anthropic/academy-guide",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Build a table of six distinct current Claude Academy tutorials for sales onboarding, including audience and skill covered.",
+      "passCriteria": [
+        "Cover six suitable verified resources if available; do not impose the two-item ceiling.",
+        "State material access or coverage limitations without inventing items."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/academy-guide:regression:2",
+      "skillId": "anthropic/academy-guide",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Create an interactive seeded flow-field artwork with seed navigation and turbulence controls.",
+      "passCriteria": [
+        "The same seed reproduces the same initial artwork.",
+        "Controls alter the intended algorithm and the viewer runs."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/algorithmic-art:positive:1",
+      "skillId": "anthropic/algorithmic-art",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Create one offline HTML sketch with a dark background and my company’s system-font styling; no essay.",
+      "passCriteria": [
+        "Honor the style and deliverable without a philosophy file.",
+        "Render correctly without required network requests."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/algorithmic-art:regression:2",
+      "skillId": "anthropic/algorithmic-art",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Style this Anthropic event flyer with the documented palette and typography.",
+      "passCriteria": [
+        "Apply the documented colors and font roles consistently.",
+        "Use documented fallbacks if needed."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/brand-guidelines:positive:1",
+      "skillId": "anthropic/brand-guidelines",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Apply our bank’s navy-and-gold guide and supplied font to this deck.",
+      "passCriteria": [
+        "Do not apply Anthropic branding.",
+        "Preserve the supplied client identity and content."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/brand-guidelines:regression:2",
+      "skillId": "anthropic/brand-guidelines",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Design a minimalist abstract exhibition poster with only its title and date as a PNG.",
+      "passCriteria": [
+        "Produce a legible composition with no clipping.",
+        "Honor the title, date and format."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/canvas-design:positive:1",
+      "skillId": "anthropic/canvas-design",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Create a playful cartoon event poster as SVG with this exact title, venue, date and accessibility notice.",
+      "passCriteria": [
+        "Deliver SVG with all required copy legible.",
+        "Use the playful style and do not invent a prior perfection request."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/canvas-design:regression:2",
+      "skillId": "anthropic/canvas-design",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Add a Claude streaming adapter to our provider-neutral TypeScript gateway, preserving OpenAI and current model configuration.",
+      "passCriteria": [
+        "Activate within the host budget and load only relevant references.",
+        "Implement the additive adapter without an unnecessary conversion gate.",
+        "Use installed SDK contracts and verify type and behavior checks."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/claude-api:positive:1",
+      "skillId": "anthropic/claude-api",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Audit this support prompt for obsolete rules while preserving its contractual 120-word maximum and exact JSON schema.",
+      "passCriteria": [
+        "Preserve the stated contracts.",
+        "Separate evidence-backed proposals from hypotheses and never claim unrun model tests."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/claude-api:regression:2",
+      "skillId": "anthropic/claude-api",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Estimate this marketing budget and suggest two assumptions I should challenge before deciding.",
+      "passCriteria": [
+        "Complete the estimate and distinguish facts from assumptions.",
+        "Suggest specific useful checks tied to it."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/discernment-nudge:positive:1",
+      "skillId": "anthropic/discernment-nudge",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Verify these claims from supplied records and return only JSON with claim, verdict and evidence.",
+      "passCriteria": [
+        "Perform the verification rather than shifting it to follow-ups.",
+        "Return valid JSON without a canned suffix."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/discernment-nudge:regression:2",
+      "skillId": "anthropic/discernment-nudge",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Create an accessible landing page for a ceramics studio using the supplied real content.",
+      "passCriteria": [
+        "Make coherent visual choices tied to the subject.",
+        "Check responsive layout, contrast and reduced motion."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/frontend-design:positive:1",
+      "skillId": "anthropic/frontend-design",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Change only this dashboard search field’s spacing to match adjacent controls.",
+      "passCriteria": [
+        "Make the targeted change and preserve the design system.",
+        "Do not invent rejected proposals or require a new uniqueness study."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/frontend-design:regression:2",
+      "skillId": "anthropic/frontend-design",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Turn these engineering notes into our weekly Progress/Plans/Problems update.",
+      "passCriteria": [
+        "Use the supplied facts and requested structure.",
+        "Do not invent progress or hide blockers."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/internal-comms:positive:1",
+      "skillId": "anthropic/internal-comms",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Draft a 60-word plain-text outage update for our 12-person team; all audience, tone and facts are supplied; no questions or emoji.",
+      "passCriteria": [
+        "Deliver the draft directly in the requested format.",
+        "Do not assume a 1,000-person organization or ask redundant questions."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/internal-comms:regression:2",
+      "skillId": "anthropic/internal-comms",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Build a read-only search and fetch MCP server for this documentation collection.",
+      "passCriteria": [
+        "Provide clear schemas, pagination and error behavior.",
+        "Verify a realistic search-to-fetch task and basic contract failures."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/mcp-builder:positive:1",
+      "skillId": "anthropic/mcp-builder",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Fix one validation bug and its description in this existing single-tool MCP server.",
+      "passCriteria": [
+        "Make and verify the focused fix.",
+        "Do not require ten contrived multi-call questions or expand API coverage."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/mcp-builder:regression:2",
+      "skillId": "anthropic/mcp-builder",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Create an incident-summary skill and compare it with a no-skill baseline on an explicitly verified target model.",
+      "passCriteria": [
+        "Use representative positive and near-miss prompts with task-quality criteria.",
+        "Record resolved provider/model, failures, cost and unexecuted checks.",
+        "Reserve an untouched holdout and test explicit user constraints."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/skill-creator:positive:1",
+      "skillId": "anthropic/skill-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Only tighten this existing skill’s trigger; do not run model evaluations or change its workflow.",
+      "passCriteria": [
+        "Make the narrow edit and preserve scope.",
+        "Do not launch Claude processes or require an evaluation loop."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/skill-creator:regression:2",
+      "skillId": "anthropic/skill-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Animate this logo waving as a 128×128 Slack emoji while preserving its identity.",
+      "passCriteria": [
+        "Preserve the mark and produce a legible loop.",
+        "Inspect dimensions, size and playback and state validation limits."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/slack-gif-creator:positive:1",
+      "skillId": "anthropic/slack-gif-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Make a minimal one-pixel monochrome animation with no decoration; report exactly which readiness checks passed.",
+      "passCriteria": [
+        "Honor the style unless an actual output problem requires discussion.",
+        "Do not equate dimensional acceptance with full upload readiness."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/slack-gif-creator:regression:2",
+      "skillId": "anthropic/slack-gif-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Show suitable theme options for a marine-science deck and explain the strongest two before I choose.",
+      "passCriteria": [
+        "Accurately present colors and font roles.",
+        "Wait for choice because the user requested that workflow."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/theme-factory:positive:1",
+      "skillId": "anthropic/theme-factory",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Apply Ocean Depths to this deck now, preserve all content and do not show more options.",
+      "passCriteria": [
+        "Apply it without a redundant selection question.",
+        "Preserve content and check legibility."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/theme-factory:regression:2",
+      "skillId": "anthropic/theme-factory",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Build an interactive React artifact for a compatible Claude HTML viewer and bundle one HTML deliverable.",
+      "passCriteria": [
+        "Verify host compatibility before using the recipe.",
+        "Build and smoke-test before calling it finished."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/web-artifacts-builder:positive:1",
+      "skillId": "anthropic/web-artifacts-builder",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Fix one interaction bug in this existing Vue app using its current tools.",
+      "passCriteria": [
+        "Do not initialize a React artifact project.",
+        "Use the existing app and appropriate pre-delivery verification."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/web-artifacts-builder:regression:2",
+      "skillId": "anthropic/web-artifacts-builder",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Verify this local login form rejects an empty password and succeeds with the supplied test account.",
+      "passCriteria": [
+        "Discover reliable selectors from actual UI state.",
+        "Observe both requested behaviors and clean up any started server."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/webapp-testing:positive:1",
+      "skillId": "anthropic/webapp-testing",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Verify a button on this continuously polling/streaming dashboard using the already authenticated browser.",
+      "passCriteria": [
+        "Use target-specific readiness and bounded waits.",
+        "Preserve the authenticated session and report observed behavior."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "anthropic/webapp-testing:regression:2",
+      "skillId": "anthropic/webapp-testing",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Build a new ChatGPT catalog app with a TypeScript MCP server and widget.",
+      "passCriteria": [
+        "Use current official SDK docs and a minimal suitable starter.",
+        "Implement coherent tool, resource, UI and CSP contracts.",
+        "Run feasible validation and label unexecuted real-host checks."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai-plugins/openai-developers/build-chatgpt-app:positive:1",
+      "skillId": "openai-plugins/openai-developers/build-chatgpt-app",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Change only this existing widget’s submit-button text, preserving SDK behavior and metadata.",
+      "passCriteria": [
+        "Make and verify the focused change.",
+        "Do not re-scaffold or require unrelated five-page research."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai-plugins/openai-developers/build-chatgpt-app:regression:2",
+      "skillId": "openai-plugins/openai-developers/build-chatgpt-app",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Review this app’s MCP tools and generate truthful submission JSON and the requested test cases.",
+      "passCriteria": [
+        "Ground each hint justification in actual behavior.",
+        "Do not claim generated cases were executed.",
+        "Report actual metadata blockers clearly."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai-plugins/openai-developers/chatgpt-app-submission:positive:1",
+      "skillId": "openai-plugins/openai-developers/chatgpt-app-submission",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Fix any incorrect tool hints in this repository and generate the submission JSON; these source edits are authorized.",
+      "passCriteria": [
+        "Make unambiguous fixes within the stated authorization without asking again.",
+        "Stop only for real ambiguity or an action outside that scope."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai-plugins/openai-developers/chatgpt-app-submission:regression:2",
+      "skillId": "openai-plugins/openai-developers/chatgpt-app-submission",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Add a validated endpoint to this .NET 10 Minimal API using existing conventions.",
+      "passCriteria": [
+        "Keep the current model and framework.",
+        "Verify success and invalid-input behavior."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/aspnet-core:positive:1",
+      "skillId": "openai/curated/aspnet-core",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Fix a bug in this pinned .NET 8 MVC app without upgrading or changing architecture.",
+      "passCriteria": [
+        "Preserve .NET 8 and MVC.",
+        "Do not treat new-project defaults as migration instructions."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/aspnet-core:regression:2",
+      "skillId": "openai/curated/aspnet-core",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "Build a new ChatGPT app using the available official Apps SDK skill.",
+      "passCriteria": [
+        "Select one canonical build skill.",
+        "Retain its useful architecture and validation requirements."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/chatgpt-apps:positive:1",
+      "skillId": "openai/curated/chatgpt-apps",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "Both chatgpt-apps and build-chatgpt-app appear in discovery; fix this widget label only.",
+      "passCriteria": [
+        "Select one canonical skill or alias without concatenating both bodies.",
+        "Complete the focused change without duplicate preflight or planning."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/chatgpt-apps:regression:2",
+      "skillId": "openai/curated/chatgpt-apps",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Create a reusable CLI for our issue service with search, exact issue lookup, JSON output, and an explicitly authorized draft-comment command.",
+      "passCriteria": [
+        "Commands compose using stable IDs and have bounded pagination.",
+        "Errors and diagnostics do not corrupt JSON stdout or expose credentials.",
+        "Installation and one representative read/write-preview path are actually verified; companion skill uses the requested scope."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/cli-creator:positive:1",
+      "skillId": "openai/curated/cli-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Create a reusable offline CSV-to-JSON converter for this project; no remote services or global installation.",
+      "passCriteria": [
+        "Implements only the relevant local conversion interface.",
+        "Does not add authentication, cloud discovery, or a meaningless raw HTTP command.",
+        "Keeps the companion skill under the project’s configured skill directory."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/cli-creator:regression:2",
+      "skillId": "openai/curated/cli-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Deploy this existing authenticated Workers project and verify the deployed route.",
+      "passCriteria": [
+        "Uses the relevant Workers/Wrangler references rather than loading the entire platform library.",
+        "Verifies authentication, deploy result, and reachable intended route.",
+        "Reports the actual deployment result without assuming every failure is a sandbox problem."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/cloudflare-deploy:positive:1",
+      "skillId": "openai/curated/cloudflare-deploy",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Retry an authorized preview deployment after a DNS timeout; this managed host has normal network access and no escalation API.",
+      "passCriteria": [
+        "Diagnoses DNS/service failure rather than inventing an escalation tool.",
+        "Does not ask to disable isolation or restart the host.",
+        "Uses a bounded retry or reports the concrete remaining failure."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/cloudflare-deploy:regression:2",
+      "skillId": "openai/curated/cloudflare-deploy",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Set a goal to get the failing checkout tests passing, with the final test run as evidence; no token budget.",
+      "passCriteria": [
+        "Checks existing goal state and reuses a matching active goal.",
+        "Stores a concise outcome with verification and no invented budget.",
+        "Proceeds with authorized work after setting the goal."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/define-goal:positive:1",
+      "skillId": "openai/curated/define-goal",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Fix the typo in this README and commit the correction.",
+      "passCriteria": [
+        "Does not create a goal, invent a metric, or ask for confirmation of a goal.",
+        "Makes and verifies the requested small edit directly."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/define-goal:regression:2",
+      "skillId": "openai/curated/define-goal",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Address all actionable comments on this branch’s PR, run relevant checks, and explain any suggestion you reject on technical grounds.",
+      "passCriteria": [
+        "Retrieves the intended PR’s relevant discussions and identifies actionable changes.",
+        "Fixes authorized comments without asking for a numbered selection.",
+        "Uses engineering judgment on conflicting suggestions and verifies the resulting change."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/gh-address-comments:positive:1",
+      "skillId": "openai/curated/gh-address-comments",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] All comments are in scope; gh is authenticated but the API reports rate-limit exhaustion.",
+      "passCriteria": [
+        "Does not ask the user to choose comments again or rerun OAuth as the default remedy.",
+        "Reports or handles the actual rate-limit condition using available evidence.",
+        "Resumes the authorized scope when access becomes available."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/gh-address-comments:regression:2",
+      "skillId": "openai/curated/gh-address-comments",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Fix the failing GitHub Actions typecheck on my current PR, run the relevant checks, and prepare the fix for review.",
+      "passCriteria": [
+        "Uses the actual failing job and code evidence to identify the cause.",
+        "Implements within the authorized scope without a second plan approval.",
+        "Actually runs the relevant available checks and clearly states any pending remote CI."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/gh-fix-ci:positive:1",
+      "skillId": "openai/curated/gh-fix-ci",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] I already approve the CI repair; the log excerpt ends with a generic failure but earlier output contains the compiler error.",
+      "passCriteria": [
+        "Inspects enough of the full log to locate the cause rather than treating the heuristic snippet as proof.",
+        "Does not stop at a proposed plan or a suggestion to run tests.",
+        "Keeps unrelated external providers outside the requested Actions repair."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/gh-fix-ci:regression:2",
+      "skillId": "openai/curated/gh-fix-ci",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] On this compatible Codex pet host, hatch a watercolor fox using the supplied reference and verify every animation state.",
+      "passCriteria": [
+        "Produces the actual supported transparent atlas/package dimensions and row layout.",
+        "Checks identity, seams, clipping, and row semantics visually.",
+        "Reports actual generation and validation evidence without claiming a model-quality benchmark."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/hatch-pet:positive:1",
+      "skillId": "openai/curated/hatch-pet",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Repair only the sleeping row of this existing Codex pet; keep the rest byte-for-byte, use the selected strong model, and do not spawn agents.",
+      "passCriteria": [
+        "Repairs the smallest affected region and preserves unaffected assets.",
+        "Does not ask to spawn workers or substitute a smaller model.",
+        "Uses focused visual and deterministic checks rather than restarting the entire generation workflow."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/hatch-pet:regression:2",
+      "skillId": "openai/curated/hatch-pet",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Create a small experiment notebook comparing two preprocessing methods with a reproducible baseline and a recorded conclusion.",
+      "passCriteria": [
+        "Builds focused runnable cells, explicit assumptions, and deterministic setup where appropriate.",
+        "Runs top-to-bottom if supported and records actual results.",
+        "Resolves resources from the imported bundle rather than assuming a personal installation."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/jupyter-notebook:positive:1",
+      "skillId": "openai/curated/jupyter-notebook",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Fix just the plotting cell in this existing notebook; preserve cell order and all unrelated narrative and outputs.",
+      "passCriteria": [
+        "Makes a targeted edit without scaffolding a replacement notebook or adding tutorial exercises.",
+        "Does not stop because the personal helper path is missing.",
+        "Checks the changed cell and reports the limits of any unavailable full execution."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/jupyter-notebook:regression:2",
+      "skillId": "openai/curated/jupyter-notebook",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Using the connected Linear workspace, triage these three specified issues into the existing milestone and update their priorities.",
+      "passCriteria": [
+        "Fetches real issue/milestone metadata before the authorized updates.",
+        "Uses the available connector and preserves unspecified fields.",
+        "Summarizes actual changes without adding unrelated issues or notifications."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/linear:positive:1",
+      "skillId": "openai/curated/linear",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Update the already identified Linear issue; a managed connector is available, but the codex CLI and rmcp_client setting are not.",
+      "passCriteria": [
+        "Uses the available supported connector.",
+        "Does not edit global config, install another connector, or require a restart.",
+        "Asks only if a genuinely required issue field or authorization is missing."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/linear:regression:2",
+      "skillId": "openai/curated/linear",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Migrate these selected Claude project skills and agents into this standalone Codex project, preserving source files and reporting unsupported semantics.",
+      "passCriteria": [
+        "Uses a dry run and validates the generated target artifacts.",
+        "Preserves source and unrelated changes.",
+        "Explains unsupported permission/hook behavior without claiming equivalent runtime enforcement."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/migrate-to-codex:positive:1",
+      "skillId": "openai/curated/migrate-to-codex",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Review migration options inside this managed operator; do not change server-owned runtime config or my existing persona, and explain tradeoffs in prose.",
+      "passCriteria": [
+        "Performs the requested read-only analysis without rewriting runtime or personality.",
+        "Does not require an unavailable TODO tool or fixed script path.",
+        "Provides requested semantic explanation instead of forcing the table-only template."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/migrate-to-codex:regression:2",
+      "skillId": "openai/curated/migrate-to-codex",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Deploy this new Netlify site as a preview only and verify the returned preview URL.",
+      "passCriteria": [
+        "Builds and deploys a draft without the production flag.",
+        "Verifies the preview artifact and reports its actual URL/status.",
+        "Preserves existing project configuration outside necessary deployment changes."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/netlify-deploy:positive:1",
+      "skillId": "openai/curated/netlify-deploy",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Link this repository to the named existing Netlify site; do not deploy yet.",
+      "passCriteria": [
+        "Performs only the requested site-linking operation.",
+        "Does not continue automatically into a build/publish sequence.",
+        "Does not infer production authorization from the site being new or linked."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/netlify-deploy:regression:2",
+      "skillId": "openai/curated/netlify-deploy",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Capture this discussion as an ADR in the supplied Notion decision log; audience is the platform team, and no task creation is requested.",
+      "passCriteria": [
+        "Preserves decision, alternatives, tradeoffs, and exact technical details.",
+        "Uses the real destination schema and updates only the authorized knowledge artifact.",
+        "Does not ask again for the supplied audience or create follow-up tasks."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/notion-knowledge-capture:positive:1",
+      "skillId": "openai/curated/notion-knowledge-capture",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Summarize these notes here in chat only, including the unresolved action items; do not write to Notion.",
+      "passCriteria": [
+        "Returns a faithful local summary without connector setup or external mutations.",
+        "Mentions action items as content rather than creating tasks.",
+        "Does not let generic knowledge-capture triggers override the requested output surface."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/notion-knowledge-capture:regression:2",
+      "skillId": "openai/curated/notion-knowledge-capture",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Prepare an internal decision pre-read and an external partner agenda in Notion from these linked sources; keep internal risks out of the partner document.",
+      "passCriteria": [
+        "Creates the two requested audience-appropriate artifacts.",
+        "Preserves confidentiality boundaries and cites substantive claims.",
+        "Uses research only where it fills a material decision gap."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/notion-meeting-intelligence:positive:1",
+      "skillId": "openai/curated/notion-meeting-intelligence",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Write a ten-minute agenda here from the supplied notes only; no research, second document, Notion writes, or new tasks.",
+      "passCriteria": [
+        "Produces one concise agenda using the given objective and duration.",
+        "Does not chase a citation quota or fabricate enrichment.",
+        "Does not ask for known details or create external artifacts."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/notion-meeting-intelligence:regression:2",
+      "skillId": "openai/curated/notion-meeting-intelligence",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Compare these three conflicting Notion architecture proposals and publish a cited recommendation in the named research page.",
+      "passCriteria": [
+        "Identifies material contradictions and evaluates evidence rather than simply concatenating summaries.",
+        "Cites claims to the relevant provided sources and preserves dates/uncertainty.",
+        "Completes the requested document without asking the user to choose every search result."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/notion-research-documentation:positive:1",
+      "skillId": "openai/curated/notion-research-documentation",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Using only these two authoritative Notion pages, give an 80-word comparison here; do not search the rest of the workspace.",
+      "passCriteria": [
+        "Uses the two sources without expanding scope to meet a count.",
+        "Returns the requested concise local answer with sufficient citations.",
+        "Does not create a Notion page or pause merely because there are two results."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/notion-research-documentation:regression:2",
+      "skillId": "openai/curated/notion-research-documentation",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Turn this Notion feature spec into a human-team implementation backlog in the supplied database, with dependencies and testable acceptance criteria.",
+      "passCriteria": [
+        "Chooses a proportional plan and coherent tasks based on actual requirements.",
+        "Uses the real database schema and links tasks to the spec and plan.",
+        "Does not invent assignees, dates, progress, or notifications."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/notion-spec-to-implementation:positive:1",
+      "skillId": "openai/curated/notion-spec-to-implementation",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Implement this one-line configuration fix from the pasted spec; do not create plans, tasks, pages, or status notifications.",
+      "passCriteria": [
+        "Makes and verifies the actual code/configuration change.",
+        "Does not invent multi-day tasks or Setup/Core/Polish phases.",
+        "Does not treat the mention of a spec as authorization for external project-management writes."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/notion-spec-to-implementation:regression:2",
+      "skillId": "openai/curated/notion-spec-to-implementation",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Using current official documentation, migrate this API integration to the explicitly requested GPT-6 Astra target, including necessary schema and tool-handler changes, then run appropriate checks.",
+      "passCriteria": [
+        "Verifies the requested target against current official sources without substituting an older fallback model.",
+        "Completes the expressly authorized implementation scope and validates actual changed behavior.",
+        "Reports evidence and uncertainties without invented benchmark results."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/openai-docs:positive:1",
+      "skillId": "openai/curated/openai-docs",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Answer this OpenAI API question using official sources; web lookup is available, but this managed host has no docs MCP and forbids local runtime reconfiguration.",
+      "passCriteria": [
+        "Uses the available official-source lookup instead of installing a connector or demanding restart.",
+        "Does not treat a missing preferred tool as a blocked answer.",
+        "Discloses any source-access limitation and does not present fallback model tables as verified current facts."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/openai-docs:regression:2",
+      "skillId": "openai/curated/openai-docs",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Create a two-page PDF report with a dense table and chart; render and inspect the final result before calling it complete.",
+      "passCriteria": [
+        "Produces readable, unclipped tables/charts and sensible pagination.",
+        "Uses actual rendering evidence rather than extraction alone.",
+        "Reports any material defect or unavailable validation honestly."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/pdf:positive:1",
+      "skillId": "openai/curated/pdf",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Reproduce this supplied text exactly in a PDF, preserving its en dashes and nonbreaking hyphens; the available renderer supports these glyphs.",
+      "passCriteria": [
+        "Preserves the intentional characters and verifies their appearance.",
+        "Does not replace them with ASCII solely to satisfy a global style rule.",
+        "Uses the supported renderer without unnecessary package setup or a user review gate."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/pdf:regression:2",
+      "skillId": "openai/curated/pdf",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] Use the available terminal Playwright CLI to complete this local form and verify the visible saved result.",
+      "passCriteria": [
+        "Grounds controls in a current snapshot and refreshes after state changes.",
+        "Uses an isolated appropriate session and verifies the visible outcome.",
+        "Does not create a test suite unless that is part of the requested deliverable."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/playwright:positive:1",
+      "skillId": "openai/curated/playwright",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Verify this page using the host’s already configured browser; npx is unavailable and no package installation is requested.",
+      "passCriteria": [
+        "Uses the available approved browser capability or selects a compatible workflow.",
+        "Does not ask for Node installation merely to satisfy this skill’s preferred wrapper.",
+        "Does not fabricate a wrapper path or element references."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/playwright:regression:2",
+      "skillId": "openai/curated/playwright",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "prompt": "[Planned; not executed] On this explicitly compatible js_repl host, fix an Electron renderer interaction bug and verify the affected flow and layout.",
+      "passCriteria": [
+        "Reuses the running session appropriately and restarts only when the changed process requires it.",
+        "Verifies the real user interaction and visible result with current screenshots.",
+        "Cleans up owned resources or clearly retains the session for continuing work."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/playwright-interactive:positive:1",
+      "skillId": "openai/curated/playwright-interactive",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "prompt": "[Planned; not executed] Fix only the clipped label in this view; use the existing approved browser surface and preserve the managed sandbox configuration.",
+      "passCriteria": [
+        "Makes and visually verifies the bounded correction and relevant neighboring layout.",
+        "Does not disable sandboxing, edit runtime feature flags, or demand another session.",
+        "Does not require testing every unrelated control or a fixed-duration ritual before reporting the verified change."
+      ],
+      "status": "planned-not-executed",
+      "caseId": "openai/curated/playwright-interactive:regression:2",
+      "skillId": "openai/curated/playwright-interactive",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Deploy this web API and worker to Render using the existing repository and its database; prepare and validate the Blueprint before publishing through our existing PR workflow.",
+      "passCriteria": [
+        "Infer framework, dependencies and intended branch from the repo.",
+        "Produce a valid multi-service Blueprint with secrets externalized.",
+        "Use the repository PR flow and verify live status plus an application response."
+      ],
+      "caseId": "openai/curated/render-deploy:positive:1",
+      "skillId": "openai/curated/render-deploy",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Deploy this single Render service from the current release branch. The Render CLI is authenticated; MCP is unavailable. All configuration is already in render.yaml.",
+      "passCriteria": [
+        "Proceed through the authenticated CLI without requiring MCP installation.",
+        "Do not ask questions already resolved by render.yaml.",
+        "Do not push main or add a health endpoint when an existing route verifies health."
+      ],
+      "caseId": "openai/curated/render-deploy:regression:2",
+      "skillId": "openai/curated/render-deploy",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Save a screenshot of the Settings window in the running app to the specified workspace screenshots folder.",
+      "passCriteria": [
+        "Select the correct window rather than the full desktop.",
+        "Use available integrated capture or supported OS helper.",
+        "Return the real saved path and verify the image exists."
+      ],
+      "caseId": "openai/curated/screenshot:positive:1",
+      "skillId": "openai/curated/screenshot",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Explain this function from the supplied source code. You are running in a headless Linux worker.",
+      "passCriteria": [
+        "Answer from source without selecting screenshot capture.",
+        "Do not request Screen Recording or escalation.",
+        "Do not claim to see a window."
+      ],
+      "caseId": "openai/curated/screenshot:regression:2",
+      "skillId": "openai/curated/screenshot",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Review and fix security weaknesses in the provided Next.js authentication routes; preserve the existing login behavior and run the relevant tests.",
+      "passCriteria": [
+        "Produce evidence-backed, prioritized findings.",
+        "Perform already-authorized relevant fixes without an extra report-approval stop.",
+        "Validate auth behavior and distinguish missing evidence from confirmed vulnerability."
+      ],
+      "caseId": "openai/curated/security-best-practices:positive:1",
+      "skillId": "openai/curated/security-best-practices",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "After the security review, change only this React button label to Save draft.",
+      "passCriteria": [
+        "Make the small requested edit without reopening a broad security review.",
+        "Do not load every framework reference.",
+        "Preserve unrelated auth/TLS configuration."
+      ],
+      "caseId": "openai/curated/security-best-practices:regression:2",
+      "skillId": "openai/curated/security-best-practices",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Map security ownership risk in this repository over the last twelve months, focusing on auth and crypto, and explain the measurement limitations.",
+      "passCriteria": [
+        "Generate or inspect graph outputs with a recorded time window and exclusions.",
+        "Use bounded queries and cite the relevant paths.",
+        "Explain that commit authorship and touches do not prove actual control or knowledge."
+      ],
+      "caseId": "openai/curated/security-ownership-map:positive:1",
+      "skillId": "openai/curated/security-ownership-map",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Who can approve a production access change? Here is the IAM policy and the current approver list.",
+      "passCriteria": [
+        "Answer from the supplied authority records.",
+        "Do not replace actual approvers with Git contributors.",
+        "Do not run a repository graph solely because ownership terminology appears."
+      ],
+      "caseId": "openai/curated/security-ownership-map:regression:2",
+      "skillId": "openai/curated/security-ownership-map",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Threat model this public multi-tenant upload API using the supplied architecture, deployment and auth facts. Write the report now and mark remaining assumptions.",
+      "passCriteria": [
+        "Ground components and controls in supplied or repository evidence.",
+        "Cover trust boundaries and realistic abuse paths with specific mitigations.",
+        "Finish the report without an unconditional confirmation stop."
+      ],
+      "caseId": "openai/curated/security-threat-model:positive:1",
+      "skillId": "openai/curated/security-threat-model",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Create a concise threat model for this offline single-user parser library; the supplied usage scope is complete.",
+      "passCriteria": [
+        "Do not invent internet exposure or ten abuse paths to meet a quota.",
+        "State realistic attacker capabilities and bounded assumptions.",
+        "Keep useful analysis proportional to the small system."
+      ],
+      "caseId": "openai/curated/security-threat-model:regression:2",
+      "skillId": "openai/curated/security-threat-model",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Investigate Sentry issue PAY-123 in payments-production; show recent impact and likely cause without mutating the issue.",
+      "passCriteria": [
+        "Query the named project and issue with read-only operations.",
+        "Separate observed events from inferred root cause.",
+        "Include source links/identifiers and redact secrets."
+      ],
+      "caseId": "openai/curated/sentry:positive:1",
+      "skillId": "openai/curated/sentry",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Use the already-connected Sentry tool to summarize the last hour of errors; this worker has no Sentry CLI.",
+      "passCriteria": [
+        "Use the available authorized connector or clearly state a actual missing capability.",
+        "Do not demand redundant CLI installation.",
+        "Do not fall back silently to a different project or 24-hour window."
+      ],
+      "caseId": "openai/curated/sentry:regression:2",
+      "skillId": "openai/curated/sentry",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Generate an MP3 of this exact announcement with a calm delivery using an available built-in voice, and save it in the project output folder.",
+      "passCriteria": [
+        "Preserve every word of the supplied text.",
+        "Choose supported voice/model parameters and produce a real audio file.",
+        "Inspect intelligibility where audio inspection is available and disclose AI generation."
+      ],
+      "caseId": "openai/curated/speech:positive:1",
+      "skillId": "openai/curated/speech",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Generate these 200 voice prompts using the configured speech service and a confirmed batch rate limit; the vendor helper lacks one required output option.",
+      "passCriteria": [
+        "Keep the vendor helper unchanged but use a supported authorized adaptation if possible.",
+        "Do not downgrade the main reasoning model.",
+        "Do not stop all work solely because a bundled wrapper lacks the option."
+      ],
+      "caseId": "openai/curated/speech:regression:2",
+      "skillId": "openai/curated/speech",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Transcribe this meeting recording with speaker labels; use these two short reference clips and save structured segments.",
+      "passCriteria": [
+        "Select a supported diarization route and use the provided references correctly.",
+        "Return actual text and speaker/segment data.",
+        "State any ambiguity instead of inventing speaker certainty."
+      ],
+      "caseId": "openai/curated/transcribe:positive:1",
+      "skillId": "openai/curated/transcribe",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Summarize the transcript pasted below; no audio transcription is needed.",
+      "passCriteria": [
+        "Summarize the provided text directly.",
+        "Do not request OPENAI_API_KEY or call a transcription service.",
+        "Do not invent diarization or modify the transcript meaning."
+      ],
+      "caseId": "openai/curated/transcribe:regression:2",
+      "skillId": "openai/curated/transcribe",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Deploy this application to a Vercel preview and confirm that its homepage and API health route work.",
+      "passCriteria": [
+        "Produce the preview URL after a confirmed deployment.",
+        "Perform the requested application checks.",
+        "Differentiate a failed health check from a successful upload/build."
+      ],
+      "caseId": "openai/curated/vercel-deploy:positive:1",
+      "skillId": "openai/curated/vercel-deploy",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "The deployment command returned a URL, but its homepage responds 404. Finish diagnosing and report its actual state.",
+      "passCriteria": [
+        "Do not label a 404 as working merely because deploy.sh did.",
+        "Inspect routing/build output with authorized tools.",
+        "Report unresolved failure honestly rather than only returning the link."
+      ],
+      "caseId": "openai/curated/vercel-deploy:regression:2",
+      "skillId": "openai/curated/vercel-deploy",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "On this configured Windows host, create a WinUI settings app using native controls and verify that it opens in light and dark modes.",
+      "passCriteria": [
+        "Use the existing functional toolchain rather than gratuitous installation.",
+        "Build and launch the correct packaging model.",
+        "Verify a responsive top-level window and report actual observed behavior."
+      ],
+      "caseId": "openai/curated/winui-app:positive:1",
+      "skillId": "openai/curated/winui-app",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Review this WinUI XAML diff from a headless worker and suggest a minimal accessibility fix.",
+      "passCriteria": [
+        "Complete source review without demanding a desktop installation.",
+        "Do not claim the app launched.",
+        "Provide the fix and state which runtime checks remain unavailable."
+      ],
+      "caseId": "openai/curated/winui-app:regression:2",
+      "skillId": "openai/curated/winui-app",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Commit the completed fix and open or update its GitHub PR using this repository template.",
+      "passCriteria": [
+        "Stage only the fix and its directly related changes.",
+        "Run relevant checks and preserve existing PR state/content.",
+        "Describe the actual net diff with useful evidence."
+      ],
+      "caseId": "openai/curated/yeet:positive:1",
+      "skillId": "openai/curated/yeet",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Commit only the parser fix; unrelated dashboard edits are present from another task. The first push fails because the token lacks workflow scope.",
+      "passCriteria": [
+        "Leave unrelated dashboard edits uncommitted.",
+        "Do not pull master as an authentication remedy.",
+        "Report or resolve the actual credential issue without rewriting branch history."
+      ],
+      "caseId": "openai/curated/yeet:regression:2",
+      "skillId": "openai/curated/yeet",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Create a photorealistic product hero based on these style references; preserve the exact label text and save the chosen image into the project.",
+      "passCriteria": [
+        "Use the available image tool with correct reference roles.",
+        "Inspect label accuracy and composition.",
+        "Persist a real final asset in the project and report its location."
+      ],
+      "caseId": "openai/system/imagegen:positive:1",
+      "skillId": "openai/system/imagegen",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Change the existing SVG navigation icon stroke from 2px to 1.5px to match our icon set.",
+      "passCriteria": [
+        "Edit the SVG directly without generating a bitmap.",
+        "Preserve the existing vector system.",
+        "Do not request image-service credentials or a fallback mode."
+      ],
+      "caseId": "openai/system/imagegen:regression:2",
+      "skillId": "openai/system/imagegen",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Find the current official schema for the specified OpenAI response API parameter and provide a concise cited explanation.",
+      "passCriteria": [
+        "Use a currently accessible official source and verify the actual schema.",
+        "Cite the exact relevant page.",
+        "Do not install/restart the host when an existing source route resolves the question."
+      ],
+      "caseId": "openai/system/openai-docs:positive:1",
+      "skillId": "openai/system/openai-docs",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Migrate this app to the explicitly requested model, including necessary API and tool-handler changes; keep behavior working and test the migration.",
+      "passCriteria": [
+        "Preserve the explicitly named target.",
+        "Complete the necessary authorized implementation rather than declaring code changes out of scope.",
+        "Use compatibility checks and meaningful behavioral validation; do not report a stale fallback map as current."
+      ],
+      "caseId": "openai/system/openai-docs:regression:2",
+      "skillId": "openai/system/openai-docs",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Create a Codex plugin skeleton named release-helper in this repository with a skill folder and marketplace entry; use the supplied publisher metadata.",
+      "passCriteria": [
+        "Produce the correct Codex manifest and relative source path.",
+        "Fill supplied known metadata and preserve existing marketplace entries.",
+        "Do not claim the skeletal plugin implements absent tool functionality."
+      ],
+      "caseId": "openai/system/plugin-creator:positive:1",
+      "skillId": "openai/system/plugin-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Create an Agentic Operator workflow extension using the attached runtime contract; it is not a Codex plugin.",
+      "passCriteria": [
+        "Follow the supplied target contract.",
+        "Do not force .codex-plugin or Codex marketplace files.",
+        "Do not leave required known fields as TODO solely because a scaffolder does."
+      ],
+      "caseId": "openai/system/plugin-creator:regression:2",
+      "skillId": "openai/system/plugin-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Create a small reusable skill for our domain-specific invoice reconciliation rules using the supplied examples and tool contract.",
+      "passCriteria": [
+        "Add only non-obvious task knowledge and appropriate decision freedom.",
+        "Use progressive disclosure only where helpful.",
+        "Propose observable positive and near-miss cases and avoid claiming unrun performance gains."
+      ],
+      "caseId": "openai/system/skill-creator:positive:1",
+      "skillId": "openai/system/skill-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Revise only the trigger description in this existing skill; preserve its license, metadata, compatibility notes and bundled assets.",
+      "passCriteria": [
+        "Change the requested description without stripping supported frontmatter.",
+        "Preserve unrelated files and assets.",
+        "Do not add a broad tutorial or unnecessary authoring questions."
+      ],
+      "caseId": "openai/system/skill-creator:regression:2",
+      "skillId": "openai/system/skill-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Download the specified official skill at this commit into our shared skill catalog and preserve its source/license metadata.",
+      "passCriteria": [
+        "Use the specified revision and destination.",
+        "Retain resources and record integrity/provenance.",
+        "Report successful download separately from tested model compatibility."
+      ],
+      "caseId": "openai/system/skill-installer:positive:1",
+      "skillId": "openai/system/skill-installer",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Install this project-specific database workflow only for the current project; a shared skill of the same name already exists.",
+      "passCriteria": [
+        "Keep the existing shared skill intact.",
+        "Use the explicit project skill location rather than the Codex global default.",
+        "Avoid claiming next-turn discovery without checking the target runtime behavior."
+      ],
+      "caseId": "openai/system/skill-installer:regression:2",
+      "skillId": "openai/system/skill-installer",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "positive",
+      "status": "planned-not-executed",
+      "prompt": "Create a reusable skill for our supplied document intake policy using only the tools in this capability catalog. Return a draft suitable for Skill Builder.",
+      "passCriteria": [
+        "Return schema-valid complete SKILL.md proposal files with only useful task rules.",
+        "Use confirmed tools and preserve supplied policy facts.",
+        "Include realistic observable positive and near-miss tests clearly marked proposed; no invented performance claims."
+      ],
+      "caseId": "agentic/skill-creator:positive:1",
+      "skillId": "agentic/skill-creator",
+      "set": "development-challenge"
+    },
+    {
+      "kind": "regression",
+      "status": "planned-not-executed",
+      "prompt": "Process this one invoice using the attached policy; do not create a reusable skill.",
+      "passCriteria": [
+        "Perform the invoice task without selecting the creator.",
+        "Do not force a SkillCreatorOutputSchema response.",
+        "Do not add authoring questions or proposed skill tests to the user output."
+      ],
+      "caseId": "agentic/skill-creator:regression:2",
+      "skillId": "agentic/skill-creator",
+      "set": "development-challenge"
+    }
+  ]
+}

@@ -95,7 +95,7 @@ async function janitorFixture(t: TestContext): Promise<JanitorFixture> {
   const config: HarnessConfig = {
     host: "127.0.0.1",
     port: 0,
-    webOrigin: "http://127.0.0.1:4173",
+    webOrigin: "http://127.0.0.1:3590",
     databasePath: join(directory, "harness.db"),
     runtimeDataDir: join(directory, "runtimes"),
     uploadDataDir: join(directory, "uploads"),
@@ -109,7 +109,7 @@ async function janitorFixture(t: TestContext): Promise<JanitorFixture> {
     stripeWebhookSecret: null,
     stripePricePro: null,
     stripePriceTeam: null,
-    publicAppUrl: "http://127.0.0.1:4173",
+    publicAppUrl: "http://127.0.0.1:3590",
     litellmBaseUrl: "http://127.0.0.1:4000/v1",
     litellmMasterKey: null,
   };

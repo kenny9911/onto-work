@@ -1,6 +1,5 @@
 import {
   lazy,
-  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -17,6 +16,7 @@ import type {
   TimelineItem,
 } from "@agent-harness/contracts";
 import { UPLOAD_MAX_BYTES } from "@agent-harness/contracts";
+import { RichContentBoundary } from "@/components/RichContentBoundary";
 import {
   Activity,
   Archive,
@@ -462,9 +462,9 @@ function TimelineEntry({
   if (item.kind === "user") {
     return (
       <div className="workspace-user-body text-ui-body">
-        <Suspense fallback={<p className="whitespace-pre-wrap">{item.body}</p>}>
+        <RichContentBoundary fallback={<p className="whitespace-pre-wrap">{item.body}</p>}>
           <MessageResponse>{item.body}</MessageResponse>
-        </Suspense>
+        </RichContentBoundary>
       </div>
     );
   }
@@ -472,16 +472,16 @@ function TimelineEntry({
   if (item.kind === "assistant") {
     return (
       <div className="workspace-response text-ui-body text-[var(--ink-1)] [&_code]:rounded-[3px] [&_code]:bg-[var(--c-surface)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-ui-code [&_code]:text-[var(--ink-1)]">
-        <Suspense fallback={<p className="whitespace-pre-wrap">{item.body}</p>}>
+        <RichContentBoundary fallback={<p className="whitespace-pre-wrap">{item.body}</p>}>
           <MessageResponse>{item.body}</MessageResponse>
-        </Suspense>
+        </RichContentBoundary>
       </div>
     );
   }
 
   if (item.kind === "reasoning") {
     return (
-      <Suspense
+      <RichContentBoundary
         fallback={(
           <p className="mt-1.5 whitespace-pre-wrap text-ui-body text-[var(--ink-3)]">
             {item.body}
@@ -492,13 +492,13 @@ function TimelineEntry({
           <ReasoningTrigger />
           <ReasoningContent>{item.body}</ReasoningContent>
         </Reasoning>
-      </Suspense>
+      </RichContentBoundary>
     );
   }
 
   if (item.kind === "command" || item.kind === "file_change") {
     return (
-      <Suspense
+      <RichContentBoundary
         fallback={(
           <div className="mt-2 overflow-hidden rounded-md border border-[var(--c-hair)] bg-[var(--c-plate)]">
             <p className="border-b border-[var(--c-hair)] px-3 py-2 text-ui-control font-medium text-[var(--ink-2)]">
@@ -527,7 +527,7 @@ function TimelineEntry({
             </pre>
           </ToolContent>
         </Tool>
-      </Suspense>
+      </RichContentBoundary>
     );
   }
 

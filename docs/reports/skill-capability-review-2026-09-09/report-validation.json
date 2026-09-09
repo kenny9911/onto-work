@@ -1,0 +1,45 @@
+{
+  "validatedAt": "2026-09-09T09:14:53.915331+00:00",
+  "scope": "report integrity, not model behavior",
+  "result": "passed",
+  "summary": {
+    "skillsReviewed": 53,
+    "ontoWorkSharedSkills": 14,
+    "riskCounts": {
+      "moderate": 29,
+      "high": 16,
+      "low": 8
+    },
+    "recommendationCounts": {
+      "adapt": 34,
+      "domain-only": 2,
+      "host-only": 13,
+      "retain": 3,
+      "retire-duplicate": 1
+    },
+    "ontoWorkRiskCounts": {
+      "moderate": 9,
+      "high": 5
+    },
+    "individualActivation": {
+      "passed": 52,
+      "failed": 1
+    },
+    "sourceCitationsValidated": 170,
+    "examinedFilesHashed": 185,
+    "plannedCases": 106,
+    "executedModelCases": 0,
+    "entrypointWords": 81030,
+    "entrypointBytes": 577937
+  },
+  "checks": [
+    "53 unique IDs match inventory",
+    "14 shared skills",
+    "all entrypoint hashes unchanged",
+    "14 shared-copy bodies match reviewed source and all catalog file hashes verify",
+    "all runtime source hashes unchanged",
+    "all cited line ranges and exact quotes valid",
+    "each skill has one positive and one regression planned case",
+    "all skills carry evidence and both model assessments"
+  ]
+}

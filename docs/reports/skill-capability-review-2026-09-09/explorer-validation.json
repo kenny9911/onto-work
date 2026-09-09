@@ -1,0 +1,23 @@
+{
+  "verifiedAt": "2026-09-09T09:14:57.218Z",
+  "result": "passed",
+  "htmlSha256": "0c65325d39bc4fa08608e9d8d303c2b08038b1544926e4142f8eb5dcca1d5669",
+  "scope": "Offline report UI only; no model behavior benchmark",
+  "checks": [
+    "53 visible skills",
+    "risk and shared filters intersect correctly",
+    "recommendation filter",
+    "search empty state",
+    "all 53 detail views and evidence counts",
+    "keyboard modal dismissal",
+    "mobile page fits viewport",
+    "local artifact links resolve",
+    "no page or console errors",
+    "no network requests"
+  ],
+  "screenshots": [
+    "explorer-desktop.png",
+    "explorer-detail.png",
+    "explorer-mobile.png"
+  ]
+}
