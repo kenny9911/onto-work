@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-09",
+  "scope": "business-ontology-agentic-tools",
+  "policy": "Only the previously shared skills retained by the business/runtime curation remain shared. This change does not install the rest of the Agentic Operator collection globally; project-authored business and ontology skills are preserved.",
+  "retained": [
+    {
+      "id": "anthropic/internal-comms",
+      "sourceId": "anthropic",
+      "path": "upstream/anthropic/skills/internal-comms",
+      "name": "anthropic-internal-comms",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/internal-comms",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/anthropic/README.md",
+        "upstream/anthropic/THIRD_PARTY_NOTICES.md"
+      ],
+      "rationale": "Draft internal business communications from supplied organizational context."
+    },
+    {
+      "id": "anthropic/skill-creator",
+      "sourceId": "anthropic",
+      "path": "upstream/anthropic/skills/skill-creator",
+      "name": "anthropic-skill-creator",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/skill-creator",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/anthropic/README.md",
+        "upstream/anthropic/THIRD_PARTY_NOTICES.md"
+      ],
+      "rationale": "Author and evaluate reusable agent skills; retained as an authoring reference, not general coding guidance."
+    },
+    {
+      "id": "openai/curated/pdf",
+      "sourceId": "openai",
+      "path": "upstream/openai/skills/.curated/pdf",
+      "name": "openai-pdf",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/pdf",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai/README.md"
+      ],
+      "rationale": "Read, create and inspect PDF business artifacts with compatible tools."
+    },
+    {
+      "id": "openai/system/skill-creator",
+      "sourceId": "openai",
+      "path": "upstream/openai/skills/.system/skill-creator",
+      "name": "openai-skill-creator",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.system/skill-creator",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai/README.md"
+      ],
+      "rationale": "Package reusable skills; retained as an authoring reference alongside the maintained creator."
+    }
+  ],
+  "removed": [
+    {
+      "id": "anthropic/frontend-design",
+      "sourceId": "anthropic",
+      "path": "upstream/anthropic/skills/frontend-design",
+      "name": "anthropic-frontend-design",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/frontend-design",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/anthropic/README.md",
+        "upstream/anthropic/THIRD_PARTY_NOTICES.md"
+      ],
+      "rationale": "Frontend UI implementation and aesthetic direction are development-time."
+    },
+    {
+      "id": "anthropic/mcp-builder",
+      "sourceId": "anthropic",
+      "path": "upstream/anthropic/skills/mcp-builder",
+      "name": "anthropic-mcp-builder",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/mcp-builder",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/anthropic/README.md",
+        "upstream/anthropic/THIRD_PARTY_NOTICES.md"
+      ],
+      "rationale": "Building MCP servers and integrations is development-time."
+    },
+    {
+      "id": "anthropic/webapp-testing",
+      "sourceId": "anthropic",
+      "path": "upstream/anthropic/skills/webapp-testing",
+      "name": "anthropic-webapp-testing",
+      "sourceUrl": "https://github.com/anthropics/skills/tree/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/webapp-testing",
+      "revision": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/anthropic/README.md",
+        "upstream/anthropic/THIRD_PARTY_NOTICES.md"
+      ],
+      "rationale": "Application UI testing is development-time."
+    },
+    {
+      "id": "openai-plugins/openai-developers/build-chatgpt-app",
+      "sourceId": "openai-plugins",
+      "path": "upstream/openai-plugins/plugins/openai-developers/skills/build-chatgpt-app",
+      "name": "openai-build-chatgpt-app",
+      "sourceUrl": "https://github.com/openai/plugins/tree/d416fd5a43426019986b1e489506db3db66dee3d/plugins/openai-developers/skills/build-chatgpt-app",
+      "revision": "d416fd5a43426019986b1e489506db3db66dee3d",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai-plugins/README.md"
+      ],
+      "rationale": "Building ChatGPT SDK applications is development-time."
+    },
+    {
+      "id": "openai-plugins/openai-developers/chatgpt-app-submission",
+      "sourceId": "openai-plugins",
+      "path": "upstream/openai-plugins/plugins/openai-developers/skills/chatgpt-app-submission",
+      "name": "openai-chatgpt-app-submission",
+      "sourceUrl": "https://github.com/openai/plugins/tree/d416fd5a43426019986b1e489506db3db66dee3d/plugins/openai-developers/skills/chatgpt-app-submission",
+      "revision": "d416fd5a43426019986b1e489506db3db66dee3d",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai-plugins/README.md"
+      ],
+      "rationale": "Publishing developer applications is development-time."
+    },
+    {
+      "id": "openai/curated/gh-address-comments",
+      "sourceId": "openai",
+      "path": "upstream/openai/skills/.curated/gh-address-comments",
+      "name": "openai-gh-address-comments",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/gh-address-comments",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai/README.md"
+      ],
+      "rationale": "GitHub pull-request review workflow is development-time."
+    },
+    {
+      "id": "openai/curated/gh-fix-ci",
+      "sourceId": "openai",
+      "path": "upstream/openai/skills/.curated/gh-fix-ci",
+      "name": "openai-gh-fix-ci",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/gh-fix-ci",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai/README.md"
+      ],
+      "rationale": "GitHub CI repair is development-time DevOps."
+    },
+    {
+      "id": "openai/curated/security-best-practices",
+      "sourceId": "openai",
+      "path": "upstream/openai/skills/.curated/security-best-practices",
+      "name": "openai-security-best-practices",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/security-best-practices",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai/README.md"
+      ],
+      "rationale": "Secure coding and repository security implementation review are development-time."
+    },
+    {
+      "id": "openai/curated/security-threat-model",
+      "sourceId": "openai",
+      "path": "upstream/openai/skills/.curated/security-threat-model",
+      "name": "openai-security-threat-model",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated/security-threat-model",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai/README.md"
+      ],
+      "rationale": "Source-repository threat modeling is development-time."
+    },
+    {
+      "id": "openai/system/openai-docs",
+      "sourceId": "openai",
+      "path": "upstream/openai/skills/.system/openai-docs",
+      "name": "openai-system-openai-docs",
+      "sourceUrl": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.system/openai-docs",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "license": "Apache-2.0",
+      "noticePaths": [
+        "upstream/openai/README.md"
+      ],
+      "rationale": "Provider API and Codex development/configuration guidance is development-time."
+    }
+  ]
+}

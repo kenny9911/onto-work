@@ -15,6 +15,7 @@ class CatalogImportTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         root = Path(self.temporary.name)
         self.source, self.shared = root / "source", root / "shared"
+        self.shared.mkdir()
         bundle = self.source / "upstream/vendor/skills/example"
         bundle.mkdir(parents=True)
         (bundle / "SKILL.md").write_text("---\nname: example\ndescription: Inspect an example.\n---\nRead assets/raw.bin.\n")
@@ -32,6 +33,12 @@ class CatalogImportTest(unittest.TestCase):
             "path": "upstream/vendor/skills/example", "sourceUrl": "https://example.com/source",
             "revision": "a" * 40, "license": "Apache-2.0",
             "noticePaths": ["upstream/vendor/README.md"]}]}
+        self.curation = {"schemaVersion": 1, "retained": [{"id": "vendor/example", "name": "vendor-example",
+            "sourceId": "vendor", "rationale": "Business example"}], "removed": []}
+        self.save_curation()
+
+    def save_curation(self):
+        (self.shared / "skill-curation.json").write_text(json.dumps(self.curation))
 
     def install(self, update=False):
         return importer.install(self.source, self.shared, self.selection, update)
@@ -88,6 +95,8 @@ class CatalogImportTest(unittest.TestCase):
     def test_reviewed_update_removes_old_selection_only_after_validation(self):
         self.install()
         self.selection["skills"][0]["name"] = "vendor-renamed"
+        self.curation["retained"][0]["name"] = "vendor-renamed"
+        self.save_curation()
         with self.assertRaisesRegex(ValueError, "requires reviewed --update"):
             self.install()
         self.assertTrue((self.shared / "skills/vendor-example").exists())
@@ -95,6 +104,37 @@ class CatalogImportTest(unittest.TestCase):
         self.assertFalse((self.shared / "skills/vendor-example").exists())
         self.assertTrue((self.shared / "skills/vendor-renamed/SKILL.md").exists())
         importer.check_catalog(self.shared)
+
+    def test_removed_skill_cannot_be_reintroduced_from_an_older_source_lock(self):
+        self.curation["removed"] = [{"id": "vendor/deploy", "name": "vendor-deploy", "sourceId": "vendor",
+            "rationale": "Deployment-time scope is excluded"}]
+        self.save_curation()
+        self.selection["skills"].append(dict(self.selection["skills"][0], id="vendor/deploy", name="vendor-deploy"))
+        with self.assertRaisesRegex(ValueError, "removed or unreviewed"):
+            self.install(update=True)
+        self.assertFalse((self.shared / "skills").exists())
+
+    def test_curation_change_requires_reviewed_catalog_update(self):
+        self.install()
+        self.curation["retained"][0]["rationale"] = "Reviewed revised scope"
+        self.save_curation()
+        with self.assertRaisesRegex(ValueError, "curation changed"):
+            importer.check_catalog(self.shared)
+        with self.assertRaisesRegex(ValueError, "requires reviewed --update"):
+            self.install()
+        self.install(update=True)
+        importer.check_catalog(self.shared)
+
+    def test_authored_project_business_skill_is_preserved(self):
+        authored = self.shared.parent / "customer-project/.agents/skills/customer-ontology/SKILL.md"
+        authored.parent.mkdir(parents=True)
+        authored.write_text("Authored business ontology")
+        self.install()
+        self.selection["skills"][0]["name"] = "vendor-renamed"
+        self.curation["retained"][0]["name"] = "vendor-renamed"
+        self.save_curation()
+        self.install(update=True)
+        self.assertEqual(authored.read_text(), "Authored business ontology")
 
 
 if __name__ == "__main__":
