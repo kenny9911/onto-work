@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "reviewedAt": "2026-09-09",
-  "sourceLockSha256": "e26b8d9caa04e52a3396214e3053ca3e827841344c8047396794db6fa5ecf946",
+  "sourceLockSha256": "d6da35bc6a58155504f21c0ffa623b799e6553b84aa4c65245d2f154918f13ff",
   "skills": [
     {
       "id": "anthropic/internal-comms",
