@@ -873,6 +873,29 @@ describe("App", () => {
       .getByText(/^idle$/i)).toBeInTheDocument();
   });
 
+  it("refreshes a missed terminal event instead of preserving Running forever", async () => {
+    const thread = { ...dashboard.threads[0]!, activeTurnId: "stalled-turn" };
+    dashboardMock.mockResolvedValue({ ...dashboard, threads: [thread], featuredThread: { thread, timeline: [] } });
+    render(<TooltipProvider><HarnessApp onSignedOut={vi.fn()} user={authenticatedUser} /></TooltipProvider>);
+    await screen.findByRole("heading", { name: thread.title });
+    expect(await screen.findByRole("button", { name: "Stop run" })).toBeVisible();
+    threadMock.mockResolvedValue({ thread: { ...thread, status: "idle", activeTurnId: null }, timeline: [] });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh status" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Stop run" })).not.toBeInTheDocument());
+    expect(screen.getByText("This turn is no longer running. You can continue the task below.")).toBeVisible();
+  });
+
+  it("preserves the runtime waiting state for an active turn", async () => {
+    const thread = { ...dashboard.threads[0]!, activeTurnId: "waiting-turn", status: "waiting" as const };
+    dashboardMock.mockResolvedValue({ ...dashboard, threads: [thread], featuredThread: { thread, timeline: [] } });
+    threadMock.mockResolvedValue({ thread, timeline: [] });
+    render(<TooltipProvider><HarnessApp onSignedOut={vi.fn()} user={authenticatedUser} /></TooltipProvider>);
+    await screen.findByRole("heading", { name: thread.title });
+    act(() => emitRuntimeEvent(currentEventSource(), { method: "thread/status/changed", params: { threadId: thread.id, status: { type: "active", activeFlags: ["waitingOnApproval"] } } }));
+    await waitFor(() => expect(within(screen.getByRole("button", { name: /Authenticated workspace regression/ })).getByText(/^waiting$/i)).toBeVisible());
+    expect(screen.getByRole("button", { name: "Stop run" })).toBeVisible();
+  });
+
   it("does not let late hydration erase a turn learned from SSE", async () => {
     window.history.replaceState({}, "", "/tasks/thread-history");
     dashboardMock.mockResolvedValue(dashboard);

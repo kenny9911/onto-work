@@ -141,6 +141,8 @@ function enumLabel(value: unknown): string | null {
 }
 
 function activeTurnId(thread: Record<string, unknown>): string | null {
+  // A persisted in-progress turn is not proof of a live turn after a restart.
+  if (record(thread.status)?.type === "notLoaded") return null;
   const turns = Array.isArray(thread.turns) ? thread.turns : [];
   for (let index = turns.length - 1; index >= 0; index -= 1) {
     const turn = record(turns[index]);
@@ -341,7 +343,10 @@ function timelineFromThread(rawThread: Record<string, unknown>, limit: number): 
     const items = Array.isArray(turn.items) ? turn.items : [];
     items.forEach((rawItem, index) => {
       const item = record(rawItem);
-      if (item) timeline.push(timelineItem(item, turn, index));
+      if (item) {
+        const entry = timelineItem(item, turn, index);
+        timeline.push({ ...entry, metadata: { ...entry.metadata, turnId: stringValue(turn.id) } });
+      }
     });
 
     const error = record(turn.error);
@@ -504,7 +509,19 @@ export class CodexHarnessAdapter implements HarnessRuntime {
     if (!thread) return null;
     return {
       thread,
-      timeline: timelineFromThread(rawThread, this.timelineItemLimit),
+      timeline: [
+        ...timelineFromThread(rawThread, this.timelineItemLimit),
+        ...runtime.pendingApprovalEvents(identity.threadId).map((event): TimelineItem => {
+          const params = record(event.params) ?? {};
+          return {
+            id: `approval-${String(event.requestId)}`, kind: "approval", status: "pending",
+            title: event.method.includes("commandExecution") ? "Command approval required" : "File change approval required",
+            body: [stringValue(params.command), stringValue(params.reason), stringValue(params.cwd) ? `Working directory: ${String(params.cwd)}` : null].filter(Boolean).join("\n"),
+            timestamp: new Date((event.expiresAt ?? Date.now()) - 30 * 60 * 1_000).toISOString(),
+            metadata: { requestId: event.requestId!, method: event.method, turnId: stringValue(params.turnId), expiresAt: event.expiresAt ?? null },
+          };
+        }),
+      ],
     };
   }
 

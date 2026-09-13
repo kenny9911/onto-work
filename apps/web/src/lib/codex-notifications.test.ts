@@ -37,6 +37,8 @@ describe("Codex notification routing", () => {
     expect(notificationMatchesThread(activeNotification, "thread-active")).toBe(true);
     expect(notificationMatchesThread(activeNotification, "thread-other")).toBe(false);
     expect(notificationMatchesThread(activeNotification, null)).toBe(false);
+    expect(notificationMatchesThread({ method: "item/commandExecution/outputDelta", params: { threadId: "thread-active", delta: "output" } }, "thread-active")).toBe(true);
+    expect(notificationMatchesThread({ method: "item/reasoning/summaryTextDelta", params: { threadId: "thread-active", delta: "summary" } }, "thread-active")).toBe(true);
     expect(notificationMatchesThread({
       kind: "notification",
       method: "runtime/connected",

@@ -1878,6 +1878,13 @@ export function registerCodexRoutes(
     write({ kind: "notification", method: "runtime/connected", params: {} });
 
     unsubscribe = bridge.subscribe((event) => {
+      if (event.method === "runtime/closed") {
+        // End this transport so EventSource reconnects to the replacement
+        // process instead of receiving keepalives from a dead runtime.
+        close();
+        reply.raw.end();
+        return;
+      }
       if (
         event.kind === "server-request" &&
         event.requestId !== undefined &&
@@ -1896,9 +1903,15 @@ export function registerCodexRoutes(
               event.method as ApprovalMethod,
               event.params,
             ),
-            expiresAt: Date.now() + APPROVAL_TTL_MS,
+            expiresAt: event.expiresAt ?? Date.now() + APPROVAL_TTL_MS,
           },
         );
+      }
+      if (event.method === "serverRequest/resolved" && event.params && typeof event.params === "object" && !Array.isArray(event.params)) {
+        const requestId = event.params.requestId;
+        if (typeof requestId === "string" || typeof requestId === "number") {
+          forgetApproval(user.tenantId, user.id, requestId);
+        }
       }
       write(event);
     });

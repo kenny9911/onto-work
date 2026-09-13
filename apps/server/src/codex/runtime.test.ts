@@ -323,3 +323,45 @@ test("refuses catalog tampering before spawn and closes existing runtimes on rev
   assert.equal(manager.has("existing-user"), false);
   assert.equal(runtime.state, "closed");
 });
+
+test("cancels expired approvals even without a browser subscriber", async (t) => {
+  const runtimeDataDir = await mkdtemp(join(tmpdir(), "agent-harness-approval-expiry-"));
+  const manager = new CodexRuntimeManager({
+    runtimeDataDir, allowedWorkspaceRoots: [], codexBinary: process.execPath,
+    codexArgs: ["-e", FAKE_APP_SERVER], approvalTimeoutMs: 40, requestTimeoutMs: 2_000,
+  });
+  t.after(async () => { await manager.shutdown(); await rm(runtimeDataDir, { recursive: true, force: true }); });
+  const runtime = await manager.startUser("expiry-user", { provider: { adapter: "ollama", model: "test" } });
+  const result = await runtime.request<JsonObject>("probe/server-requests");
+  assert.deepEqual(result.approvalResult, { decision: "cancel" });
+  const replay: CodexRuntimeEvent[] = [];
+  const unsubscribe = runtime.subscribe((event) => replay.push(event));
+  unsubscribe();
+  assert.equal(replay.length, 0);
+  await assert.rejects(runtime.respond("supported-approval-request", { decision: "accept" }), /no longer pending/);
+});
+
+test("replays pending approvals across browser reconnects without extending their deadline", async (t) => {
+  const runtimeDataDir = await mkdtemp(join(tmpdir(), "agent-harness-approval-replay-"));
+  const manager = new CodexRuntimeManager({
+    runtimeDataDir, allowedWorkspaceRoots: [], codexBinary: process.execPath,
+    codexArgs: ["-e", FAKE_APP_SERVER], requestTimeoutMs: 2_000,
+  });
+  t.after(async () => { await manager.shutdown(); await rm(runtimeDataDir, { recursive: true, force: true }); });
+  const runtime = await manager.startUser("replay-user", { provider: { adapter: "ollama", model: "test" } });
+  const probe = runtime.request<JsonObject>("probe/server-requests");
+  // The echo reply proves the preceding approval was read, without answering it.
+  await runtime.request("echo", {});
+  const first: CodexRuntimeEvent[] = [];
+  runtime.subscribe((event) => first.push(event))();
+  const second: CodexRuntimeEvent[] = [];
+  runtime.subscribe((event) => second.push(event))();
+  assert.equal(first.length, 1);
+  assert.deepEqual(second, first);
+  assert.ok(first[0]!.expiresAt! > Date.now());
+  await runtime.respond("supported-approval-request", { decision: "decline" });
+  assert.deepEqual((await probe).approvalResult, { decision: "decline" });
+  const after: CodexRuntimeEvent[] = [];
+  runtime.subscribe((event) => after.push(event))();
+  assert.equal(after.length, 0);
+});
