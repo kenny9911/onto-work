@@ -290,6 +290,9 @@ describe("App", () => {
       </TooltipProvider>,
     );
 
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     const workspaceHeading = await screen.findByRole(
       "heading",
       { name: "Authenticated workspace regression" },
@@ -319,6 +322,9 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const palette = await screen.findByRole("dialog", { name: "Command palette" });
     fireEvent.click(within(palette).getByText("Model routes"));
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     const routesHeading = await screen.findByRole("heading", { name: "Model routes" });
     expect(routesHeading).toBeInTheDocument();
     await waitFor(() => expect(routesHeading).toHaveFocus());
