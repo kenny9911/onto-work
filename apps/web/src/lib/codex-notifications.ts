@@ -3,6 +3,7 @@ export interface CodexNotification {
   method?: string;
   params?: Record<string, unknown>;
   requestId?: string | number;
+  expiresAt?: number;
 }
 
 export const MAX_PENDING_NOTIFICATION_COUNT = 256;
@@ -55,8 +56,12 @@ export function isTimelineNotification(notification: CodexNotification): boolean
     || method === "item/fileChange/requestApproval"
     || method === "serverRequest/resolved"
     || method === "turn/completed"
+    || method === "turn/started"
+    || method === "turn/plan/updated"
+    || method === "error"
     || method === "item/started"
-    || (method.includes("agentMessage") && method.endsWith("delta"));
+    || method === "item/completed"
+    || (method.startsWith("item/") && method.endsWith("delta"));
 }
 
 export function notificationMatchesThread(

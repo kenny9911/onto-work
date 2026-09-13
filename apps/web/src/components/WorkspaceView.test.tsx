@@ -452,11 +452,14 @@ describe("WorkspaceView scrolling", () => {
     const cluster = spine.getByRole("button", { name: /Command sequence/ });
     expect(cluster).toHaveTextContent("3 commands");
     expect(cluster).toHaveAttribute("aria-expanded", "false");
-    expect(spine.queryByText("pnpm test 0")).not.toBeInTheDocument();
+    // The progress summary also shows recent commands. Inspect the expandable
+    // sequence itself to verify that its full details remain collapsed.
+    const sequence = within(cluster.parentElement!);
+    expect(sequence.queryByText("pnpm test 0")).not.toBeInTheDocument();
 
     fireEvent.click(cluster);
     expect(cluster).toHaveAttribute("aria-expanded", "true");
-    expect(spine.getByText("pnpm test 0")).toBeInTheDocument();
+    expect(sequence.getByText("pnpm test 0")).toBeInTheDocument();
   });
 });
 

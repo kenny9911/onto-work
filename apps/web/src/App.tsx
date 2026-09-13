@@ -14,6 +14,7 @@ import type {
   TimelineItem,
   UserSummary,
 } from "@agent-harness/contracts";
+import { applyNotification, reportedThreadStatus } from "@/lib/task-progress";
 import { KeyRound, LoaderCircle } from "lucide-react";
 import { CommandPalette } from "@/components/CommandPalette";
 import { AppHeader } from "@/components/AppHeader";
@@ -199,114 +200,6 @@ function idFrom(value: unknown): string | null {
   if (typeof value === "string") return value;
   if (value && typeof value === "object" && "id" in value && typeof value.id === "string") return value.id;
   return null;
-}
-
-function textFrom(value: unknown): string | null {
-  if (typeof value === "string") return value;
-  if (!value || typeof value !== "object") return null;
-  for (const key of ["text", "delta", "message"]) {
-    const candidate = (value as Record<string, unknown>)[key];
-    if (typeof candidate === "string") return candidate;
-  }
-  return null;
-}
-
-function applyNotification(items: TimelineItem[], notification: CodexNotification): TimelineItem[] {
-  const method = notification.method ?? "event";
-  const params = notification.params ?? {};
-  const timestamp = new Date().toISOString();
-
-  if (
-    notification.kind === "server-request" &&
-    notification.requestId !== undefined &&
-    (method === "item/commandExecution/requestApproval" ||
-      method === "item/fileChange/requestApproval")
-  ) {
-    const requestId = notification.requestId;
-    const command = textFrom(params.command);
-    const reason = textFrom(params.reason);
-    const cwd = textFrom(params.cwd);
-    return [
-      ...items,
-      {
-        id: `approval-${String(requestId)}`,
-        kind: "approval",
-        title: method.includes("commandExecution") ? "Command approval required" : "File change approval required",
-        body: [command, reason, cwd ? `Working directory: ${cwd}` : null]
-          .filter((value): value is string => Boolean(value))
-          .join("\n") || "Codex is waiting for your decision.",
-        status: "pending",
-        timestamp,
-        metadata: { requestId, method },
-      },
-    ];
-  }
-
-  if (method === "serverRequest/resolved") {
-    const requestId = params.requestId;
-    return items.map((item) =>
-      item.kind === "approval" && item.metadata?.requestId === requestId
-        ? { ...item, status: "completed" as const }
-        : item,
-    );
-  }
-
-  if (method.includes("agentMessage") && method.endsWith("delta")) {
-    const delta = textFrom(params.delta) ?? textFrom(params);
-    if (!delta) return items;
-    const existingIndex = items.findLastIndex(
-      (item) => item.kind === "assistant" && item.status === "running",
-    );
-    if (existingIndex === -1) {
-      return [
-        ...items,
-        {
-          id: `assistant-${Date.now()}`,
-          kind: "assistant",
-          title: "Agent",
-          body: delta,
-          status: "running",
-          timestamp,
-        },
-      ];
-    }
-    return items.map((item, index) =>
-      index === existingIndex ? { ...item, body: `${item.body}${delta}` } : item,
-    );
-  }
-
-  if (method === "turn/completed") {
-    return items.map((item) =>
-      item.status === "running" ? { ...item, status: "completed" as const } : item,
-    );
-  }
-
-  if (method === "item/started") {
-    const item = params.item as Record<string, unknown> | undefined;
-    const type = typeof item?.type === "string" ? item.type : "activity";
-    if (type.toLowerCase().includes("command")) {
-      const metadata = Object.fromEntries(
-        Object.entries(item ?? {}).filter(
-          (entry): entry is [string, string | number | boolean | null] =>
-            entry[1] === null || ["string", "number", "boolean"].includes(typeof entry[1]),
-        ),
-      );
-      return [
-        ...items,
-        {
-          id: idFrom(item) ?? `command-${Date.now()}`,
-          kind: "command",
-          title: "Run command",
-          body: textFrom(item?.command) ?? "Command started",
-          status: "running",
-          timestamp,
-          metadata,
-        },
-      ];
-    }
-  }
-
-  return items;
 }
 
 function mcpCapabilityStatus(
@@ -580,16 +473,16 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
     });
   }, []);
 
-  const recordThreadStarted = useCallback((threadId: string, turnId: string) => {
+  const recordThreadStarted = useCallback((threadId: string, turnId: string, status: ThreadSummary["status"] = "running") => {
     threadLivenessEpoch.current[threadId] = (threadLivenessEpoch.current[threadId] ?? 0) + 1;
-    threadStatusProof.current[threadId] = "running";
+    threadStatusProof.current[threadId] = status;
     const nextTurns = { ...activeTurnsRef.current, [threadId]: turnId };
     activeTurnsRef.current = nextTurns;
     setActiveTurnsByThread(nextTurns);
     setDashboard((current) => current
       ? patchDashboardThread(current, threadId, {
           activeTurnId: turnId,
-          status: "running",
+          status,
           updatedAt: new Date().toISOString(),
         })
       : current);
@@ -651,7 +544,7 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
         const preserveLiveness = (incoming: ThreadSummary): ThreadSummary => {
           const provenTurnId = activeTurnsRef.current[incoming.id];
           if (provenTurnId) {
-            return { ...incoming, activeTurnId: provenTurnId, status: "running" };
+            return { ...incoming, activeTurnId: provenTurnId, status: threadStatusProof.current[incoming.id] ?? incoming.status };
           }
           if ((threadLivenessEpoch.current[incoming.id] ?? 0) === 0) return incoming;
           const existing = current?.threads.find((thread) => thread.id === incoming.id)
@@ -835,6 +728,11 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
     events.onopen = () => {
       runtimeStreamAttempt.current = 0;
       setRuntimeStream({ status: "live", attempt: 0, lastEventAt: null });
+      const threadId = activeThreadIdRef.current;
+      if (threadId) {
+        threadHydrationRequested.current.add(threadId);
+        setThreadHydrationRevision((revision) => revision + 1);
+      }
     };
     events.onerror = () => {
       // readyState CLOSED means this EventSource will not retry by itself.
@@ -894,6 +792,23 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
           ? params.turn as Record<string, unknown>
           : null;
         const eventTurnId = idFrom(params.turnId) ?? idFrom(eventTurn);
+        if (eventThreadId && (notification.kind === "server-request" || notification.method === "serverRequest/resolved")) {
+          // Prevent an older history read from overwriting a newer decision.
+          threadLivenessEpoch.current[eventThreadId] = (threadLivenessEpoch.current[eventThreadId] ?? 0) + 1;
+        }
+        if (eventThreadId && notification.method === "thread/status/changed") {
+          const status = reportedThreadStatus(params.status);
+          if (status) {
+            threadLivenessEpoch.current[eventThreadId] = (threadLivenessEpoch.current[eventThreadId] ?? 0) + 1;
+            threadStatusProof.current[eventThreadId] = status;
+            setDashboard((current) => current ? patchDashboardThread(current, eventThreadId, { status }) : current);
+            // Only a full read or turn/completed clears a turn; idle events can
+            // race the next turn/started notification.
+            threadHydrationRequested.current.add(eventThreadId);
+            setThreadHydrationRevision((revision) => revision + 1);
+            scheduleDashboardRefresh();
+          }
+        }
         if (eventThreadId && notification.method === "turn/started" && eventTurnId) {
           recordThreadStarted(eventThreadId, eventTurnId);
           scheduleDashboardRefresh();
@@ -940,6 +855,11 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
   const retryRuntimeStream = useCallback(() => {
     runtimeStreamAttempt.current = 0;
     setRuntimeStreamNonce((current) => current + 1);
+    const threadId = activeThreadIdRef.current;
+    if (threadId) {
+      threadHydrationRequested.current.add(threadId);
+      setThreadHydrationRevision((revision) => revision + 1);
+    }
   }, []);
 
   const activeThread = useMemo(
@@ -952,6 +872,18 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
     [savedProjects, selectedProjectId],
   );
   const timeline = timelinesByThread[timelineKey(activeThreadId)] ?? [];
+
+  useEffect(() => {
+    if (!activeThreadId || !(activeTurnsByThread[activeThreadId] || activeThread?.status === "running" || activeThread?.status === "waiting")) return;
+    // SSE can miss a terminal event while disconnected. Reconcile a full,
+    // authorized read periodically instead of preserving Running indefinitely.
+    const timer = setInterval(() => {
+      threadHydrationRequested.current.add(activeThreadId);
+      setThreadHydrationRevision((revision) => revision + 1);
+      scheduleDashboardRefresh();
+    }, 15_000);
+    return () => clearInterval(timer);
+  }, [activeThreadId, activeThread?.status, activeTurnsByThread, scheduleDashboardRefresh]);
 
   useEffect(() => {
     document.documentElement.dataset.ahTheme = theme;
@@ -985,7 +917,7 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
         const canApplyLiveness = (threadLivenessEpoch.current[threadId] ?? 0) === livenessAtRequest;
         if (canApplyLiveness) {
           if (detail.thread.activeTurnId) {
-            recordThreadStarted(detail.thread.id, detail.thread.activeTurnId);
+            recordThreadStarted(detail.thread.id, detail.thread.activeTurnId, detail.thread.status);
           } else {
             recordThreadStopped(detail.thread.id, null, detail.thread.status);
           }
@@ -998,14 +930,12 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
               : null);
           const provenTurnId = activeTurnsRef.current[detail.thread.id];
           const hydratedThread = canApplyLiveness
-            ? detail.thread.activeTurnId
-              ? { ...detail.thread, status: "running" as const }
-              : detail.thread
+            ? detail.thread
             : {
                 ...detail.thread,
                 activeTurnId: provenTurnId ?? null,
                 status: provenTurnId
-                  ? "running" as const
+                  ? threadStatusProof.current[detail.thread.id] ?? "running" as const
                   : threadStatusProof.current[detail.thread.id]
                     ?? currentSummary?.status
                     ?? detail.thread.status,
@@ -1028,12 +958,25 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
         setTimelinesByThread((timelines) => {
           const liveItems = timelines[key] ?? [];
           const seen = new Set<string>();
-          const merged = [...detail.timeline, ...liveItems].filter((item) => {
+          const liveById = new Map(liveItems.map((item) => [item.id, item]));
+          const pendingIds = new Set(detail.timeline.filter((item) => item.kind === "approval").map((item) => item.id));
+          const merged = [...detail.timeline.map((item) => {
+            const live = liveById.get(item.id);
+            if (live && item.kind === "approval" && !canApplyLiveness) return live;
+            // History timestamps are per-turn; don't reset the activity clock
+            // for a command whose output just streamed into this browser.
+            return live && Date.parse(live.timestamp) > Date.parse(item.timestamp)
+              ? { ...item, timestamp: live.timestamp } : item;
+          }), ...liveItems].filter((item) => {
             if (seen.has(item.id)) return false;
             seen.add(item.id);
             return true;
-          });
-          return { ...timelines, [key]: merged };
+          }).map((item) => canApplyLiveness && item.kind === "approval" && !pendingIds.has(item.id) && !item.metadata?.expired
+            ? { ...item, status: "completed" as const } : item);
+          return { ...timelines, [key]: canApplyLiveness && !detail.thread.activeTurnId
+            ? merged.map((item) => item.status === "running" || item.status === "pending"
+              ? { ...item, status: ["approval", "command", "file_change"].includes(item.kind) ? "failed" as const : "completed" as const } : item)
+            : merged };
         });
       })
       .catch((cause) => {
@@ -1465,7 +1408,8 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
     setTaskActionPending("interrupt");
     try {
       await api.interruptTurn(threadId, turnId);
-      recordThreadStopped(threadId, turnId);
+      threadHydrationRequested.current.add(threadId);
+      setThreadHydrationRevision((revision) => revision + 1);
       scheduleDashboardRefresh();
     } finally {
       setTaskActionPending(null);
@@ -1492,6 +1436,8 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
     );
     try {
       await api.resolveCodexApproval(requestId, method, decision);
+      updateThreadTimeline(approvalThreadId, (items) => items.map((candidate) => candidate.id === item.id
+        ? { ...candidate, status: "completed" as const } : candidate));
     } catch (cause) {
       updateThreadTimeline(approvalThreadId, (items) =>
         items.map((candidate) =>
@@ -1504,6 +1450,11 @@ export function HarnessApp({ user, onSignedOut }: { user: UserSummary; onSignedO
             : candidate,
         ),
       );
+    } finally {
+      if (approvalThreadId) {
+        threadHydrationRequested.current.add(approvalThreadId);
+        setThreadHydrationRevision((revision) => revision + 1);
+      }
     }
   }
 

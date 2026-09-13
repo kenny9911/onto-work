@@ -14,6 +14,7 @@ const FAKE_DASHBOARD_APP_SERVER = String.raw`
 const readline = require("node:readline");
 const input = readline.createInterface({ input: process.stdin });
 const send = (message) => process.stdout.write(JSON.stringify(message) + "\n");
+let turnStatus = "completed";
 const thread = {
   id: "thread-1",
   name: "Runtime bridge",
@@ -47,7 +48,7 @@ input.on("line", (line) => {
   }
   if (message.method === "thread/read") {
     send({ id: message.id, result: { thread: { ...thread, turns: [{
-      id: "turn-1", status: "completed", startedAt: 1_700_000_000,
+      id: "turn-1", status: turnStatus, startedAt: 1_700_000_000,
       completedAt: 1_700_000_001, error: null, items: [
         { type: "userMessage", id: "user-item", content: [{ type: "text", text: "Build it" }] },
         { type: "agentMessage", id: "agent-item", text: "Done", phase: "final_answer" },
@@ -62,6 +63,15 @@ input.on("line", (line) => {
   if (message.method === "echo") {
     send({ method: "test/event", params: message.params });
     send({ id: message.id, result: message.params });
+  }
+  if (message.method === "probe/unloaded") {
+    thread.status = { type: "notLoaded" };
+    turnStatus = "inProgress";
+    send({ id: message.id, result: {} });
+  }
+  if (message.method === "probe/approval") {
+    send({ id: "pending-approval", method: "item/commandExecution/requestApproval", params: { threadId: "thread-1", turnId: "turn-1", command: "pwd" } });
+    send({ id: message.id, result: {} });
   }
 });
 process.on("SIGTERM", () => process.exit(0));
@@ -181,6 +191,16 @@ test("adapts tenant provider and Codex threads for dashboard and route consumers
       { kind: "assistant", body: "Done" },
     ],
   );
+  const probeBridge = await adapter.forUser(identity);
+  await probeBridge.request("probe/approval");
+  const pendingDetail = await adapter.threadSnapshot({ ...identity, threadId: "thread-1" });
+  assert.equal(pendingDetail?.timeline.at(-1)?.kind, "approval");
+  assert.equal(pendingDetail?.timeline.at(-1)?.status, "pending");
+  await probeBridge.respond("pending-approval", { decision: "cancel" });
+  await probeBridge.request("probe/unloaded");
+  const unloaded = await adapter.threadSnapshot({ ...identity, threadId: "thread-1" });
+  assert.equal(unloaded?.thread.activeTurnId, undefined, "an unloaded historical turn must not show Running");
+  assert.equal(unloaded?.timeline.some((item) => item.kind === "approval"), false);
   assert.equal(
     store.getThreadWorkspaceBinding("tenant-1", "user-1", "thread-1")?.workspacePath,
     await realpath(workspace),

@@ -16,6 +16,7 @@ import type {
   TimelineItem,
 } from "@agent-harness/contracts";
 import { UPLOAD_MAX_BYTES } from "@agent-harness/contracts";
+import { TaskProgress } from "./TaskProgress";
 import { RichContentBoundary } from "@/components/RichContentBoundary";
 import {
   Activity,
@@ -313,24 +314,6 @@ function SetupNotice({ dashboard, hasAvailableProject }: { dashboard: DashboardP
           ? "Connect a model in Settings to start your first task."
           : "Add a project in Settings to give your task a place to work."}</p>
     </div>
-  );
-}
-
-/**
- * Tail of the spine while a turn is in flight. The runtime reports that a turn
- * is running and streams its text, but not a token rate, so the design's
- * throughput readout is deliberately omitted rather than estimated.
- */
-function StreamingNode({ model }: { model: string }) {
-  return (
-    <li className="workspace-message workspace-message--streaming" role="status">
-      <div className="workspace-message-avatar"><Spinner className="size-4" /></div>
-      <div className="min-w-0">
-        <div className="workspace-message-heading"><span>Onto</span><span className="workspace-message-meta">Working</span></div>
-        <p className="mt-2 text-ui-body text-muted-foreground">Working on your task<span className="ah-caret">…</span></p>
-        <span className="sr-only">{model}</span>
-      </div>
-    </li>
   );
 }
 
@@ -1074,7 +1057,7 @@ export function WorkspaceView({
   const hasActiveTask = activeThreadId !== null || timeline.length > 0;
   const spineGroups = useMemo(() => groupTimeline(timeline), [timeline]);
   const taskTitle = activeThread?.title ?? "New task";
-  const status = activeTurnId ? "running" : activeThread?.status ?? (isSending ? "running" : "idle");
+  const status = timeline.some((item) => item.kind === "approval" && item.status === "pending") ? "waiting" : activeThread?.status === "waiting" ? "waiting" : activeTurnId ? "running" : activeThread?.status ?? (isSending ? "running" : "idle");
   const pendingApproval = timeline.findLast(
     (item) => item.kind === "approval" && item.status === "pending",
   );
@@ -1419,7 +1402,12 @@ export function WorkspaceView({
                           </RunSpineNode>
                         );
                       })}
-                      {activeTurnId ? <StreamingNode model={activeThread?.model || providerLabel(activeProvider)} /> : null}
+                      {hasActiveTask ? <li className="workspace-message"><div className="workspace-message-avatar"><Activity className="size-4" /></div><div className="min-w-0 w-full"><TaskProgress
+                        thread={activeThread} turnId={activeTurnId} timeline={timeline}
+                        agents={dashboard.threads.filter((thread) => thread.parentThreadId === activeThreadId)}
+                        stream={runtimeStream} onRefresh={onRetryRuntimeStream} onStop={() => onInterrupt().catch((cause: unknown) => setActionError(cause instanceof Error ? cause.message : "The turn could not be interrupted."))}
+                        stopping={taskActionPending === "interrupt"}
+                      /></div></li> : null}
                       <ParallelBranch threads={childThreads} />
                     </ol>
                   </ConversationContent>

@@ -43,6 +43,8 @@ export interface CodexRuntimeEvent {
   method: string;
   params?: JsonValue;
   requestId?: JsonRpcId;
+  /** Original deadline, preserved when a pending approval is replayed. */
+  expiresAt?: number;
 }
 
 export type CodexRuntimeListener = (event: CodexRuntimeEvent) => void;
@@ -72,6 +74,7 @@ export interface CodexRuntimeManagerOptions {
   initializeTimeoutMs?: number;
   shutdownTimeoutMs?: number;
   maxPendingRequests?: number;
+  approvalTimeoutMs?: number;
   maxProtocolLineBytes?: number;
   runtimeEnvironment?: Readonly<Record<string, string | undefined>>;
   onStderr?: (userId: string, chunk: string) => void;
@@ -100,6 +103,7 @@ interface RuntimeProcessOptions {
   initializeTimeoutMs: number;
   shutdownTimeoutMs: number;
   maxPendingRequests: number;
+  approvalTimeoutMs: number;
   maxProtocolLineBytes: number;
   runtimeEnvironment: Readonly<Record<string, string | undefined>>;
   onStderr?: (userId: string, chunk: string) => void;
@@ -119,6 +123,7 @@ interface ResolvedManagerOptions {
   initializeTimeoutMs: number;
   shutdownTimeoutMs: number;
   maxPendingRequests: number;
+  approvalTimeoutMs: number;
   maxProtocolLineBytes: number;
   runtimeEnvironment: Readonly<Record<string, string | undefined>>;
   onStderr?: (userId: string, chunk: string) => void;
@@ -280,6 +285,7 @@ export class CodexRuntime {
   private child: ChildProcessWithoutNullStreams | null = null;
   private stdoutBuffer = Buffer.alloc(0);
   private readonly pending = new Map<string, PendingRequest>();
+  private readonly approvals = new Map<string, { event: CodexRuntimeEvent; timer: NodeJS.Timeout }>();
   private readonly listeners = new Set<CodexRuntimeListener>();
   private writeTail: Promise<void> = Promise.resolve();
   private closePromise: Promise<void> | null = null;
@@ -305,6 +311,13 @@ export class CodexRuntime {
 
   get initializeResult(): CodexInitializeResponse | null {
     return this.initializeResultValue;
+  }
+
+  pendingApprovalEvents(threadId: string): CodexRuntimeEvent[] {
+    return [...this.approvals.values()].flatMap(({ event }) =>
+      isRecord(event.params) && event.params.threadId === threadId && (event.expiresAt ?? 0) > Date.now()
+        ? [event] : [],
+    );
   }
 
   async start(): Promise<this> {
@@ -401,7 +414,22 @@ export class CodexRuntime {
 
   async respond(requestId: JsonRpcId, result: JsonValue = null): Promise<void> {
     this.assertReady();
-    await this.writeMessage({ id: requestId, result });
+    const key = responseKey(requestId);
+    const pending = this.approvals.get(key);
+    if (!pending) throw new CodexRuntimeError("This approval is no longer pending");
+    if ((pending.event.expiresAt ?? 0) <= Date.now()) {
+      this.expireApproval(key);
+      throw new CodexRuntimeError("This approval has expired");
+    }
+    this.approvals.delete(key);
+    clearTimeout(pending.timer);
+    try {
+      await this.writeMessage({ id: requestId, result });
+    } catch (error) {
+      // A failed transport cannot safely leave an agent awaiting a lost decision.
+      this.handleProtocolFailure(error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
   }
 
   async respondError(
@@ -423,6 +451,15 @@ export class CodexRuntime {
   ): () => void {
     if (options.signal?.aborted) return () => undefined;
     this.listeners.add(listener);
+    // Approvals belong to the process, not a browser connection. Replay only
+    // unresolved requests, with their original deadline, on every subscription.
+    for (const { event } of this.approvals.values()) {
+      if ((event.expiresAt ?? 0) > Date.now()) {
+        try { listener(event); } catch (error) {
+          this.reportError(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
+    }
     let subscribed = true;
     const unsubscribe = () => {
       if (!subscribed) return;
@@ -570,14 +607,65 @@ export class CodexRuntime {
         ...(message.params === undefined ? {} : { params: message.params as JsonValue }),
         ...(serverRequest ? { requestId } : {}),
       };
-      for (const listener of [...this.listeners]) {
-        try {
-          listener(event);
-        } catch (error) {
-          this.reportError(error instanceof Error ? error : new Error(String(error)));
+      if (serverRequest) {
+        const key = responseKey(requestId);
+        if (this.approvals.has(key)) return;
+        // Bound memory without silently discarding an unanswered RPC.
+        if (this.approvals.size >= 128) {
+          const oldest = this.approvals.keys().next().value;
+          if (oldest !== undefined) this.expireApproval(oldest);
+        }
+        event.expiresAt = Date.now() + this.options.approvalTimeoutMs;
+        const timer = setTimeout(() => this.expireApproval(key), this.options.approvalTimeoutMs);
+        timer.unref();
+        this.approvals.set(key, { event, timer });
+      } else if (message.method === "serverRequest/resolved" && isRecord(message.params)) {
+        const id = message.params.requestId;
+        if (isJsonRpcId(id)) this.clearApproval(responseKey(id));
+      } else if (message.method === "turn/completed" && isRecord(message.params)) {
+        const turn = isRecord(message.params.turn) ? message.params.turn : null;
+        for (const [key, pending] of this.approvals) {
+          const params = pending.event.params;
+          if (isRecord(params) && params.threadId === message.params.threadId
+            && (!turn?.id || params.turnId === turn.id)) this.clearApproval(key);
         }
       }
+      this.publish(event);
     }
+  }
+
+  private publish(event: CodexRuntimeEvent): void {
+    for (const listener of [...this.listeners]) {
+      try {
+        listener(event);
+      } catch (error) {
+        this.reportError(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+  }
+
+  private clearApproval(key: string): void {
+    const pending = this.approvals.get(key);
+    if (pending) clearTimeout(pending.timer);
+    this.approvals.delete(key);
+  }
+
+  private expireApproval(key: string): void {
+    const pending = this.approvals.get(key);
+    if (!pending) return;
+    this.clearApproval(key);
+    // Cancel, never grant authority by timeout. Codex releases its approval wait
+    // and finishes the turn through its normal interruption lifecycle.
+    void this.writeMessage({ id: pending.event.requestId!, result: { decision: "cancel" } })
+      .then(() => this.publish({
+        sequence: ++this.sequence, userId: this.userId, kind: "notification",
+        method: "serverRequest/resolved",
+        params: {
+          threadId: isRecord(pending.event.params) ? pending.event.params.threadId ?? null : null,
+          requestId: pending.event.requestId!, reason: "expired",
+        },
+      }))
+      .catch((error) => this.handleProtocolFailure(error instanceof Error ? error : new Error(String(error))));
   }
 
   private handleProtocolFailure(error: Error): void {
@@ -605,6 +693,8 @@ export class CodexRuntime {
       );
     this.stateValue = "closed";
     this.failPending(error);
+    for (const key of this.approvals.keys()) this.clearApproval(key);
+    this.publish({ sequence: ++this.sequence, userId: this.userId, kind: "notification", method: "runtime/closed", params: {} });
     this.listeners.clear();
     this.resolveExit?.();
     this.resolveExit = null;
@@ -699,6 +789,7 @@ export class CodexRuntimeManager {
         DEFAULT_MAX_PENDING_REQUESTS,
         "maxPendingRequests",
       ),
+      approvalTimeoutMs: positiveInteger(options.approvalTimeoutMs, 30 * 60 * 1_000, "approvalTimeoutMs"),
       maxProtocolLineBytes: positiveInteger(
         options.maxProtocolLineBytes,
         DEFAULT_MAX_PROTOCOL_LINE_BYTES,
@@ -842,6 +933,7 @@ export class CodexRuntimeManager {
       initializeTimeoutMs: this.options.initializeTimeoutMs,
       shutdownTimeoutMs: this.options.shutdownTimeoutMs,
       maxPendingRequests: this.options.maxPendingRequests,
+      approvalTimeoutMs: this.options.approvalTimeoutMs,
       maxProtocolLineBytes: this.options.maxProtocolLineBytes,
       runtimeEnvironment: this.options.runtimeEnvironment,
       onStderr: this.options.onStderr,
