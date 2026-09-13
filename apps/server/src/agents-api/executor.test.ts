@@ -115,12 +115,20 @@ test("terminates output floods and escalates shutdown for unresponsive executors
   assert.equal(handle.snapshot().stdoutBytes, 1_025);
 
   const stubborn = new AgentsApiExecutorSupervisor({
-    launcher: { command: process.execPath, args: ["-e", 'require("node:fs").writeFileSync("ready", "ready"); process.on("SIGTERM", () => {}); setInterval(() => {}, 1000);'] },
+    launcher: { command: process.execPath, args: ["-e", String.raw`
+      const fs = require("node:fs");
+      process.on("SIGTERM", () => {});
+      setInterval(() => {}, 1000);
+      // Publish readiness only after the handler exists. Writing the marker
+      // first lets the parent deliver SIGTERM while its default action is live.
+      fs.writeFileSync("ready.tmp", "SIGTERM handler installed");
+      fs.renameSync("ready.tmp", "ready");
+    `] },
     restrictedApiKey: "test", shutdownTimeoutMs: 50,
   });
   t.after(() => stubborn.close());
   const stubbornHandle = await stubborn.start(launch);
-  await waitForFile(join(launch.workspaceDirectory, "ready"));
+  assert.equal(await waitForFile(join(launch.workspaceDirectory, "ready")), "SIGTERM handler installed");
   await stubborn.stop(launch.sessionId);
   assert.equal((await stubbornHandle.closed).signal, "SIGKILL");
 });

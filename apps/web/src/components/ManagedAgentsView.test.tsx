@@ -85,7 +85,7 @@ describe("ManagedAgentsView", () => {
     expect(create).toHaveBeenCalledTimes(2);
     expect(create.mock.calls[0]).toEqual(create.mock.calls[1]);
     expect(create.mock.calls[0]?.[0]).toEqual({ projectId: project.id, agentId: "repository-reviewer", message: "Review permission checks" });
-    expect(MockEventSource.instances[0]?.options).toEqual({ withCredentials: true });
+    await waitFor(() => expect(MockEventSource.instances[0]?.options).toEqual({ withCredentials: true }));
   });
 
   it("ignores stale snapshots and binds cancellation to the latest root turn before allowing a follow-up", async () => {

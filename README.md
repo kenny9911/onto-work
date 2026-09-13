@@ -291,6 +291,14 @@ pnpm --filter @agent-harness/server test
 pnpm --filter @agent-harness/web test
 ```
 
+The test-only `jsdom@26.1.0` dependency uses a narrowly scoped `nwsapi@2.2.24`
+override. In the later selector implementation, Floating UI's `:modal` probe
+reaches `isFullscreen`, which calls jsdom's `Element.matches` recursively and
+causes provider-dialog tests to time out. See the [affected selector implementation](https://github.com/dperini/nwsapi/blob/2e9498f9509a2d8e42d460a0be68963d595e42f0/src/nwsapi.js#L707).
+Remove the override after upgrading to a compatible selector engine and verifying
+the existing provider-switch test on Linux. Browser production code is unaffected.
+CI sequences workspace suites so their test worker pools do not compete for CPU.
+
 The test suite covers control-plane authorization/password/provider-secret paths; guarded administrator reset/session invalidation/audit; tenant-scoped audit reads; ordered migration compatibility and newer-schema refusal; tenant workspace/thread binding and history authorization; idempotent quota and seat races; durable Stripe deduplication/stale-event/rollback behavior; Codex configuration and workspace-path safety; per-user app-server lifecycle and JSON-RPC correlation; stable-by-default protocol handling; constrained Codex routes and approval replay rejection; selected-task event isolation and bounded buffering; upload path/symlink/hardlink refusal, streaming byte limits independent of `bodyLimit`, storage-quota races, header duplication, idempotency conflicts, envelope-forgery refusal across split and normalization-folded input, and approval-scope refusal on threads holding an attachment; and key navigation/workspace UI behavior. A separate live pinned-Codex canary verified the generated shell policy against `command/exec /usr/bin/env`. Provider compatibility and a complete pinned Codex end-to-end run remain separate release gates.
 
 ## Production limitations
