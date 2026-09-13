@@ -39,6 +39,8 @@ function workspaceRoots(value: string | undefined): string[] {
 }
 
 export interface HarnessConfig {
+  /** Deployment-owned opt-in. Credentials and executor configuration never enter browser payloads. */
+  agentsApi?: AgentsApiConfig;
   host: string;
   port: number;
   webOrigin: string;
@@ -65,8 +67,43 @@ export interface HarnessConfig {
   allowPrivateProviderEndpoints?: boolean;
 }
 
+export interface AgentsApiConfig {
+  enabled: boolean;
+  apiKey: string | null;
+  executorKey: string | null;
+  model: string;
+  executorImage: string | null;
+  maxConcurrentSessions: number;
+  maxTurnSeconds: number;
+  skillIds: string[];
+  /** Explicit deployment pilot allowlist. Missing or empty denies managed admission. */
+  allowedTenantIds?: string[];
+}
+
+/** Invalid limits remain invalid so managed availability fails closed without
+ * preventing unrelated native-runtime startup. Never parse a prefix like "2abc". */
+function managedInteger(value: string | undefined, fallback: number): number {
+  if (value === undefined || value.trim() === "") return fallback;
+  return /^\d+$/.test(value.trim()) ? Number(value.trim()) : Number.NaN;
+}
+
+export function loadAgentsApiConfig(env: NodeJS.ProcessEnv = process.env): AgentsApiConfig {
+  return {
+    enabled: enabledFeatureFlag(env.AGENTS_API_ENABLED),
+    apiKey: env.AGENTS_API_KEY?.trim() || null,
+    executorKey: env.AGENTS_API_EXECUTOR_KEY?.trim() || null,
+    model: env.AGENTS_API_MODEL?.trim() || "gpt-6-astra",
+    executorImage: env.AGENTS_API_EXECUTOR_IMAGE?.trim() || null,
+    maxConcurrentSessions: managedInteger(env.AGENTS_API_MAX_CONCURRENT_SESSIONS, 2),
+    maxTurnSeconds: managedInteger(env.AGENTS_API_MAX_TURN_SECONDS, 600),
+    skillIds: [...new Set((env.AGENTS_API_SKILL_IDS || "").split(",").map((id) => id.trim()).filter(Boolean))],
+    allowedTenantIds: [...new Set((env.AGENTS_API_ALLOWED_TENANT_IDS || "").split(",").map((id) => id.trim()).filter(Boolean))],
+  };
+}
+
 export function loadConfig(): HarnessConfig {
   return {
+    agentsApi: loadAgentsApiConfig(),
     host: process.env.HOST ?? "127.0.0.1",
     port: integerFromEnv(process.env.PORT, DEFAULT_PORT),
     webOrigin: process.env.WEB_ORIGIN ?? "http://127.0.0.1:3590",

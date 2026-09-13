@@ -10,6 +10,7 @@ import Stripe from "stripe";
 import { ZodError } from "zod";
 import type { ApiError } from "@agent-harness/contracts";
 import { CodexHarnessAdapter } from "./codex/adapter.js";
+import { ManagedAgentsRuntime } from "./agents-api/service.js";
 import { loadConfig, type HarnessConfig } from "./config.js";
 import { HarnessStore } from "./database.js";
 import { ApiHttpError } from "./http.js";
@@ -23,6 +24,7 @@ import { registerProjectRoutes } from "./routes/projects.js";
 import { registerProviderRoutes } from "./routes/providers.js";
 import { registerUploadRoutes } from "./routes/uploads.js";
 import { registerUserRoutes } from "./routes/users.js";
+import { registerManagedAgentRoutes } from "./routes/managed-agents.js";
 import type { HarnessRuntime } from "./runtime.js";
 import {
   startUploadJanitor,
@@ -34,6 +36,7 @@ export interface BuildAppOptions {
   config?: HarnessConfig;
   store?: HarnessStore;
   runtime?: HarnessRuntime;
+  managedAgents?: ManagedAgentsRuntime;
   logger?: boolean;
 }
 
@@ -406,6 +409,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerBillingRoutes(app, { store, config, stripe });
   registerAuditRoutes(app, { store });
   registerUploadRoutes(app, { store, config });
+  const managedAgents = options.managedAgents ?? new ManagedAgentsRuntime({ store, config });
+  registerManagedAgentRoutes(app, { store, runtime: managedAgents });
+  if (ownsStore) await managedAgents.initialize();
 
   // Staged plaintext is per-turn and the Codex child cannot write, so it can
   // never clean up after itself. Same `ownsStore` guard as the reservation
@@ -423,6 +429,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   app.addHook("onClose", async () => {
     janitor?.stop();
+    await managedAgents.close();
     await runtime.close?.();
     if (ownsStore) store.close();
   });

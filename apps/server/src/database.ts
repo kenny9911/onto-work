@@ -1863,7 +1863,7 @@ export class HarnessStore {
   createUsageReservation(input: {
     tenantId: string;
     userId: string;
-    providerConnectionId: string;
+    providerConnectionId: string | null;
     routeCatalogId: string;
     model: string;
     operation: UsageReservation["operation"];
@@ -1880,13 +1880,14 @@ export class HarnessStore {
           EXISTS(
             SELECT 1 FROM users WHERE id = ? AND tenant_id = ?
           ) AS user_matches,
-          EXISTS(
+          (? IS NULL OR EXISTS(
             SELECT 1 FROM provider_connections WHERE id = ? AND tenant_id = ?
-          ) AS provider_matches
+          )) AS provider_matches
       `)
       .get(
         input.userId,
         input.tenantId,
+        input.providerConnectionId,
         input.providerConnectionId,
         input.tenantId,
       ) as { user_matches: number; provider_matches: number };

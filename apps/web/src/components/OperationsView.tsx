@@ -1,5 +1,5 @@
 import "./management.css";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardPayload, ThreadSummary, TimelineItem } from "@agent-harness/contracts";
 import {
   Activity,
@@ -23,8 +23,11 @@ import {
   type Availability,
 } from "@/components/AvailabilityBadge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { OperationsViewId } from "@/lib/view";
+
+const ManagedAgentsView = lazy(() => import("./ManagedAgentsView").then((module) => ({ default: module.ManagedAgentsView })));
 
 export type CapabilityKind = "mcp_server" | "tool" | "skill";
 export type CapabilityStatus = "ready" | "disabled" | "blocked" | "error" | "unknown";
@@ -185,7 +188,7 @@ function PageHeader({ view }: { view: OperationsViewId }) {
           >
             {copy.title}
           </h1>
-          <AvailabilityBadge state={copy.availability} />
+          {view !== "agents" ? <AvailabilityBadge state={copy.availability} /> : null}
         </div>
         <p className="management-subtitle">
           {copy.subtitle}
@@ -1271,7 +1274,20 @@ export function OperationsView(props: OperationsViewProps) {
       <PageHeader view={props.view} />
       <PageScrollRegion view={props.view}>
         {props.view === "agents" ? (
-          <AgentsView dashboard={props.dashboard} onSelectThread={props.onSelectThread} />
+          <Tabs defaultValue="native" className="management-content">
+            <TabsList aria-label="Agent runtime" className="mb-5">
+              <TabsTrigger value="native">Local task agents</TabsTrigger>
+              <TabsTrigger value="managed">Managed tasks</TabsTrigger>
+            </TabsList>
+            <TabsContent value="native">
+              <AgentsView dashboard={props.dashboard} onSelectThread={props.onSelectThread} />
+            </TabsContent>
+            <TabsContent value="managed">
+              <Suspense fallback={<p role="status" className="text-ui-body text-muted-foreground">Loading managed agents…</p>}>
+                <ManagedAgentsView />
+              </Suspense>
+            </TabsContent>
+          </Tabs>
         ) : null}
         {props.view === "environments" ? <EnvironmentsView dashboard={props.dashboard} /> : null}
         {props.view === "capabilities" ? (

@@ -469,6 +469,33 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     name: "uploads",
     sql: UPLOADS_SCHEMA,
   },
+  {
+    version: 9,
+    name: "managed_agent_tasks",
+    sql: `
+      CREATE TABLE managed_agent_tasks (
+        id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        workspace_path TEXT NOT NULL,
+        definition_json TEXT NOT NULL,
+        detail_json TEXT NOT NULL,
+        session_id TEXT UNIQUE,
+        environment_id TEXT,
+        remote_url TEXT,
+        reservation_id TEXT REFERENCES usage_reservations(id),
+        deadline_at TEXT,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (tenant_id, user_id) REFERENCES users(tenant_id, id) ON DELETE CASCADE,
+        FOREIGN KEY (tenant_id, project_id) REFERENCES projects(tenant_id, id) ON DELETE CASCADE
+      );
+      CREATE INDEX managed_agent_tasks_owner ON managed_agent_tasks(tenant_id, user_id, created_at DESC);
+      CREATE INDEX managed_agent_tasks_status ON managed_agent_tasks(status);
+    `,
+  },
 ] as const;
 
 function migrationChecksum(migration: DatabaseMigration): string {
