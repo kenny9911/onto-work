@@ -5,6 +5,7 @@ describe("task execution events", () => {
   it("upserts streamed commands and records their actual exit result", () => {
     let items = applyNotification([], { method: "item/started", params: { turnId: "turn", item: { id: "cmd", type: "commandExecution", command: "test command" } } });
     items = applyNotification(items, { method: "item/commandExecution/outputDelta", params: { turnId: "turn", itemId: "cmd", delta: "output" } });
+    expect(items[0]?.body).toContain("output");
     items = applyNotification(items, { method: "item/completed", params: { turnId: "turn", item: { id: "cmd", type: "commandExecution", status: "completed", exitCode: 1, aggregatedOutput: "failed output" } } });
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({ id: "cmd", status: "failed", body: "failed output", metadata: { exitCode: 1, turnId: "turn" } });

@@ -61,7 +61,7 @@ export function isTimelineNotification(notification: CodexNotification): boolean
     || method === "error"
     || method === "item/started"
     || method === "item/completed"
-    || (method.startsWith("item/") && method.endsWith("delta"));
+    || (method.startsWith("item/") && /delta$/i.test(method));
 }
 
 export function notificationMatchesThread(

@@ -84,7 +84,7 @@ export function applyNotification(items: TimelineItem[], event: CodexNotificatio
       metadata: { ...prior?.metadata, turnId, ...(typeof raw.exitCode === "number" ? { exitCode: raw.exitCode } : {}), ...(typeof raw.durationMs === "number" ? { durationMs: raw.durationMs } : {}) },
     });
   }
-  if (method?.endsWith("delta")) {
+  if (method && /delta$/i.test(method)) {
     const id = text(params.itemId);
     const delta = text(params.delta);
     if (!delta) return items;
