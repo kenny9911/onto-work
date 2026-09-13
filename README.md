@@ -11,7 +11,8 @@ The repository has moved beyond a UI-only MVP: it includes a hardened product sh
 - Fastify control plane with signed HttpOnly sessions, origin checks, login rate limiting, tenant-scoped users, `admin`/`member` roles, transactional seat admission, encrypted provider credentials, a tenant-scoped administrator audit API, and SQLite persistence.
 - A supervised Codex app-server manager using stdio, an isolated `CODEX_HOME` and process home per tenant user, an allow-listed child environment, controlled workspace roots, and Responses-compatible provider configuration.
 - A tenant-bound, narrow Codex HTTP bridge. New tasks start only through an opaque saved-project ID at `POST /api/tasks`; the browser cannot supply a filesystem path, model, sandbox, or raw `thread/start`. Typed routes cover resume, turns, inline reviews, rename, fork, archive/restore, interrupt, steer, server-sent runtime events, and command/file approval responses with per-user expiry, capacity, and replay guards. Arbitrary app-server methods are not exposed to the browser.
-- Ordered, checksummed SQLite migrations through version 7 plus entitlement snapshots, tenant workspace grants, saved projects, thread/workspace ownership bindings, durable mutation receipts, idempotent usage reservations, usage events, seat/active-run/request limits, and server-selected route/model admission. Task-start binding, receipt, usage, and audit commit atomically after the returned workspace and model are verified against admission.
+- Ordered, checksummed SQLite migrations through version 9 plus entitlement snapshots, tenant workspace grants, saved projects, thread/workspace ownership bindings, managed-session mappings, durable mutation receipts, idempotent usage reservations, usage events, seat/active-run/request limits, and server-selected route/model admission. Task-start binding, receipt, usage, and audit commit atomically after the returned workspace and model are verified against admission.
+- Optional managed Repository Reviewer under Agents → Managed tasks, with explicit tenant enablement, an immutable committed-HEAD snapshot, a Docker-isolated local executor, OpenAI-managed session history, follow-up/cancellation, and recoverable task state. Native Codex remains the default. See [managed runtime setup](#optional-managed-repository-reviewer) and [ADR-0003](docs/architecture/ADR-0003-managed-agents-runtime.md) for the separate cloud-data boundary and enablement gates.
 - Provider catalog entries for OpenAI, OpenRouter, NewAPI, Anthropic, Gemini, DeepSeek, Doubao, Qwen, GLM, and Ollama. Non-Responses providers cross an explicit translation-gateway boundary.
 - Optional Stripe Checkout and billing portal plus signature verification, durable event-ID deduplication/outcome records, stale-event rejection, Stripe billing-period preservation, and atomic subscription/entitlement/audit updates when Stripe variables are configured.
 - Shared TypeScript contracts and server/runtime/UI tests.
@@ -27,6 +28,7 @@ Detached review worktrees, an archived-task browser, durable event replay, route
 | `packages/contracts` | Shared API and UI types plus the provider catalog |
 | `codex` | Pinned `openai/codex` Git submodule |
 | `infra/litellm` | Optional loopback-only LiteLLM evaluation scaffold |
+| `infra/agents-api` | Optional managed runtime's reviewed local executor image recipe |
 | `docs/architecture` | Runtime boundary, full-product blueprint, capability roadmap, and upstream upgrade policy |
 | `docs/design` | Claude Design artifact handoff and binding visual direction |
 | `docs/operations` | Operator runbooks, including model routing and LLM gateway setup |
@@ -51,6 +53,7 @@ The Claude prototype is a design specification with fictional data, not evidence
 - pnpm 9.15.0, matching the root `packageManager` field. Node 26 does not bundle Corepack, so install pnpm separately.
 - A compatible `codex` executable on `PATH`, or Rust tooling to build the pinned submodule.
 - Docker Compose v2 only if using the optional LiteLLM scaffold.
+- A working Docker daemon and a reviewed digest-pinned executor image if enabling the optional managed reviewer.
 - Stripe CLI/account only if testing subscriptions.
 
 Codex's upstream platform requirements apply: macOS or Linux, and Windows through WSL2.
@@ -158,7 +161,86 @@ Generated Codex configuration currently sets `shell_environment_policy.inherit =
 
 Every provider/model alias must pass an end-to-end Codex compatibility test before enablement. In particular, do not assume that a LiteLLM chat adapter preserves Responses streaming events or tool-call semantics.
 
-### Optional LiteLLM
+## Optional managed Repository Reviewer
+
+The managed reviewer uses the Agents API with `self_hosted` execution. OpenAI
+runs the agent loop and stores prompts, tool results, and session history; Docker
+runs `codex exec-server` locally against a read-only snapshot. The API currently
+supports US data residency only and does not support Zero Data Retention, even
+with local execution. Enable it only for appropriate pilot repositories. Native
+provider routes and local `app-server` tasks remain available independently.
+
+1. Review the [plan, design, and implementation specification](docs/architecture/managed-agents-runtime-spec.md).
+   Select a dedicated OpenAI project with Agents API access. Create an application
+   key with `api.agents.read`, `api.agents.write`, and `api.responses.write`, plus
+   a separate restricted environment key belonging to the same organization,
+   project, and user/service-account identity. Give the environment key no other
+   API permissions; it is readable by generated code inside the executor.
+2. Build an executor image from an exact reviewed Codex package release using
+   `infra/agents-api/Dockerfile`, or pull an approved image. For a local build,
+   replace `REVIEWED_EXACT_VERSION` before running:
+
+   ```sh
+   docker build --file infra/agents-api/Dockerfile --build-arg CODEX_VERSION=REVIEWED_EXACT_VERSION --tag agent-harness-executor:reviewed .
+   docker image inspect --format '{{.Id}}' agent-harness-executor:reviewed
+   ```
+
+   Set `AGENTS_API_EXECUTOR_IMAGE` to the complete `sha256:...` image ID printed
+   by Docker, or to an approved `registry/name@sha256:...` reference already
+   present locally. Runtime startup never pulls an image and rejects mutable
+   tags. This image uses the selected npm release, independently of the repository's
+   Codex submodule; review compatibility before changing either version.
+3. Inject `AGENTS_API_KEY` and `AGENTS_API_EXECUTOR_KEY` through deployment secret
+   management, or the ignored local `.env` for a trusted development pilot.
+   Set `AGENTS_API_ALLOWED_TENANT_IDS` to the explicit tenant UUIDs admitted to the
+   pilot; the authenticated `/api/auth/me` response includes the current user's
+   `tenantId`. An empty list denies managed task admission. No wildcard is allowed.
+4. Set `AGENTS_API_ENABLED=true`, select `AGENTS_API_MODEL`, and optionally select
+   approved shared catalog entries through `AGENTS_API_SKILL_IDS`. Defaults allow
+   two concurrent managed sessions and 600 seconds per turn. Invalid limits fail
+   availability rather than being silently truncated. Managed turns also consume
+   the tenant's existing request and active-run quotas shared with native tasks;
+   duration/concurrency limits are not dollar-accurate budgets.
+5. Verify the container's read-only source mount, private scratch, non-root user,
+   and inaccessible host state. Allow the documented outbound registration and
+   executor connections. Docker's default network is not an egress allowlist;
+   enforce approved destinations at the deployment network boundary.
+
+   ```sh
+   pnpm agents:verify-container sha256:REPLACE_WITH_COMPLETE_REVIEWED_IMAGE_ID
+   ```
+
+   This offline kernel probe uses no network or model calls and does not require
+   API keys. It checks filesystem containment, scratch writes, and the absence of
+   application keys; it does not verify the live executor connection.
+6. Run a credentialed canary before admitting real work: task creation, findings,
+   follow-up, rejected steering, cancellation, reconnect/history, timeout, and restart.
+   A passing local build or image probe does not verify account access or live
+   API protocol compatibility.
+
+In **Agents → Managed tasks**, select a saved Git repository root and submit a
+review request. The reviewer sees only the task's committed `HEAD` snapshot;
+follow-ups use that same revision. Uncommitted/untracked files, Git metadata,
+symlinks, submodules, repository-selected agent configuration, and common private
+filenames are excluded. Filename exclusions cannot detect secrets embedded in
+ordinary source files. Start a new task to review a newer commit.
+
+Steering is unavailable because the upstream input API cannot atomically target
+the expected active turn; wait for completion before sending a follow-up.
+Write actions, uploads, arbitrary MCP/plugins, native approval/fork/rollback
+operations, and provider switching are unsupported for managed tasks. Deleting
+a managed session also clears locally retained message content while retaining
+task metadata as a tombstone. Incomplete remote or container cleanup remains
+visible for retry. Server restart does not replay uncertain input or commands.
+Before deleting an account, have its owner delete all managed sessions and resolve
+cleanup failures. Administrator account deletion refuses users with undeleted
+managed work so a database cascade cannot orphan cloud sessions or containers.
+
+The authoritative operational contract and current limitations are in
+[ADR-0003](docs/architecture/ADR-0003-managed-agents-runtime.md) and the
+[managed runtime specification](docs/architecture/managed-agents-runtime-spec.md).
+
+## Optional LiteLLM
 
 The scaffold is independent of the normal web/server process:
 
@@ -200,6 +282,7 @@ The server exposes Checkout and billing-portal creation for administrators and r
 | `pnpm typecheck` | Type checks every workspace package |
 | `pnpm test` | Server Node tests, web Vitest tests, and package tests |
 | `pnpm lint` | Current TypeScript-based lint gate for every package |
+| `pnpm agents:verify-container <image-id-or-digest>` | Offline Docker filesystem-isolation probe; no API/model calls |
 
 Target one workspace when iterating:
 
@@ -235,7 +318,7 @@ Do not treat this production-foundation preview as production-ready without addr
 - Hooks, arbitrary MCP servers, repository-selected plugins/skills, and future applications/templates require a signed allow-list and capability isolation before enablement.
 - Uploaded files are stored outside every workspace root under `UPLOAD_DATA_DIR`, encrypted at rest, with server-derived paths, server-decided content types, a transactional storage quota, and per-turn staged plaintext that is swept on settle and at boot. They are **not** isolated from the agent: the pinned Codex has unconditional full-disk read, so an injected agent can enumerate the store. Encryption bounds that to ciphertext plus one turn's staged plaintext in the reading user's own shard; real isolation needs per-tenant OS identity. The v1 allow-list is UTF-8 text only — archives, PDF, and office documents are deliberately not accepted, because decompression and binary parsing do not belong in the trusted process.
 - Uploaded content reaches the model as tool output inside an approval-gated turn, framed by a server-authored envelope, and never as an input item. Delimiting is defense in depth, not a control; the controls are the read-only sandbox, the per-command approval gate, the refusal of session-wide approval while a thread holds an attachment, and the absence of auto-extraction. A determined injection can still cause the agent to quote file content into its own answer.
-- Ordered checksummed local migrations are supplied through version 8, and startup rejects an unknown/newer schema version. Production rolling-upgrade orchestration, tested rollback, PostgreSQL migration policy, built-asset serving, TLS, reverse proxying, observability, application-wide abuse controls, backup, disaster recovery, and deployment automation are not.
+- Ordered checksummed local migrations are supplied through version 9, and startup rejects an unknown/newer schema version. Production rolling-upgrade orchestration, tested rollback, PostgreSQL migration policy, built-asset serving, TLS, reverse proxying, observability, application-wide abuse controls, backup, disaster recovery, and deployment automation are not.
 
 The non-negotiable security boundary and production exit criteria are maintained in [ADR-0001](docs/architecture/ADR-0001-codex-runtime-boundary.md) and the [threat model](docs/security/threat-model.md).
 

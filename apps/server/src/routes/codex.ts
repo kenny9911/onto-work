@@ -417,6 +417,15 @@ export function registerCodexRoutes(
   const admissionPolicy = new RunAdmissionPolicy(store);
   const pendingApprovals = new Map<string, Map<string, PendingApproval>>();
   const mutationLedger = new TaskMutationLedger(store.db);
+  const closeEventStreams = new Set<() => void>();
+  let shuttingDown = false;
+
+  // Hijacked SSE responses otherwise keep Fastify from reaching onClose, where
+  // both native and managed runtimes stop their child processes and executors.
+  app.addHook("preClose", async () => {
+    shuttingDown = true;
+    for (const close of [...closeEventStreams]) close();
+  });
   /**
    * Turns that carried user-attached files, keyed tenant/user/thread/turn and
    * held for the same 30 minutes as a pending approval.
@@ -1785,6 +1794,12 @@ export function registerCodexRoutes(
       throw new ApiHttpError(403, "invalid_origin", "Request origin is not allowed.");
     }
     const bridge = await userBridge(runtime, { tenantId: user.tenantId, userId: user.id });
+    // Runtime lookup may have awaited while preClose drained existing streams.
+    if (shuttingDown) {
+      reply.header("connection", "close");
+      throw new ApiHttpError(503, "codex_stream_closing", "The server is shutting down. Reconnect after it restarts.");
+    }
+    if (reply.raw.destroyed) return;
 
     reply.hijack();
     reply.raw.writeHead(200, {
@@ -1809,8 +1824,18 @@ export function registerCodexRoutes(
       heartbeat = null;
       queue.length = 0;
       queuedBytes = 0;
+      closeEventStreams.delete(closeForShutdown);
+      reply.raw.off("drain", flush);
       unsubscribe();
     };
+
+    const closeForShutdown = () => {
+      try { close(); } finally {
+        // Do not wait for a slow browser to consume queued events during shutdown.
+        reply.raw.destroy();
+      }
+    };
+    closeEventStreams.add(closeForShutdown);
 
     const flush = () => {
       if (closed || reply.raw.destroyed) return;

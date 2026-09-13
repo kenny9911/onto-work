@@ -174,6 +174,9 @@ class FakeBridge implements CodexUserRouteBridge {
 class FakeInteractiveRuntime implements HarnessRuntime {
   readonly bridge = new FakeBridge();
   readonly identities: Array<{ tenantId: string; userId: string }> = [];
+  closeCalls = 0;
+
+  async close(): Promise<void> { this.closeCalls++; }
 
   async forUser(identity: { tenantId: string; userId: string }): Promise<CodexUserRouteBridge> {
     this.identities.push(identity);
@@ -885,6 +888,9 @@ test("task creation replays the durable response without dispatching twice", asy
     .prepare("SELECT COUNT(*) AS count FROM usage_events WHERE reservation_id = ?")
     .get(reservation?.id) as { count: number };
   assert.equal(eventCount.count, 1);
+  // Close the second app while its externally owned store is still open. The
+  // fixture's earlier after-hook closes that shared database before later hooks.
+  await replayApp.close();
 });
 
 test("an expired thread-start lease rolls back binding, receipt, usage, and audit", async (t) => {
@@ -1520,6 +1526,81 @@ test("correlates concurrent turns and meters tokenUsage.last across response rac
     { turn_id: "turn-a", status: "completed", input_tokens: 5, output_tokens: 6 },
     { turn_id: "turn-b", status: "completed", input_tokens: 7, output_tokens: 3 },
   ]);
+});
+
+test("app shutdown closes an open native event stream before closing its runtime", { timeout: 8_000 }, async (t) => {
+  const fixture = await routeFixture(t);
+  const address = await fixture.app.listen({ host: "127.0.0.1", port: 0 });
+  const streamRequest = httpGet(new URL("/api/codex/events", address), {
+    headers: { accept: "text/event-stream", cookie: fixture.cookie, origin: fixture.config.webOrigin },
+  });
+  const streamResponse = await new Promise<IncomingMessage>((resolve, reject) => {
+    streamRequest.once("response", resolve);
+    streamRequest.once("error", reject);
+  });
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  let closing: Promise<void> | undefined;
+  try {
+    assert.equal(streamResponse.statusCode, 200);
+    await waitForStreamText(streamResponse, "runtime/connected");
+    assert.equal(fixture.runtime.bridge.listeners.size, 1);
+    const disconnected = new Promise<void>((resolve) => streamResponse.once("close", resolve));
+    closing = fixture.app.close();
+    await Promise.race([
+      closing,
+      new Promise<never>((_resolve, reject) => { timeout = setTimeout(() => reject(new Error("Open native SSE prevented runtime shutdown")), 2_000); }),
+    ]);
+    await disconnected;
+    assert.equal(fixture.runtime.closeCalls, 1, "onClose must reach runtime child-process cleanup");
+    assert.equal(fixture.runtime.bridge.listeners.size, 0);
+    assert.equal(fixture.runtime.bridge.unsubscribeCount, 1);
+    assert.equal(streamRequest.aborted, false, "The server must close the stream without a client abort");
+  } finally {
+    clearTimeout(timeout);
+    streamResponse.destroy();
+    streamRequest.destroy();
+    await closing;
+  }
+});
+
+test("native stream lookup cannot create a new SSE response after shutdown begins", { timeout: 8_000 }, async (t) => {
+  const fixture = await routeFixture(t);
+  const lookupStarted = deferred<void>();
+  const releaseLookup = deferred<void>();
+  fixture.runtime.forUser = async () => {
+    lookupStarted.resolve();
+    await releaseLookup.promise;
+    return fixture.runtime.bridge;
+  };
+  const address = await fixture.app.listen({ host: "127.0.0.1", port: 0 });
+  const request = httpGet(new URL("/api/codex/events", address), { headers: { cookie: fixture.cookie } });
+  const response = new Promise<IncomingMessage>((resolve, reject) => {
+    request.once("response", resolve);
+    request.once("error", reject);
+  });
+  let closing: Promise<void> | undefined;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await lookupStarted.promise;
+    closing = fixture.app.close();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    releaseLookup.resolve();
+    const rejected = await response;
+    rejected.resume();
+    assert.equal(rejected.statusCode, 503);
+    assert.doesNotMatch(rejected.headers["content-type"] ?? "", /text\/event-stream/);
+    await Promise.race([
+      closing,
+      new Promise<never>((_resolve, reject) => { timeout = setTimeout(() => reject(new Error("Late native SSE prevented shutdown")), 2_000); }),
+    ]);
+    assert.equal(fixture.runtime.bridge.listeners.size, 0);
+    assert.equal(fixture.runtime.closeCalls, 1);
+  } finally {
+    clearTimeout(timeout);
+    releaseLookup.resolve();
+    request.destroy();
+    await closing;
+  }
 });
 
 test(

@@ -7,6 +7,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "agents:verify-container": "node scripts/verify-managed-container.mjs",
     "skills:import": "python3 scripts/import-shared-skills.py",
     "skills:check": "python3 scripts/import-shared-skills.py --check",
     "skills:test": "python3 -m unittest discover -s scripts -p 'test_*.py'",

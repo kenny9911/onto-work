@@ -213,6 +213,12 @@ export function registerUserRoutes(
       const target = users.find((user) => user.id === userId);
       if (!target) throw new ApiHttpError(404, "user_not_found", "User not found.");
       assertAdminContinuity(users, target, "member", "suspended");
+      const managedWork = store.db.prepare(
+        "SELECT 1 FROM managed_agent_tasks WHERE tenant_id = ? AND user_id = ? AND status != 'deleted' LIMIT 1",
+      ).get(actor.tenantId, userId);
+      if (managedWork) {
+        throw new ApiHttpError(409, "user_managed_sessions_exist", "Delete this user's managed sessions before deleting their account so remote work and executor resources can be cleaned up.");
+      }
       const result = store.db
         .prepare("DELETE FROM users WHERE tenant_id = ? AND id = ?")
         .run(actor.tenantId, userId);

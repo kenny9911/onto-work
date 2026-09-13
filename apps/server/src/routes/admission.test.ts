@@ -178,6 +178,7 @@ test("ordered migrations preserve a legacy database and record immutable version
     { version: 6, name: "saved_projects", checksum_length: 64 },
     { version: 7, name: "task_mutation_idempotency", checksum_length: 64 },
     { version: 8, name: "uploads", checksum_length: 64 },
+    { version: 9, name: "managed_agent_tasks", checksum_length: 64 },
   ]);
   assert.equal(
     migrationChecksum(DATABASE_MIGRATIONS.find((migration) => migration.version === 4)!),
