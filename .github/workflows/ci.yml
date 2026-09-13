@@ -28,7 +28,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test
+      # Server and browser runners already parallelize their test files. Avoid
+      # competing worker pools and UI timeouts on a shared hosted runner.
+      - run: pnpm -r --workspace-concurrency=1 test
       - run: pnpm skills:test
       - run: pnpm build
       - run: git diff --exit-code
