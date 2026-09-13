@@ -91,8 +91,9 @@ export function applyNotification(items: TimelineItem[], event: CodexNotificatio
     const kind = method.includes("agentMessage") ? "assistant" : method.includes("reasoning") ? "reasoning" : method.includes("commandExecution") ? "command" : null;
     if (!kind) return items;
     const prior = id ? items.find((item) => item.id === id) : items.findLast((item) => item.kind === kind && item.status === "running");
+    const previousBody = kind === "command" && !prior?.metadata?.outputStarted ? "" : prior?.body ?? "";
     return upsert({ id: prior?.id || id || `${kind}-${turnId}-${items.length}`, kind, title: prior?.title || (kind === "assistant" ? "Agent" : kind === "command" ? "Run command" : "Reasoning"),
-      body: `${prior?.body ?? ""}${delta}`, status: "running", timestamp, metadata: { ...prior?.metadata, turnId } });
+      body: `${previousBody}${delta}`, status: "running", timestamp, metadata: { ...prior?.metadata, turnId, ...(kind === "command" ? { outputStarted: true } : {}) } });
   }
   return items;
 }
